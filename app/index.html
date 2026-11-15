@@ -112,6 +112,14 @@ td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; white-sp
 .note strong { color: var(--ink); }
 ul.plain { margin: 0; padding-left: 18px; color: var(--ink2); font-size: 13px; display: flex; flex-direction: column; gap: 4px; }
 .hidden { display: none; }
+.payday { display: grid; grid-template-columns: minmax(0, 360px) minmax(0, 1fr); gap: 16px; align-items: center; }
+.phone { background: var(--surface); border: 1px solid var(--border); border-radius: 18px; padding: 14px 16px; box-shadow: 0 6px 20px rgba(0,0,0,.10); display: flex; flex-direction: column; gap: 6px; }
+.phone .app { font-size: 12px; color: var(--ink2); display: flex; justify-content: space-between; }
+.phone .big { font-size: 30px; font-weight: 700; line-height: 1.1; color: var(--keel); }
+.phone dl { margin: 4px 0 0; display: grid; grid-template-columns: 1fr auto; gap: 2px 12px; font-size: 13px; color: var(--ink2); }
+.phone dd { margin: 0; text-align: right; color: var(--ink); font-variant-numeric: tabular-nums; }
+.payday .why { font-size: 14px; color: var(--ink2); max-width: 52ch; }
+.payday .why strong { color: var(--ink); }
 .steps { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; counter-reset: s; }
 .steps li { counter-increment: s; display: flex; flex-direction: column; gap: 4px; font-size: 13px; color: var(--ink2); border-top: 3px solid var(--keel); padding-top: 8px; }
 .steps b { color: var(--ink); font-size: 15px; }
@@ -127,6 +135,7 @@ footer { color: var(--muted); font-size: 12px; }
 @media (max-width: 720px) {
   .tiles, .cols { grid-template-columns: 1fr; }
   .steps { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .payday { grid-template-columns: 1fr; }
   h1 { font-size: 24px; }
 }
 @media (prefers-reduced-motion: no-preference) { .tip { transition: opacity .1s; } }
@@ -172,6 +181,8 @@ footer { color: var(--muted); font-size: 12px; }
   </section>
 
   <section class="tiles" id="tiles" aria-label="Summary"></section>
+
+  <section class="payday" id="payday" aria-label="Payday for the selected simulated driver" aria-live="polite"></section>
 
   <section class="card">
     <header>
@@ -417,6 +428,18 @@ function render() {
     '<span><i class="dot" style="background:' + C.keel + '"></i>Keel: ' + money(M.keel.avgPay) + '</span>' +
     '<span><i class="dot" style="background:' + C.avg4 + '"></i>4-week average: ' + money(M.avg4.avgPay) + '</span>' +
     '<span>Tax set aside over ' + WEEKS + ' weeks: ' + money(M.taxTotal) + ' (illustrative ' + pct(TAX) + ')</span></div></div>';
+
+  // Payday card: the storm's first week in the replay (the hardest week), else the last week shown.
+  var pi = state.scenario === "storm" ? Math.min(STORM_AT, WEEKS - 1) : WEEKS - 1;
+  document.getElementById("payday").innerHTML =
+    '<div class="phone"><div class="app"><span>Keel · simulated driver ' + esc(state.driver) + '</span><span>Week ' + (pi + 1) + ', Friday</span></div>' +
+    '<div>Your paycheck this Friday</div><div class="big">' + money(R.pol.keel[pi]) + '</div>' +
+    '<dl><dt>Earned this week, after tax</dt><dd>' + money(R.net[pi]) + '</dd>' +
+    '<dt>Tax set aside</dt><dd>' + money(R.gross[pi] - R.net[pi]) + '</dd>' +
+    '<dt>Buffer after payday</dt><dd>' + money(R.buf.keel[pi]) + '</dd></dl></div>' +
+    '<p class="why"><strong>' + (state.scenario === "storm" ? "Snowstorm week. " : "Latest week. ") + '</strong>' +
+    (R.net[pi] < R.pol.keel[pi] ? "Earnings came in below the paycheck, so the buffer covered the gap. " : "Earnings covered the paycheck, so the rest went into the buffer. ") +
+    esc(R.log[pi].reason) + '</p>';
 
   document.getElementById("c1sub").textContent = "Weekly take-home earnings after the tax set-aside, next to the paycheck Keel pays. Simulated driver " + state.driver + (state.scenario === "storm" ? ", snowstorm in weeks 12 and 13." : ", normal weeks.");
   var s1 = [{ name: "Take-home earnings", short: "Earnings", color: C.ink2, values: R.net }, { name: "Keel paycheck", short: "Keel", color: C.keel, values: R.pol.keel }];

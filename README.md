@@ -69,8 +69,12 @@ Prompts for each role are in `prompts/`. Start every agent session with `prompts
 ```bash
 pip install -r requirements.txt
 python run_all.py          # data -> forecast -> policy -> evaluation -> outputs/
-# open app/index.html in a browser (or deploy the app/ folder as a static site)
+python3 -m http.server 8000   # from the repo root, then open http://localhost:8000/
 ```
+
+The app fetches `../outputs/results.json` (falling back to `outputs/sample/results.json`), so it must be served over HTTP from the **repo root**. Opening `app/index.html` as a file, or deploying only `app/`, cannot reach `outputs/`. To deploy, publish the whole repo root as a static site (GitHub Pages: Settings → Pages → branch `main`, folder `/`); the root `index.html` forwards to `app/`.
+
+App tests (Node 18+, no install): `node --test app/data.test.js`
 
 `run_all.py` is a skeleton. Each role fills in its step.
 

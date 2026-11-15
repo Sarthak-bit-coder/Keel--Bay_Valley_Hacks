@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Keel prototype</title>
+<title>Keel</title>
 <style>
 /* Plan: a calm instrument-panel look. Blue is Keel everywhere, orange and aqua are the two simple rules it is compared with.
    Layout: one filter row, three summary tiles, two charts, scorecard, checks, decision log. */
@@ -112,6 +112,9 @@ td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; white-sp
 .note strong { color: var(--ink); }
 ul.plain { margin: 0; padding-left: 18px; color: var(--ink2); font-size: 13px; display: flex; flex-direction: column; gap: 4px; }
 .hidden { display: none; }
+#whatif button { white-space: nowrap; font: inherit; font-size: 13px; color: var(--keel); background: none; border: 0; padding: 0; cursor: pointer; text-decoration: underline; text-underline-offset: 2px; }
+#whatif tr[aria-current="true"] td { background: color-mix(in srgb, var(--keel) 10%, transparent); }
+#whatif tr[aria-current="true"] button { color: var(--ink); text-decoration: none; font-weight: 600; }
 .steps { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; counter-reset: s; }
 .steps li { counter-increment: s; display: flex; flex-direction: column; gap: 4px; font-size: 13px; color: var(--ink2); border-top: 3px solid var(--keel); padding-top: 8px; }
 .steps b { color: var(--ink); font-size: 15px; }
@@ -171,6 +174,8 @@ footer { color: var(--muted); font-size: 12px; }
     <label class="field check"><input type="checkbox" id="tableview"> Show data as tables</label>
   </section>
 
+  <p class="note hidden" id="loaderr" role="alert"></p>
+
   <section class="tiles" id="tiles" aria-label="Summary"></section>
 
   <section class="card">
@@ -191,6 +196,15 @@ footer { color: var(--muted); font-size: 12px; }
     <div class="legend" id="c2legend"></div>
     <div class="plot" id="c2"></div>
     <div class="scroll hidden" id="c2table"></div>
+  </section>
+
+  <section class="card" aria-labelledby="whatif-h">
+    <header>
+      <h2 id="whatif-h">What if?</h2>
+      <p id="whatifsub">Every scenario and risk limit for this driver, read from the results file. Nothing here is re-simulated in the browser. Pick a row to load it above.</p>
+    </header>
+    <p class="note" id="whatifsum"></p>
+    <div class="scroll"><table id="whatif"></table></div>
   </section>
 
   <section class="card" aria-labelledby="how-h">
@@ -239,50 +253,19 @@ footer { color: var(--muted); font-size: 12px; }
   <footer>Draft for Bay Valley Hacks. Simulation only: no real money moves and nothing here is financial or tax advice.</footer>
 </div>
 
+<script src="data.js"></script>
 <script id="data">
 "use strict";
-// ---------- Data loader: reads outputs/results.json (CONTRACT.md), falls back to the toy sample ----------
-// The toy simulation that made the sample lives in docs/prototype.html and app/export_sample.mjs.
-var SOURCES = ["../outputs/results.json", "../outputs/sample/results.json"];
+// Loading, validation and run shaping live in app/data.js (tested in app/data.test.js).
 var DATA = null, WEEKS = 0, TAX = 0, HORIZON = 0;
-var STORM_AT = 11; // storm shading at weeks 12-13 (0-based index). Matches the toy; confirm with Role B for real data.
-
-function loadData() {
-  var i = 0;
-  function next() {
-    if (i >= SOURCES.length) return Promise.reject(new Error("no results file found"));
-    var url = SOURCES[i++];
-    return fetch(url, { cache: "no-store" })
-      .then(function (r) { if (!r.ok) throw new Error(url + ": " + r.status); return r.json(); })
-      .catch(function () { return next(); });
-  }
-  return next();
-}
-
-function findRun(driver, scenario, risk) {
-  return DATA.runs.find(function (r) { return r.driver === driver && r.scenario === scenario && Math.abs(r.risk_limit - risk) < 1e-9; });
-}
-
-// Turn one CONTRACT run into the shape render() uses.
-function fromRun(run) {
-  var w = run.weeks, M = run.metrics;
-  function col(k) { return w.map(function (x) { return x[k]; }); }
-  function side(k) { return { overdraft: M.overdraft_weeks[k], avgPay: M.avg_pay[k], swing: M.pay_swing[k] }; }
-  return {
-    net: col("net"), gross: col("gross"), lo: col("lo"), hi: col("hi"),
-    pol: { keel: col("pay_keel"), avg4: col("pay_avg4"), last: col("pay_last") },
-    buf: { keel: col("buf_keel"), avg4: col("buf_avg4"), last: col("buf_last") },
-    // buffer before the week = end balance - take-home + paycheck
-    log: w.map(function (x) { return { week: x.week, lo: x.lo, hi: x.hi, buffer: x.buf_keel - x.net + x.pay_keel, pay: x.pay_keel, risk: x.risk, reason: x.reason }; }),
-    m: { keel: side("keel"), avg4: side("avg4"), last: side("last"), earnSwing: M.earnings_swing, taxTotal: M.tax_total, lowHit: M.low_case_hit_rate },
-    checks: { identity: run.checks.identity, buffer: run.checks.buffer_nonnegative, pay: run.checks.pay_nonnegative }
-  };
-}
+function findRun(driver, scenario, risk) { return KeelData.findRun(DATA, driver, scenario, risk); }
+var fromRun = KeelData.fromRun;
 </script>
 
 <script id="ui">
 "use strict";
 var state = { driver: "A", scenario: "storm", risk: 0.05, tables: false };
+var NAMES = { normal: "Normal weeks", storm: "Snowstorm replay" };
 var NS = "http://www.w3.org/2000/svg";
 function money(n) { var r = Math.round(n); return (r < 0 ? "−$" : "$") + Math.abs(r).toLocaleString("en-US"); }
 function pct(n) { return Math.round(n * 100) + "%"; }
@@ -320,10 +303,11 @@ function lineChart(el, cfg) {
     g += '<rect x="' + m.l + '" y="' + Y(0) + '" width="' + (W - m.l - m.r) + '" height="' + (Y(y0) - Y(0)) + '" fill="' + css("--crit") + '" opacity="0.07"/>';
     g += '<g transform="translate(' + (m.l + 8) + ',' + (Y(y0) - 18) + ')"><path d="M6 1 11 10H1z" fill="none" stroke="' + css("--crit") + '" stroke-width="1.4" stroke-linejoin="round"/><path d="M6 4.2v2.6M6 8.3v.3" stroke="' + css("--crit") + '" stroke-width="1.4" stroke-linecap="round"/><text x="16" y="10" font-size="11" fill="' + ink2 + '">Overdraft zone</text></g>';
   }
-  if (cfg.storm) {
+  if (cfg.stormWeeks && cfg.stormWeeks.length) {
     var sx = (W - m.l - m.r) / (n - 1);
-    g += '<rect x="' + (X(STORM_AT) - sx / 2) + '" y="' + m.t + '" width="' + (sx * 2) + '" height="' + (H - m.t - m.b) + '" fill="' + ink2 + '" opacity="0.08"/>';
-    g += '<text x="' + (X(STORM_AT) + sx / 2) + '" y="' + (m.t + 11) + '" text-anchor="middle" font-size="11" fill="' + ink2 + '">Snowstorm</text>';
+    var s0 = Math.min.apply(null, cfg.stormWeeks) - 1, s1 = Math.max.apply(null, cfg.stormWeeks) - 1;
+    g += '<rect x="' + (X(s0) - sx / 2) + '" y="' + m.t + '" width="' + (sx * (s1 - s0 + 1)) + '" height="' + (H - m.t - m.b) + '" fill="' + ink2 + '" opacity="0.08"/>';
+    g += '<text x="' + ((X(s0) + X(s1)) / 2) + '" y="' + (m.t + 11) + '" text-anchor="middle" font-size="11" fill="' + ink2 + '">Snowstorm</text>';
   }
   if (cfg.band) {
     var up = cfg.band.hi.map(function (v, i) { return X(i) + "," + Y(v); }).join(" ");
@@ -403,6 +387,7 @@ function render() {
   if (!run) { document.getElementById("tiles").innerHTML = '<div class="tile">No run in the results file for this driver, scenario and limit.</div>'; return; }
   var R = fromRun(run), M = R.m, TOY = DATA.meta.model === "toy";
   WEEKS = run.weeks.length;
+  var storm = KeelData.stormWeeks(run, DATA.meta);
   var C = { keel: css("--keel"), avg4: css("--avg4"), last: css("--last"), ink2: css("--ink2") };
 
   document.getElementById("tiles").innerHTML =
@@ -418,17 +403,17 @@ function render() {
     '<span><i class="dot" style="background:' + C.avg4 + '"></i>4-week average: ' + money(M.avg4.avgPay) + '</span>' +
     '<span>Tax set aside over ' + WEEKS + ' weeks: ' + money(M.taxTotal) + ' (illustrative ' + pct(TAX) + ')</span></div></div>';
 
-  document.getElementById("c1sub").textContent = "Weekly take-home earnings after the tax set-aside, next to the paycheck Keel pays. Simulated driver " + state.driver + (state.scenario === "storm" ? ", snowstorm in weeks 12 and 13." : ", normal weeks.");
+  document.getElementById("c1sub").textContent = "Weekly take-home earnings after the tax set-aside, next to the paycheck Keel pays. Simulated driver " + state.driver + (state.scenario !== "storm" ? ", normal weeks." : storm.length ? ", snowstorm in week" + (storm.length > 1 ? "s " + storm[0] + " to " + storm[storm.length - 1] : " " + storm[0]) + "." : ", snowstorm scenario (the results file does not mark which weeks).");
   var s1 = [{ name: "Take-home earnings", short: "Earnings", color: C.ink2, values: R.net }, { name: "Keel paycheck", short: "Keel", color: C.keel, values: R.pol.keel }];
   legend(document.getElementById("c1legend"), [{ name: "Keel paycheck", color: C.keel }, { name: "Take-home earnings", color: C.ink2 }], true);
-  lineChart(document.getElementById("c1"), { series: [s1[1], s1[0]], band: { lo: R.lo, hi: R.hi }, zero: true, storm: state.scenario === "storm", endLabels: true, label: "Weekly take-home earnings and Keel paycheck for 20 weeks." });
+  lineChart(document.getElementById("c1"), { series: [s1[1], s1[0]], band: { lo: R.lo, hi: R.hi }, zero: true, stormWeeks: storm, endLabels: true, label: "Weekly take-home earnings and Keel paycheck for " + WEEKS + " weeks." });
   tableView(document.getElementById("c1table"), ["Take-home earnings", "Keel paycheck", "Forecast low", "Forecast high"], R.net.map(function (v, i) { return [v, R.pol.keel[i], R.lo[i], R.hi[i]]; }));
 
   legend(document.getElementById("c2legend"), [{ name: "Keel", color: C.keel }, { name: "4-week average", color: C.avg4 }, { name: "Last week’s pay", color: C.last }], false);
   lineChart(document.getElementById("c2"), { series: [
     { name: "Keel", color: C.keel, values: R.buf.keel },
     { name: "4-week average", color: C.avg4, values: R.buf.avg4 },
-    { name: "Last week’s pay", color: C.last, values: R.buf.last }], zero: true, storm: state.scenario === "storm", endLabels: false, label: "Buffer balance for three pay rules over 20 weeks." });
+    { name: "Last week’s pay", color: C.last, values: R.buf.last }], zero: true, stormWeeks: storm, endLabels: false, label: "Buffer balance for three pay rules over " + WEEKS + " weeks." });
   tableView(document.getElementById("c2table"), ["Keel", "4-week average", "Last week’s pay"], R.buf.keel.map(function (v, i) { return [v, R.buf.avg4[i], R.buf.last[i]]; }));
   ["c1", "c2"].forEach(function (id) {
     document.getElementById(id).classList.toggle("hidden", state.tables);
@@ -461,6 +446,7 @@ function render() {
   var rows = R.log.slice(-8).map(function (r) {
     return "<tr><td>W" + r.week + "</td><td class=\"num\">" + money(r.lo) + "–" + money(r.hi) + "</td><td class=\"num\">" + money(r.buffer) + "</td><td class=\"num\">" + money(r.pay) + "</td><td>" + esc(r.reason) + "</td></tr>";
   }).join("");
+  renderWhatIf();
   document.getElementById("log").innerHTML = "<thead><tr><th>Week</th><th class=\"num\">Forecast range</th><th class=\"num\">Buffer before</th><th class=\"num\">Paycheck</th><th>Why</th></tr></thead><tbody>" + rows + "</tbody>";
 }
 
@@ -507,10 +493,59 @@ function renderLosses() {
   document.getElementById("losslist").innerHTML = items.map(function (t) { return "<li>" + esc(t) + "</li>"; }).join("");
 }
 
+// What-if: compares precomputed runs for the selected driver; the badge text says whether they are toy or real.
+function renderWhatIf() {
+  var rows = KeelData.whatIf(DATA, state.driver), TOY = DATA.meta.model === "toy";
+  document.getElementById("whatifsub").textContent = (TOY ? "Toy sample, not our result. " : "Simulated drivers. ") +
+    "Every scenario and risk limit for driver " + state.driver + ", read from the results file. Nothing is re-simulated in the browser. Pick a row to load it above.";
+  var same = rows.filter(function (r) { return r.scenario === state.scenario; });
+  var lo = same[0], hi = same[same.length - 1];
+  document.getElementById("whatifsum").innerHTML = lo && hi && lo !== hi
+    ? "<strong>" + esc(NAMES[state.scenario] || state.scenario) + ":</strong> moving the limit from " + pct(lo.risk) + " to " + pct(hi.risk) +
+      " changes Keel’s average paycheck from " + money(lo.avgPay) + " to " + money(hi.avgPay) + " and its empty-buffer weeks from " + lo.emptyKeel + " to " + hi.emptyKeel + "."
+    : "";
+  var h = '<thead><tr><th>Scenario</th><th class="num">Risk limit</th><th class="num">Keel avg paycheck</th><th class="num">4-week avg paycheck</th>' +
+    '<th class="num">Empty-buffer weeks: Keel / 4-week / last week</th><th class="num">Keel paycheck swing</th><th class="num">Earnings swing</th></tr></thead><tbody>';
+  rows.forEach(function (r) {
+    var cur = r.scenario === state.scenario && Math.abs(r.risk - state.risk) < 1e-9;
+    h += '<tr' + (cur ? ' aria-current="true"' : "") + '><td><button type="button" data-sc="' + esc(r.scenario) + '" data-risk="' + r.risk + '">' + esc(NAMES[r.scenario] || r.scenario) + "</button></td>" +
+      '<td class="num">' + pct(r.risk) + '</td><td class="num">' + money(r.avgPay) + '</td><td class="num">' + money(r.avgPayAvg4) + "</td>" +
+      '<td class="num">' + r.emptyKeel + " / " + r.emptyAvg4 + " / " + r.emptyLast + " of " + r.weeks + '</td><td class="num">' + money(r.swing) + '</td><td class="num">' + money(r.earnSwing) + "</td></tr>";
+  });
+  document.getElementById("whatif").innerHTML = h + "</tbody>";
+}
+document.getElementById("whatif").addEventListener("click", function (e) {
+  var b = e.target.closest("button[data-sc]");
+  if (!b) return;
+  state.risk = parseFloat(b.dataset.risk);
+  document.getElementById("risk").value = String(state.risk);
+  setScenario(b.dataset.sc);
+});
+
+// Fill the driver and risk menus from the file, so more drivers or limits need no app change.
+function fillSelect(id, items, current) {
+  var el = document.getElementById(id);
+  el.innerHTML = items.map(function (it) { return '<option value="' + esc(it.value) + '"' + (it.value === current ? " selected" : "") + ">" + esc(it.label) + "</option>"; }).join("");
+  return el.value;
+}
+function fillControls(d) {
+  var o = KeelData.options(d);
+  state.driver = fillSelect("driver", o.drivers.map(function (x) { return { value: String(x.id), label: x.label.replace(/^Driver\s+/, "") }; }),
+    o.drivers.some(function (x) { return String(x.id) === state.driver; }) ? state.driver : String(o.drivers[0].id));
+  var risk = o.risks.indexOf(state.risk) >= 0 ? state.risk : o.risks[0];
+  state.risk = parseFloat(fillSelect("risk", o.risks.map(function (r) { return { value: String(r), label: pct(r) }; }), String(risk)));
+  if (o.scenarios.indexOf(state.scenario) < 0) state.scenario = o.scenarios[0];
+  document.getElementById("sc-storm").disabled = o.scenarios.indexOf("storm") < 0;
+  document.getElementById("sc-normal").disabled = o.scenarios.indexOf("normal") < 0;
+}
+
+function setScenarioButtons() {
+  document.getElementById("sc-storm").setAttribute("aria-pressed", state.scenario === "storm");
+  document.getElementById("sc-normal").setAttribute("aria-pressed", state.scenario === "normal");
+}
 function setScenario(s) {
   state.scenario = s;
-  document.getElementById("sc-storm").setAttribute("aria-pressed", s === "storm");
-  document.getElementById("sc-normal").setAttribute("aria-pressed", s === "normal");
+  setScenarioButtons();
   render();
 }
 document.getElementById("driver").addEventListener("change", function (e) { state.driver = e.target.value; render(); });
@@ -520,8 +555,15 @@ document.getElementById("sc-storm").addEventListener("click", function () { setS
 document.getElementById("sc-normal").addEventListener("click", function () { setScenario("normal"); });
 if (window.matchMedia) { try { window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", render); } catch (e) {} }
 new MutationObserver(render).observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
-loadData().then(function (d) {
+KeelData.loadData(window.fetch.bind(window)).then(function (res) {
+  var d = res.data;
   DATA = d; TAX = d.meta.tax_rate; HORIZON = d.meta.horizon_weeks;
+  fillControls(d);
+  setScenarioButtons();
+  // A broken real file must not hide behind the toy sample: say it was skipped.
+  var broken = res.skipped.filter(function (x) { return !/HTTP 404/.test(x.reason); });
+  if (broken.length) document.getElementById("loaderr").innerHTML = "<strong>Skipped:</strong> " + broken.map(function (x) { return esc(x.url + " (" + x.reason + ")"); }).join("; ") + ". Showing " + esc(res.url) + ".";
+  document.getElementById("loaderr").classList.toggle("hidden", !broken.length);
   document.getElementById("badgetext").textContent = d.meta.model === "toy"
     ? "Toy data: simulated drivers, toy forecast. Not our result."
     : "Simulated drivers, real NYC ride-hail data";
@@ -532,9 +574,10 @@ loadData().then(function (d) {
     .then(function (r) { return r.ok ? r.json() : null; })
     .catch(function () { return null; })
     .then(renderCalib);
-}).catch(function () {
+}).catch(function (e) {
   document.getElementById("badgetext").textContent = "No results file loaded";
-  document.getElementById("tiles").innerHTML = '<div class="tile">Could not load outputs/results.json or the sample. Serve the repo root over HTTP (for example <code>python -m http.server</code>) and open /app/.</div>';
+  var why = (e.skipped || []).map(function (x) { return "<li>" + esc(x.url + ": " + x.reason) + "</li>"; }).join("");
+  document.getElementById("tiles").innerHTML = '<div class="tile">Could not load outputs/results.json or the sample. Serve the repo root over HTTP (from the repo root: <code>python3 -m http.server 8000</code>, then open <code>http://localhost:8000/</code>).' + (why ? '<ul class="plain">' + why + "</ul>" : "") + "</div>";
 });
 </script>
 </body>

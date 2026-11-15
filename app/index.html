@@ -69,6 +69,15 @@ h2 { font-size: 17px; text-wrap: balance; }
 .top { display: flex; flex-wrap: wrap; gap: 12px 24px; align-items: flex-end; justify-content: space-between; }
 .badge { display: inline-flex; gap: 8px; align-items: center; border: 1px solid var(--border); background: var(--surface); border-radius: 999px; padding: 4px 12px; font-size: 13px; color: var(--ink2); }
 .badge svg { flex: none; }
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+#optlist { border: 0; margin: 0; padding: 0; display: grid; gap: 8px; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); }
+#optlist label { display: flex; gap: 8px; align-items: flex-start; border: 1px solid var(--border); border-radius: 8px; padding: 10px; cursor: pointer; }
+#optlist label:has(input:checked) { border-color: var(--keel); background: color-mix(in srgb, var(--keel) 10%, transparent); }
+#optlist .big { font-size: 18px; font-weight: 600; color: var(--ink); display: block; }
+#optlist .sub { font-size: 13px; color: var(--ink2); }
+#optdetail dl { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 8px 16px; margin: 0; }
+#optdetail dt { font-size: 13px; color: var(--ink2); }
+#optdetail dd { margin: 0; font-size: 18px; font-weight: 600; }
 .badge.toy { border-color: currentColor; color: #b35c00; font-weight: 600; }
 @media (prefers-color-scheme: dark) { .badge.toy { color: #ffb86b; } }
 .filters { display: flex; flex-wrap: wrap; gap: 12px 20px; align-items: center; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 12px 16px; }
@@ -196,6 +205,19 @@ footer { color: var(--muted); font-size: 12px; }
     <div class="legend" id="c2legend"></div>
     <div class="plot" id="c2"></div>
     <div class="scroll hidden" id="c2table"></div>
+  </section>
+
+  <section class="card" aria-labelledby="opt-h">
+    <header>
+      <h2 id="opt-h">Paycheck optimizer</h2>
+      <p id="optsub">Pick a week, then pick a paycheck. Each choice is one risk limit Keel was actually run with.</p>
+    </header>
+    <label class="field" for="optweek">Week
+      <select id="optweek"></select>
+    </label>
+    <fieldset id="optlist"><legend class="sr-only">Paycheck and risk options</legend></fieldset>
+    <div id="optdetail" aria-live="polite"></div>
+    <p class="note" id="optnote"></p>
   </section>
 
   <section class="card" aria-labelledby="whatif-h">
@@ -447,6 +469,7 @@ function render() {
     return "<tr><td>W" + r.week + "</td><td class=\"num\">" + money(r.lo) + "–" + money(r.hi) + "</td><td class=\"num\">" + money(r.buffer) + "</td><td class=\"num\">" + money(r.pay) + "</td><td>" + esc(r.reason) + "</td></tr>";
   }).join("");
   renderWhatIf();
+  renderOptimizer();
   document.getElementById("log").innerHTML = "<thead><tr><th>Week</th><th class=\"num\">Forecast range</th><th class=\"num\">Buffer before</th><th class=\"num\">Paycheck</th><th>Why</th></tr></thead><tbody>" + rows + "</tbody>";
 }
 
@@ -492,6 +515,45 @@ function renderLosses() {
   items.push("Hand-written reasons for each loss go in outputs/failures.md once the real run is done.");
   document.getElementById("losslist").innerHTML = items.map(function (t) { return "<li>" + esc(t) + "</li>"; }).join("");
 }
+
+// Paycheck optimizer: every option is a precomputed run; nothing is estimated in the browser.
+var optWeek = 1;
+function renderOptimizer() {
+  var run = findRun(state.driver, state.scenario, state.risk), TOY = DATA.meta.model === "toy";
+  if (!run) return;
+  optWeek = Math.min(Math.max(1, optWeek), run.weeks.length);
+  document.getElementById("optweek").innerHTML = run.weeks.map(function (w) {
+    return '<option value="' + w.week + '"' + (w.week === optWeek ? " selected" : "") + ">Week " + w.week + (w.week_start ? " (" + esc(w.week_start) + ")" : "") + "</option>";
+  }).join("");
+  var opts = KeelData.paycheckChoices(DATA, state.driver, state.scenario, optWeek);
+  function riskText(o) { return o.risk === null ? "risk not in file" : pct(o.risk) + " chance of running dry"; }
+  document.getElementById("optlist").innerHTML = '<legend class="sr-only">Paycheck and risk options for week ' + optWeek + "</legend>" +
+    opts.map(function (o) {
+      var on = Math.abs(o.riskLimit - state.risk) < 1e-9;
+      return '<label><input type="radio" name="optpick" value="' + o.riskLimit + '"' + (on ? " checked" : "") + '><span><span class="big">' + money(o.pay) +
+        '</span><span class="sub">' + esc(riskText(o)) + " · limit " + pct(o.riskLimit) + "</span></span></label>";
+    }).join("");
+  var o = opts.find(function (x) { return Math.abs(x.riskLimit - state.risk) < 1e-9; });
+  document.getElementById("optdetail").innerHTML = o ? "<dl>" +
+    "<div><dt>Paycheck this week</dt><dd>" + money(o.pay) + "</dd></div>" +
+    "<div><dt>Estimated chance the buffer runs dry (next " + DATA.meta.horizon_weeks + " weeks)</dt><dd>" + (o.risk === null ? "Not in file" : pct(o.risk)) + "</dd></div>" +
+    "<div><dt>Buffer before → after</dt><dd>" + money(o.bufferBefore) + " → " + money(o.bufferAfter) + "</dd></div>" +
+    "<div><dt>Average paycheck · empty-buffer weeks (whole replay)</dt><dd>" + money(o.avgPay) + " · " + o.emptyWeeks + " of " + o.weeks + "</dd></div>" +
+    '</dl><p class="note"><strong>Why:</strong> ' + esc(o.reason || "No explanation in the file.") + "</p>" : "";
+  document.getElementById("optsub").textContent = (TOY ? "Toy sample, not our result. " : "") +
+    "Pick a week, then pick a paycheck. Each choice is one risk limit Keel was actually run with; other amounts were not evaluated, so they are not offered.";
+  document.getElementById("optnote").textContent = (TOY ? "Toy data: numbers come from the prototype simulation, not the real model. " : "Simulated drivers. ") +
+    "Read from the results file, not computed in the browser. Each option's buffer is the one that limit had built up by this week. Not financial or tax advice.";
+}
+document.getElementById("optweek").addEventListener("change", function (e) { optWeek = parseInt(e.target.value, 10); renderOptimizer(); });
+document.getElementById("optlist").addEventListener("change", function (e) {
+  if (e.target.name !== "optpick") return;
+  state.risk = parseFloat(e.target.value);
+  document.getElementById("risk").value = String(state.risk);
+  render();
+  var picked = document.querySelector('#optlist input[value="' + state.risk + '"]');
+  if (picked) picked.focus();
+});
 
 // What-if: compares precomputed runs for the selected driver; the badge text says whether they are toy or real.
 function renderWhatIf() {

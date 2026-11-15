@@ -91,6 +91,25 @@
       .sort(function (a, b) { return a.scenario === b.scenario ? a.risk - b.risk : a.scenario < b.scenario ? -1 : 1; });
   }
 
+  // Paycheck optimizer: for one week, the paycheck Keel chose under each risk limit in the file, with the
+  // chance of running dry the policy estimated for it. Only precomputed runs are offered; a missing risk stays
+  // null (shown as "not in file"), never filled in. Each option's buffer is the one that limit built up by then.
+  function paycheckChoices(data, driver, scenario, week) {
+    return data.runs
+      .filter(function (r) { return r.driver === driver && r.scenario === scenario && r.weeks.length >= week; })
+      .map(function (r) {
+        var w = r.weeks[week - 1];
+        return {
+          riskLimit: r.risk_limit, week: w.week, weekStart: w.week_start || null, pay: w.pay_keel,
+          risk: typeof w.risk === "number" ? w.risk : null,
+          bufferBefore: w.buf_keel - w.net + w.pay_keel, bufferAfter: w.buf_keel, net: w.net,
+          reason: typeof w.reason === "string" ? w.reason : "",
+          avgPay: r.metrics.avg_pay.keel, emptyWeeks: r.metrics.overdraft_weeks.keel, weeks: r.weeks.length
+        };
+      })
+      .sort(function (a, b) { return a.riskLimit - b.riskLimit; });
+  }
+
   // Turn one CONTRACT run into the shape render() uses.
   function fromRun(run) {
     var w = run.weeks, M = run.metrics;
@@ -107,7 +126,7 @@
     };
   }
 
-  var api = { SOURCES: SOURCES, validate: validate, loadData: loadData, findRun: findRun, options: options, stormWeeks: stormWeeks, whatIf: whatIf, fromRun: fromRun };
+  var api = { SOURCES: SOURCES, validate: validate, loadData: loadData, findRun: findRun, options: options, stormWeeks: stormWeeks, whatIf: whatIf, paycheckChoices: paycheckChoices, fromRun: fromRun };
   if (typeof module !== "undefined" && module.exports) module.exports = api;
   else root.KeelData = api;
 })(this);

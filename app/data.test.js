@@ -105,3 +105,39 @@ test("fromRun keeps the replay length from the data", () => {
   assert.equal(R.net.length, 9);
   assert.equal(R.log.length, 9);
 });
+
+test("paycheckChoices: one option per risk limit, values copied from that run's week", () => {
+  const d = clone(SAMPLE);
+  const opts = K.paycheckChoices(d, "A", "storm", 2);
+  const limits = d.runs.filter((r) => r.driver === "A" && r.scenario === "storm").map((r) => r.risk_limit).sort((a, b) => a - b);
+  assert.deepEqual(opts.map((o) => o.riskLimit), limits);
+  for (const o of opts) {
+    const w = K.findRun(d, "A", "storm", o.riskLimit).weeks[1];
+    assert.equal(o.pay, w.pay_keel);
+    assert.equal(o.risk, w.risk);
+    assert.equal(o.bufferAfter, w.buf_keel);
+    assert.ok(Math.abs(o.bufferBefore + w.net - w.pay_keel - w.buf_keel) < 1e-9);
+    assert.equal(o.reason, w.reason);
+  }
+});
+
+test("paycheckChoices: a missing risk estimate stays null, never invented", () => {
+  const d = clone(SAMPLE);
+  delete K.findRun(d, "A", "storm", 0.05).weeks[0].risk;
+  const o = K.paycheckChoices(d, "A", "storm", 1).find((x) => x.riskLimit === 0.05);
+  assert.equal(o.risk, null);
+});
+
+test("paycheckChoices: weeks past the end of a run and unknown drivers give no options", () => {
+  const d = clone(SAMPLE);
+  assert.deepEqual(K.paycheckChoices(d, "A", "storm", 9999), []);
+  assert.deepEqual(K.paycheckChoices(d, "Z", "storm", 1), []);
+});
+
+test("paycheckChoices works on the real results file when it is present", { skip: !fs.existsSync(path.join(__dirname, "../outputs/results.json")) }, () => {
+  const real = JSON.parse(fs.readFileSync(path.join(__dirname, "../outputs/results.json"), "utf8"));
+  assert.deepEqual(K.validate(real), []);
+  const opts = K.paycheckChoices(real, "A", "storm", 1);
+  assert.equal(opts.length, 4);
+  assert.ok(opts.every((o) => typeof o.risk === "number" && o.risk <= o.riskLimit + 1e-9), "estimated risk stays within its limit");
+});

@@ -10,6 +10,8 @@
 ## Goal
 Turn `docs/prototype.html` into the real app, driven by `outputs/results.json`, and ship a polished submission with a clear pitch.
 
+The theme is **"Elevate the Ordinary."** Pitch Keel as a steady paycheck for gig workers and freelancers, proven here on simulated ride-hail drivers built on real NYC ride-hail data. Say "gig worker" in general copy and "driver" only for the demo data.
+
 ## Paste this into Claude Code
 
 ```
@@ -32,10 +34,10 @@ Show me the changes as small diffs. Do not rewrite the file wholesale.
 - **10:00 to 11:15:** agree the contract. **Generate `outputs/sample/results.json` yourself** by running the toy simulation from the prototype's `sim` block in Node and writing the CONTRACT format (ask Claude Code to do this: "export the sim results for all drivers, scenarios and risk limits into the CONTRACT.md format"). Commit it so B and you can both use it.
 - **11:15 to 1:30 PM:** wire the app to the sample file. Start the Devpost draft in a doc (problem, who it helps, how it works, what we built, what we learned, what's next).
 - **1:30 to 3:30 PM:** polish the UI. Take screenshots. Draft the video script (see below).
-- **3:30 to 5:30 PM:** swap in the real `results.json` from B. Check every number on screen against the file. Run the safety checks and the table view.
-- **5:30 to 6:30 PM:** finish the write-up. Add the honest limits (simulated drivers, approximate coverage, no real money).
-- **6:30 to 7:00 PM:** record the video. Upload.
-- **7:00 to 7:30 PM:** fill in the submission form. Test every link while logged out. Submit by **7:30 PM**.
+- **3:30 to 5:30 PM:** swap in the real `results.json` from B. Audit every number on screen against the file. Run the safety checks and the table view.
+- **5:30 to 7:00 PM:** finish the write-up and gallery screenshots. Add the honest limits (simulated drivers, approximate coverage, no real money).
+- **7:00 to 8:00 PM:** record the video and upload it. Every team must submit a video.
+- **8:00 to 9:00 PM:** fill in the submission form. Test every link while logged out. Submit by **9:00 PM**. The hard deadline is 10:00 PM; keep that hour as buffer.
 
 ## Video script (about 90 seconds)
 1. **0:00 to 0:15** Hook: "Gig workers get paid like a slot machine. Keel pays them like an employer."

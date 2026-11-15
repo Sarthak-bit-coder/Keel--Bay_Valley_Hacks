@@ -1,81 +1,137 @@
-# Keel (Bay Valley Hacks)
+# Keel
 
-**A steady weekly paycheck for people paid by the gig.** Gig workers get paid like a slot machine. Keel pays them like an employer: it takes in payouts from the gig apps, holds them in a buffer, and every week sets a salary, moves it to checking, and puts tax money aside.
+### A steady weekly paycheck for gig workers and freelancers.
 
-> Working name. Two other Devpost projects are already called "Keel", so we may rename before submitting. Renaming a GitHub repo is one click.
+Gig workers get paid like a slot machine. **Keel pays them like an employer:** a steady weekly paycheck built from their own volatile earnings.
 
-**Theme: "Elevate the Ordinary."** The ordinary thing is getting paid. We elevate it from a lottery into a paycheck.
+> Theme: **"Elevate the Ordinary."** The ordinary thing we elevate is getting paid.
+>
+> Built for Bay Valley Hacks 2026. We prove the idea on **simulated ride-hail drivers built on real NYC ride-hail data**. No real people, no real money, not financial or tax advice.
 
-**Tracks:** Best AI/ML, Best Fintech, Best Overall.
+---
 
-## What the judges will score
+## The problem
 
-| Judging criterion | What we show |
-|---|---|
-| Creativity and originality | A paycheck for people who have none, built on forecast uncertainty instead of a budget app |
-| Technical difficulty | LightGBM low/middle/high forecasts, conformal calibration, a Monte Carlo salary rule |
-| Functionality | A working app that replays a snowstorm week end to end |
-| UI/UX | One page: forecast band, flat paycheck line, buffer, plain-language decision log |
-| Theme relevance | Elevating the ordinary act of getting paid |
-| Presentation and pitch | 90-second video with the running app in the first 30 seconds |
+A gig worker can earn well one week and half as much the next: bad weather, a holiday, fewer hours. Rent and bills still arrive on a fixed schedule.
+
+Today's apps either advance money against future earnings (and charge for it) or just track spending. None of them turns uncertain income into a predictable paycheck while showing how risky each choice is.
+
+## What Keel does
+
+1. **Holds:** payouts from the gig apps land in a buffer, not straight in checking.
+2. **Pays:** every week Keel sets a salary and moves it to checking.
+3. **Sets tax aside:** a share of every payout is put away for tax.
+4. **Stays safe:** the salary is the highest amount that keeps the chance of running out of buffer below a limit the worker chooses (for example 5%).
+
+In good weeks the buffer grows. In bad weeks it absorbs the dip, so the paycheck stays flat.
 
 ## How it works
 
-1. **Data (A):** real NYC ride-hail trip records (TLC) set demand and pay per hour. Drivers are simulated on top, because the records have no driver ID. Weather and holidays are added.
-2. **Forecast (B):** LightGBM predicts a low, middle and high case for next week's take-home pay. Conformal calibration makes the low case right as often as it claims.
-3. **Salary rule (B):** a Monte Carlo policy picks the highest salary that keeps the chance of emptying the buffer under a set limit, using the same random draws for every rule it is compared with.
-4. **Evaluation (B):** Keel versus two simple rules (last week's pay, trailing 4-week average) on weeks the model never saw. We report where Keel loses.
-5. **App (C):** a single page that reads `outputs/results.json` and shows earnings vs paycheck, buffer under each rule, the scorecard, safety checks and a decision log.
-
-`docs/prototype.html` is the first draft of the app. It runs on a toy simulation so the team can see the target. Every number in it is from the toy, not from the real model.
-
-## Team and ownership
-
-| Role | Owns | Works in |
+| Step | What happens | Technique |
 |---|---|---|
-| A: Data and simulation | `data/`, `src/data/`, `tests/test_data.py` | branch `a/data` |
-| B: Forecast, policy, evaluation | `src/model/`, `src/policy/`, `eval/`, `outputs/` | branch `b/ml` |
-| C: App, write-up, video | `app/`, `docs/`, this README | branch `c/app` |
+| **1. Data** | Real NYC ride-hail trip records give pay per hour and demand patterns. Weather and holidays are added. Drivers are simulated on top, because the records have no driver ID. | NYC TLC high-volume trip data, Open-Meteo weather, holiday calendar |
+| **2. Forecast** | Predicts next week's take-home pay as a low, middle and high case, from recent weeks, hours, weather and holidays. | LightGBM quantile models |
+| **3. Calibrate** | Adjusts the low case so it is right about as often as it claims: a "90% low case" should hold about 90% of the time on weeks the model never saw. | Conformal calibration |
+| **4. Choose the salary** | Tries many possible paychecks, simulates the next 4 weeks many times using the forecast, and keeps the highest paycheck whose chance of an empty buffer stays under the limit. | Monte Carlo policy with common random numbers |
+| **5. Compare** | Runs the same weeks under two simple rules, *pay last week's earnings* and *pay the 4-week average*, with the same earnings and the same starting buffer. | Baselines on held-out weeks |
+| **6. Explain** | Every week gets a plain-English reason, for example: *"Chose $700 so the chance of running dry in the next 4 weeks is about 4% (limit 5%)."* | Decision log |
+
+## The app
+
+One page, no install. It reads `outputs/results.json` and redraws everything when you change a control.
+
+### Controls
+- **Driver:** A (full-time, steady), B (evenings, choppy) or C (weekends, very choppy). All simulated.
+- **Scenario:** normal weeks or a **snowstorm replay**.
+- **Allowed chance the buffer runs out:** 1%, 5%, 10% or 20%.
+- **Show data as tables:** swaps every chart for a table.
+
+### What you see
+- **Headline tiles:** weeks with an empty buffer (Keel vs the two simple rules), paycheck swing vs earnings swing, and the average weekly paycheck with the tax set aside.
+- **"Earnings swing, the paycheck does not":** jagged take-home earnings next to the flat Keel paycheck, with the forecast band and the snowstorm weeks shaded.
+- **Buffer balance under three ways of paying:** Keel vs last week's pay vs the 4-week average. Below zero means overdraft.
+- **How it works:** a four-step strip (hold, forecast, calibrate, pay).
+- **Scorecard:** the three questions we wrote down before the real run, answered from the results file, plus the cost of safety (how much less Keel pays than the 4-week average).
+- **Where Keel loses:** every case in the results file where Keel did worse than a simple rule, scanned across all drivers, scenarios and limits, so it can't be cherry-picked.
+- **Safety checks:** every week, payout = paycheck + tax set-aside + change in buffer; the buffer and paycheck are never negative.
+- **Is the low case honest?:** calibration bars showing the target vs the actual hit rate, overall and per driver.
+- **Decision log:** the plain-English reason for each weekly paycheck.
+
+### Honest labels
+- A **"Toy data"** badge shows while the app runs on the sample file (`outputs/sample/results.json`, made from a toy simulation).
+- It switches to **"Simulated drivers, real NYC ride-hail data"** once the real results are in.
+- Charts have hover tooltips and keyboard focus. The page works in light and dark mode and at phone width.
+
+### Run the app
+
+The page loads JSON, so serve it over HTTP rather than double-clicking the file:
+
+```bash
+python -m http.server
+```
+
+Then open http://localhost:8000/app/. The app loads `outputs/results.json`, or falls back to the toy sample if that file doesn't exist yet.
+
+## How we keep it honest
+
+- **Tests written first:** [`docs/preregistration.md`](docs/preregistration.md) fixes the pass marks before the real run. Calibration must land at 85–95%. Keel must have fewer empty-buffer weeks than both simple rules. The paycheck swing must be at least 30% smaller than the earnings swing.
+- **Held-out weeks:** time-ordered splits, no shuffling. The models see the test weeks only at the end.
+- **Failures reported:** `outputs/failures.md` lists where Keel does worse than a simple rule, and why.
+- **Reproducible:** `python run_all.py` rebuilds every result.
+
+## Limits
+
+- Drivers are simulated, not real people. No real money moves. Not financial or tax advice.
+- Weekly earnings carry over from week to week, so conformal coverage is approximate.
+- Holding or moving real money would need licensing. This is a demo of the method.
+- Only numbers from `outputs/results.json` count as results. The prototype and the sample file use a toy simulation.
+
+## What's next
+
+Real payout connections, paying bills straight from the buffer, more gig platforms, and the same forecast-and-reserve method for other uneven costs.
+
+---
+
+## For the team
+
+<details>
+<summary>Roles, contract, checkpoints and the full pipeline</summary>
+
+### Roles
+
+| Role | Owns | Branch |
+|---|---|---|
+| A: Data and simulation | `data/`, `src/data/`, `tests/test_data.py` | `a/data` |
+| B: Forecast, policy, evaluation | `src/model/`, `src/policy/`, `eval/`, `outputs/` | `b/ml` |
+| C: App, write-up, video | `app/`, `docs/`, this README | `c/app` |
 
 Prompts for each role are in `prompts/`. Start every agent session with `prompts/00_shared_context.md` plus the role file.
 
-## The contract between roles
+### Contract
 
-`CONTRACT.md` defines the files A hands to B and B hands to C. Do not change a column name without telling the other two. Role C generates `outputs/sample/results.json` from the prototype toy simulation in the final format (first task, before 11:15), so C can build the app before B finishes.
+`CONTRACT.md` defines the files A hands to B and B hands to C. Do not change a column name without telling the other two. `outputs/sample/results.json` (made by `app/export_sample.mjs` from the toy simulation in `docs/prototype.html`) follows the final format, so the app works before the real results exist.
 
-## Rules we keep
+### Checkpoints (final deadline 10:00 PM, aim to submit by 9:00 PM)
 
-- **Simulation only.** No real money moves. No real people's data. Say "simulated" wherever drivers appear.
-- **Not financial or tax advice.** Put this on the app and in the write-up.
-- **Write the tests down first.** `docs/preregistration.md` is committed before the real run.
-- **Report failures.** `outputs/failures.md` lists where Keel loses, not only where it wins.
-- **One command reproduces the results:** `python run_all.py`.
-
-## Checkpoints (hacking 10:00 AM to 8:00 PM, submit by 8:00 PM)
+Every team must submit a video.
 
 | Time | Checkpoint |
 |---|---|
-| 10:45 | Gate 1: a TLC high-volume file downloads and loads. If not, switch to the fallback idea (Complaint Compass). |
-| 11:15 | `CONTRACT.md` agreed. B and C can run on the sample files. |
+| 11:15 | Gate 1: a TLC high-volume file loads (if not, switch to the fallback idea, Complaint Compass). `CONTRACT.md` agreed. |
 | 1:00 PM | Gate 2: simulated drivers look credible next to published earnings-swing figures. If not, simplify the simulation. |
 | 3:30 PM | Real `outputs/results.json` exists. |
-| 5:30 PM | App wired to real outputs. Safety checks pass. |
-| 6:30 PM | Write-up and gallery screenshots drafted. |
-| 7:00 PM | Video recorded. |
-| 7:30 PM | Submitted. Thirty-minute buffer. |
+| 5:30 PM | App wired to real outputs and every number on screen audited against the file. Safety checks pass. |
+| 7:00 PM | Write-up and gallery screenshots done. |
+| 8:00 PM | Video recorded. |
+| 9:00 PM | Submitted. One-hour buffer before the 10:00 PM deadline. |
 
-## Run it
+### Full pipeline
 
 ```bash
 pip install -r requirements.txt
 python run_all.py          # data -> forecast -> policy -> evaluation -> outputs/
-# open app/index.html in a browser (or deploy the app/ folder as a static site)
 ```
 
 `run_all.py` is a skeleton. Each role fills in its step.
 
-## Limits we state in the write-up
-
-- Drivers are simulated, not real people.
-- Weekly earnings are autocorrelated, so conformal coverage is approximate.
-- Holding or moving real money would need licensing. This is a demo only.
+</details>

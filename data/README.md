@@ -10,7 +10,14 @@
 | Weather | Open-Meteo historical archive API, NYC (40.71, -74.01), daily mean temperature, precipitation, snowfall | Works (checked for 2025-01-06 to 2025-01-12) |
 | Holidays | US federal holidays | To do |
 
-Raw parquet files live in `data/raw/` and are git-ignored.
+Raw parquet files live in `data/raw/` and are git-ignored (binary, about 0.5 GB each).
+
+## Files you can open
+
+- `trip_sample.csv`: 1,200 real trips (100 random trips from each month of 2025, seed 42+month), sorted by time. `hvfhs_license_num` is the company: HV0003 Uber, HV0005 Lyft (per the TLC data dictionary). `PULocationID`/`DOLocationID` are TLC taxi zones. `driver_pay` excludes tips.
+- `daily_market.csv`: one row per day (396 days), totals over every trip: trips, hours on trips, driver pay, tips, pay per on-trip hour.
+
+Both are made by `python src/data/preview.py`.
 
 ## Weeks
 

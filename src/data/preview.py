@@ -3,6 +3,7 @@
 Writes:
   data/raw/preview_2025-01_first1000.csv  first 1,000 raw trips (git-ignored, like all raw data)
   data/daily_market.csv                   one row per day, real market aggregates (small, committed)
+  data/trip_sample.csv                    100 random real trips per month of 2025 (small, committed)
 
 Usage (from repo root): python src/data/preview.py
 """
@@ -21,6 +22,16 @@ def main():
 
     pd.read_parquet(files[0]).head(1000).to_csv(RAW / "preview_2025-01_first1000.csv", index=False)
     print("wrote", RAW / "preview_2025-01_first1000.csv")
+
+    sample_cols = ["hvfhs_license_num", "pickup_datetime", "dropoff_datetime", "PULocationID", "DOLocationID",
+                   "trip_miles", "trip_time", "base_passenger_fare", "tips", "driver_pay"]
+    parts = []
+    for i, f in enumerate(f for f in files if "_2025-" in f.name):
+        parts.append(pd.read_parquet(f, columns=sample_cols).sample(n=100, random_state=42 + i))
+    s = pd.concat(parts).sort_values("pickup_datetime")
+    s["trip_minutes"] = (s.trip_time / 60).round(1)
+    s.drop(columns="trip_time").to_csv("data/trip_sample.csv", index=False)
+    print("wrote data/trip_sample.csv", len(s), "trips")
 
     days = []
     for f in files:

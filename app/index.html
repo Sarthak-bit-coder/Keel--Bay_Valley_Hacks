@@ -69,6 +69,8 @@ h2 { font-size: 17px; text-wrap: balance; }
 .top { display: flex; flex-wrap: wrap; gap: 12px 24px; align-items: flex-end; justify-content: space-between; }
 .badge { display: inline-flex; gap: 8px; align-items: center; border: 1px solid var(--border); background: var(--surface); border-radius: 999px; padding: 4px 12px; font-size: 13px; color: var(--ink2); }
 .badge svg { flex: none; }
+.badge.toy { border-color: currentColor; color: #b35c00; font-weight: 600; }
+@media (prefers-color-scheme: dark) { .badge.toy { color: #ffb86b; } }
 .filters { display: flex; flex-wrap: wrap; gap: 12px 20px; align-items: center; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 12px 16px; }
 .field { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--ink2); }
 select { font: inherit; color: var(--ink); background: var(--surface); border: 1px solid var(--axis); border-radius: 6px; padding: 6px 8px; }
@@ -128,7 +130,7 @@ footer { color: var(--muted); font-size: 12px; }
     </div>
     <span class="badge" id="badge">
       <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><path d="M7 1.5 13 12H1z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><path d="M7 5.5v3M7 10v.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
-      First draft. Simulated driver and toy forecast, no real data.
+      <span id="badgetext">Loading data…</span>
     </span>
   </div>
 
@@ -182,7 +184,7 @@ footer { color: var(--muted); font-size: 12px; }
   <section class="card">
     <header>
       <h2>Scorecard</h2>
-      <p>The three questions we write down before the real run. These numbers come from the toy model in this page, so they show the layout, not our result.</p>
+      <p>The three questions we wrote down before the real run. Read from the results file; check the badge at the top for whether they are toy or real.</p>
     </header>
     <div class="scroll"><table id="score"></table></div>
     <p class="note" id="loses"></p>
@@ -215,124 +217,43 @@ footer { color: var(--muted); font-size: 12px; }
   <footer>Draft for Bay Valley Hacks. Simulation only: no real money moves and nothing here is financial or tax advice.</footer>
 </div>
 
-<script id="sim">
+<script id="data">
 "use strict";
-// ---------- Toy simulation (pure functions, no DOM) ----------
-var HIST = 8, WEEKS = 20, TAX = 0.15, HORIZON = 4, NPATH = 400, STORM_AT = 11, START_BUFFER = 0.5; // starting buffer = half a week of take-home pay
-var DRIVERS = {
-  A: { mean: 900, sigma: 0.20, seed: 11 },
-  B: { mean: 540, sigma: 0.30, seed: 23 },
-  C: { mean: 380, sigma: 0.40, seed: 37 }
-};
-function mulberry32(a) {
-  return function () {
-    a |= 0; a = a + 0x6D2B79F5 | 0;
-    var t = Math.imul(a ^ a >>> 15, 1 | a);
-    t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
-    return ((t ^ t >>> 14) >>> 0) / 4294967296;
-  };
-}
-function randn(r) {
-  var u = 0, v = 0;
-  while (u === 0) u = r();
-  while (v === 0) v = r();
-  return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);
-}
-function mean(a) { var s = 0; for (var i = 0; i < a.length; i++) s += a[i]; return s / a.length; }
-function sd(a) { var m = mean(a), s = 0; for (var i = 0; i < a.length; i++) s += (a[i] - m) * (a[i] - m); return Math.sqrt(s / (a.length - 1)); }
+// ---------- Data loader: reads outputs/results.json (CONTRACT.md), falls back to the toy sample ----------
+// The toy simulation that made the sample lives in docs/prototype.html and app/export_sample.mjs.
+var SOURCES = ["../outputs/results.json", "../outputs/sample/results.json"];
+var DATA = null, WEEKS = 0, TAX = 0, HORIZON = 0;
+var STORM_AT = 11; // storm shading at weeks 12-13 (0-based index). Matches the toy; confirm with Role B for real data.
 
-// Common random numbers: one fixed matrix of normal draws, reused by every salary test.
-var ZMAT = (function () {
-  var r = mulberry32(999), m = [];
-  for (var n = 0; n < NPATH; n++) { var row = []; for (var k = 0; k < HORIZON; k++) row.push(randn(r)); m.push(row); }
-  return m;
-})();
-
-function genGross(driver, scenario) {
-  var d = DRIVERS[driver], r = mulberry32(d.seed), out = [];
-  for (var i = 0; i < HIST + WEEKS; i++) {
-    var z = randn(r);
-    var g = d.mean * Math.exp(d.sigma * z - d.sigma * d.sigma / 2);
-    if (scenario === "storm") {
-      if (i === HIST + STORM_AT) g *= 0.45;
-      if (i === HIST + STORM_AT + 1) g *= 0.60;
-    }
-    out.push(g);
+function loadData() {
+  var i = 0;
+  function next() {
+    if (i >= SOURCES.length) return Promise.reject(new Error("no results file found"));
+    var url = SOURCES[i++];
+    return fetch(url, { cache: "no-store" })
+      .then(function (r) { if (!r.ok) throw new Error(url + ": " + r.status); return r.json(); })
+      .catch(function () { return next(); });
   }
-  return out;
+  return next();
 }
 
-function keelPay(hist, buffer, alpha) {
-  var mu = mean(hist), s = sd(hist), top = Math.ceil(mu * 1.3 / 5) * 5, best = { pay: 0, risk: 1 };
-  for (var pay = top; pay >= 0; pay -= 5) {
-    var bad = 0;
-    for (var n = 0; n < NPATH; n++) {
-      var b = buffer;
-      for (var k = 0; k < HORIZON; k++) {
-        var x = Math.max(0, mu + s * ZMAT[n][k]);
-        b += x - pay;
-        if (b < 0) { bad++; break; }
-      }
-    }
-    var risk = bad / NPATH;
-    if (risk <= alpha) return { pay: pay, risk: risk };
-    best = { pay: 0, risk: risk };
-  }
-  return best;
+function findRun(driver, scenario, risk) {
+  return DATA.runs.find(function (r) { return r.driver === driver && r.scenario === scenario && Math.abs(r.risk_limit - risk) < 1e-9; });
 }
 
-function simulate(driver, scenario, alpha) {
-  var gross = genGross(driver, scenario);
-  var net = gross.map(function (g) { return g * (1 - TAX); });
-  var b0 = START_BUFFER * mean(net.slice(0, HIST));
-  var pol = { keel: [], avg4: [], last: [] };
-  var buf = { keel: [], avg4: [], last: [] };
-  var cur = { keel: b0, avg4: b0, last: b0 };
-  var log = [], lo = [], hi = [];
-  for (var t = 0; t < WEEKS; t++) {
-    var i = HIST + t, hist = net.slice(i - HIST, i);
-    var mu = mean(hist), s = sd(hist);
-    var k = keelPay(hist, cur.keel, alpha);
-    var pays = { keel: k.pay, avg4: mean(net.slice(i - 4, i)), last: net[i - 1] };
-    var before = { keel: cur.keel, avg4: cur.avg4, last: cur.last };
-    Object.keys(pays).forEach(function (key) {
-      cur[key] = cur[key] + net[i] - pays[key];
-      pol[key].push(pays[key]);
-      buf[key].push(cur[key]);
-    });
-    lo.push(Math.max(0, mu - 1.28 * s));
-    hi.push(mu + 1.28 * s);
-    log.push({ week: t + 1, lo: lo[t], hi: hi[t], buffer: before.keel, pay: k.pay, risk: k.risk });
-  }
-  var shown = net.slice(HIST), shownGross = gross.slice(HIST);
-  function metrics(key) {
-    var p = pol[key], b = buf[key];
-    return {
-      overdraft: b.filter(function (v) { return v < 0; }).length,
-      avgPay: mean(p),
-      swing: Math.max.apply(null, p) - Math.min.apply(null, p),
-      minBuf: Math.min.apply(null, b)
-    };
-  }
-  var hits = 0;
-  for (var j = 0; j < WEEKS; j++) if (shown[j] >= lo[j]) hits++;
-  var checks = { identity: true, buffer: true, pay: true };
-  var prev = b0;
-  for (var q = 0; q < WEEKS; q++) {
-    var tax = shownGross[q] - shown[q];
-    var dBuf = buf.keel[q] - prev;
-    if (Math.abs(shownGross[q] - (pol.keel[q] + tax + dBuf)) > 0.01) checks.identity = false;
-    if (buf.keel[q] < 0) checks.buffer = false;
-    if (pol.keel[q] < 0) checks.pay = false;
-    prev = buf.keel[q];
-  }
+// Turn one CONTRACT run into the shape render() uses.
+function fromRun(run) {
+  var w = run.weeks, M = run.metrics;
+  function col(k) { return w.map(function (x) { return x[k]; }); }
+  function side(k) { return { overdraft: M.overdraft_weeks[k], avgPay: M.avg_pay[k], swing: M.pay_swing[k] }; }
   return {
-    net: shown, gross: shownGross, pol: pol, buf: buf, lo: lo, hi: hi, log: log, b0: b0,
-    m: { keel: metrics("keel"), avg4: metrics("avg4"), last: metrics("last"),
-         earnSwing: Math.max.apply(null, shown) - Math.min.apply(null, shown),
-         taxTotal: shownGross.reduce(function (a, g, idx) { return a + g - shown[idx]; }, 0),
-         lowHit: hits / WEEKS },
-    checks: checks
+    net: col("net"), gross: col("gross"), lo: col("lo"), hi: col("hi"),
+    pol: { keel: col("pay_keel"), avg4: col("pay_avg4"), last: col("pay_last") },
+    buf: { keel: col("buf_keel"), avg4: col("buf_avg4"), last: col("buf_last") },
+    // buffer before the week = end balance - take-home + paycheck
+    log: w.map(function (x) { return { week: x.week, lo: x.lo, hi: x.hi, buffer: x.buf_keel - x.net + x.pay_keel, pay: x.pay_keel, risk: x.risk, reason: x.reason }; }),
+    m: { keel: side("keel"), avg4: side("avg4"), last: side("last"), earnSwing: M.earnings_swing, taxTotal: M.tax_total, lowHit: M.low_case_hit_rate },
+    checks: { identity: run.checks.identity, buffer: run.checks.buffer_nonnegative, pay: run.checks.pay_nonnegative }
   };
 }
 </script>
@@ -444,7 +365,7 @@ function tableView(el, cols, rows) {
 
 function legend(el, items, band) {
   el.innerHTML = items.map(function (s) { return '<span><i class="key" style="border-color:' + s.color + '"></i>' + esc(s.name) + "</span>"; }).join("") +
-    (band ? '<span><i class="swatch" style="background:' + css("--keel") + '"></i>Forecast range (toy: mean ± 1.28 spread)</span>' : "");
+    (band ? '<span><i class="swatch" style="background:' + css("--keel") + '"></i>' + (DATA && DATA.meta.model === "toy" ? "Forecast range (toy: mean ± 1.28 spread)" : "Forecast range (calibrated low to high case)") + '</span>' : "");
 }
 
 function pill(ok, yes, no) {
@@ -455,7 +376,11 @@ function pill(ok, yes, no) {
 }
 
 function render() {
-  var R = simulate(state.driver, state.scenario, state.risk), M = R.m;
+  if (!DATA) return;
+  var run = findRun(state.driver, state.scenario, state.risk);
+  if (!run) { document.getElementById("tiles").innerHTML = '<div class="tile">No run in the results file for this driver, scenario and limit.</div>'; return; }
+  var R = fromRun(run), M = R.m, TOY = DATA.meta.model === "toy";
+  WEEKS = run.weeks.length;
   var C = { keel: css("--keel"), avg4: css("--avg4"), last: css("--last"), ink2: css("--ink2") };
 
   document.getElementById("tiles").innerHTML =
@@ -492,10 +417,10 @@ function render() {
   var tied = M.keel.overdraft === Math.min(M.avg4.overdraft, M.last.overdraft);
   var steadier = M.keel.swing < M.earnSwing;
   document.getElementById("score").innerHTML =
-    "<thead><tr><th>Question we wrote down first</th><th>Real model</th><th>Toy model in this page</th></tr></thead><tbody>" +
-    "<tr><td>Is the low-case forecast right as often as it claims (target 90%)?</td><td>" + '<span class="pill">Pending: needs the real forecaster</span>' + "</td><td>" + pct(M.lowHit) + " of weeks at or above the low case</td></tr>" +
-    "<tr><td>Does Keel run out of buffer less often than the two simple rules?</td><td>" + '<span class="pill">Pending</span>' + "</td><td>" + pill(better, "Yes: " + M.keel.overdraft + " vs " + M.avg4.overdraft + " and " + M.last.overdraft, tied ? "Tie: " + M.keel.overdraft + " weeks each" : "No: " + M.keel.overdraft + " vs " + M.avg4.overdraft + " and " + M.last.overdraft) + "</td></tr>" +
-    "<tr><td>Is the paycheck steadier than the earnings?</td><td>" + '<span class="pill">Pending</span>' + "</td><td>" + pill(steadier, "Yes: swing " + money(M.keel.swing) + " vs " + money(M.earnSwing), "No: swing " + money(M.keel.swing) + " vs " + money(M.earnSwing)) + "</td></tr></tbody>";
+    "<thead><tr><th>Question we wrote down first</th><th>" + (TOY ? "Toy sample (not our result)" : "Real model") + "</th></tr></thead><tbody>" +
+    "<tr><td>Is the low-case forecast right as often as it claims (target 90%)?</td><td>" + pct(M.lowHit) + " of weeks at or above the low case</td></tr>" +
+    "<tr><td>Does Keel run out of buffer less often than the two simple rules?</td><td>" + pill(better, "Yes: " + M.keel.overdraft + " vs " + M.avg4.overdraft + " and " + M.last.overdraft, tied ? "Tie: " + M.keel.overdraft + " weeks each" : "No: " + M.keel.overdraft + " vs " + M.avg4.overdraft + " and " + M.last.overdraft) + "</td></tr>" +
+    "<tr><td>Is the paycheck steadier than the earnings?</td><td>" + pill(steadier, "Yes: swing " + money(M.keel.swing) + " vs " + money(M.earnSwing), "No: swing " + money(M.keel.swing) + " vs " + money(M.earnSwing)) + "</td></tr></tbody>";
 
   var cost = M.avg4.avgPay - M.keel.avgPay;
   var txt = "<strong>Where Keel pays a price.</strong> ";
@@ -512,7 +437,7 @@ function render() {
     "<tr><td>Paycheck never negative</td><td class=\"num\">" + pill(R.checks.pay, "Passed", "Failed") + "</td></tr></tbody>";
 
   var rows = R.log.slice(-8).map(function (r) {
-    return "<tr><td>W" + r.week + "</td><td class=\"num\">" + money(r.lo) + "–" + money(r.hi) + "</td><td class=\"num\">" + money(r.buffer) + "</td><td class=\"num\">" + money(r.pay) + "</td><td>Chose " + money(r.pay) + " so the chance of running dry in the next " + HORIZON + " weeks is about " + pct(r.risk) + " (limit " + pct(state.risk) + ").</td></tr>";
+    return "<tr><td>W" + r.week + "</td><td class=\"num\">" + money(r.lo) + "–" + money(r.hi) + "</td><td class=\"num\">" + money(r.buffer) + "</td><td class=\"num\">" + money(r.pay) + "</td><td>" + esc(r.reason) + "</td></tr>";
   }).join("");
   document.getElementById("log").innerHTML = "<thead><tr><th>Week</th><th class=\"num\">Forecast range</th><th class=\"num\">Buffer before</th><th class=\"num\">Paycheck</th><th>Why</th></tr></thead><tbody>" + rows + "</tbody>";
 }
@@ -530,7 +455,17 @@ document.getElementById("sc-storm").addEventListener("click", function () { setS
 document.getElementById("sc-normal").addEventListener("click", function () { setScenario("normal"); });
 if (window.matchMedia) { try { window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", render); } catch (e) {} }
 new MutationObserver(render).observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
-render();
+loadData().then(function (d) {
+  DATA = d; TAX = d.meta.tax_rate; HORIZON = d.meta.horizon_weeks;
+  document.getElementById("badgetext").textContent = d.meta.model === "toy"
+    ? "Toy data: simulated drivers, toy forecast. Not our result."
+    : "Simulated drivers, real NYC ride-hail data";
+  document.getElementById("badge").classList.toggle("toy", d.meta.model === "toy");
+  render();
+}).catch(function () {
+  document.getElementById("badgetext").textContent = "No results file loaded";
+  document.getElementById("tiles").innerHTML = '<div class="tile">Could not load outputs/results.json or the sample. Serve the repo root over HTTP (for example <code>python -m http.server</code>) and open /app/.</div>';
+});
 </script>
 </body>
 </html>

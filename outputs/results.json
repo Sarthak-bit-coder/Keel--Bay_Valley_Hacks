@@ -2,7 +2,7 @@
   "meta": {
     "model": "real",
     "is_simulated": true,
-    "generated_at": "2026-11-15T15:18:03-08:00",
+    "generated_at": "2026-11-15T15:21:09-08:00",
     "tax_rate": 0.15,
     "start_buffer_weeks": 0.5,
     "horizon_weeks": 4,

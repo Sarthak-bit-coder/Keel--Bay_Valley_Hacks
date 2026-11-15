@@ -158,6 +158,43 @@
     };
   }
 
+  // Stress Test Lab. The catalog lists every scenario the UI offers; only those with runs in the results file are
+  // evaluated. The rest come back available:false and are never simulated in the browser.
+  var STRESS_SCENARIOS = [
+    { id: "normal", name: "Normal weeks" },
+    { id: "storm", name: "Snowstorm" },
+    { id: "demand_crash", name: "Demand crash" },
+    { id: "high_earnings", name: "High earnings" }
+  ];
+  function stressSummary(run) {
+    var w = run.weeks, M = run.metrics;
+    var mean = function (k) { return w.reduce(function (a, x) { return a + x[k]; }, 0) / w.length; };
+    var min = function (k) { return Math.min.apply(null, w.map(function (x) { return x[k]; })); };
+    var risks = w.map(function (x) { return x.risk; });
+    return {
+      weeks: w.length, avgNet: mean("net"), avgLo: mean("lo"), avgHi: mean("hi"),
+      avgPay: { keel: M.avg_pay.keel, avg4: M.avg_pay.avg4, last: M.avg_pay.last },
+      minBuf: { keel: min("buf_keel"), avg4: min("buf_avg4"), last: min("buf_last") },
+      empty: { keel: M.overdraft_weeks.keel, avg4: M.overdraft_weeks.avg4, last: M.overdraft_weeks.last },
+      maxRisk: risks.every(function (r) { return typeof r === "number"; }) ? Math.max.apply(null, risks) : null
+    };
+  }
+  // Before = normal weeks, after = the chosen scenario, same driver and risk limit.
+  function stressTest(data, driver, risk, scenario) {
+    var meta = STRESS_SCENARIOS.find(function (s) { return s.id === scenario; }) || { id: scenario, name: scenario };
+    var before = findRun(data, driver, "normal", risk), after = findRun(data, driver, scenario, risk);
+    if (!after) return { scenario: meta, available: false };
+    var b = before ? stressSummary(before) : null, a = stressSummary(after);
+    return {
+      scenario: meta, available: true, beforeRun: before || null, afterRun: after, before: b, after: a,
+      delta: b && {
+        avgNet: a.avgNet - b.avgNet, avgPayKeel: a.avgPay.keel - b.avgPay.keel,
+        minBufKeel: a.minBuf.keel - b.minBuf.keel, emptyKeel: a.empty.keel - b.empty.keel,
+        emptyAvg4: a.empty.avg4 - b.empty.avg4, emptyLast: a.empty.last - b.empty.last
+      }
+    };
+  }
+
   // Turn one CONTRACT run into the shape render() uses.
   function fromRun(run) {
     var w = run.weeks, M = run.metrics;
@@ -174,7 +211,7 @@
     };
   }
 
-  var api = { SOURCES: SOURCES, validate: validate, loadData: loadData, findRun: findRun, options: options, stormWeeks: stormWeeks, whatIf: whatIf, paycheckChoices: paycheckChoices, reliability: reliability, fromRun: fromRun };
+  var api = { SOURCES: SOURCES, validate: validate, loadData: loadData, findRun: findRun, options: options, stormWeeks: stormWeeks, whatIf: whatIf, paycheckChoices: paycheckChoices, reliability: reliability, STRESS_SCENARIOS: STRESS_SCENARIOS, stressTest: stressTest, fromRun: fromRun };
   if (typeof module !== "undefined" && module.exports) module.exports = api;
   else root.KeelData = api;
 })(this);

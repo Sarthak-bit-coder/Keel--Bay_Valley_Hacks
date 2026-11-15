@@ -2,11 +2,11 @@
   "model": "real",
   "target_low_case": 0.9,
   "calibrated_hit_rate": 0.909,
-  "uncalibrated_hit_rate": 0.788,
+  "uncalibrated_hit_rate": 0.818,
   "n_test_weeks": 33,
   "by_driver": {
-    "A": 1.0,
-    "B": 0.909,
+    "A": 0.909,
+    "B": 1.0,
     "C": 0.818
   }
 }

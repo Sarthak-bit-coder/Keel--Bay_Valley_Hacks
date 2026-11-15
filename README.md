@@ -129,6 +129,7 @@ Every team must submit a video.
 
 ```bash
 pip install -r requirements.txt
+# macOS: LightGBM also needs `brew install libomp`. Python 3.11-3.13 is safest for wheels.
 python run_all.py          # data -> forecast -> policy -> evaluation -> outputs/
 ```
 

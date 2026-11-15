@@ -36,3 +36,4 @@ All three rules start with the same buffer (half a week of average take-home pay
 
 - 2026-11-15: pass marks for questions 1 to 3 set before the real run. Test-week count still pending from Role A.
 - 2026-11-15: test weeks set to 11, from Role A's split in `data/README.md`.
+- 2026-11-15: real run done. `data/weekly_earnings.csv` was built by Role B's stand-in `src/data/build_weekly.py` (Role A's real TLC daily totals, real Open-Meteo weather, federal holidays, simulated hours, assumed utilization 0.55), because Role A's file was not ready. Results: Q1 pass (90.9%), Q2 pass, Q3 fail (2 of 24 runs). Pass marks and model were not changed after seeing test weeks. Details in `outputs/failures.md`.

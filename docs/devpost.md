@@ -26,7 +26,7 @@ The app shows a jagged earnings line next to a flat paycheck line, the buffer un
 
 ## How we built it
 
-- **Data (Role A):** real NYC TLC high-volume ride-hail trip records set demand and pay per hour. The records have no driver ID, so we simulate drivers on top of them, with weather (Open-Meteo) and federal holidays. TLC months used: [TBD from data/README.md].
+- **Data (Role A):** real NYC TLC high-volume ride-hail trip records set demand and pay per hour. The records have no driver ID, so we simulate drivers on top of them, with weather (Open-Meteo) and federal holidays. TLC months used: January 2025 to January 2026, built into 52 weeks (Jan 6, 2025 to Jan 4, 2026).
 - **Forecast (Role B):** LightGBM quantile models give the low, middle and high case. Split conformal prediction on a held-out, time-ordered calibration block corrects the low case.
 - **Salary rule (Role B):** Monte Carlo simulation of the next [TBD: horizon_weeks] weeks. All three pay rules are tested on the same random draws, so the comparison is fair.
 - **Evaluation (Role B):** Keel versus the two simple rules on test weeks the model never saw. We wrote the questions and pass marks down first (`docs/preregistration.md`).

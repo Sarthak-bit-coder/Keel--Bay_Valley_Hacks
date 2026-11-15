@@ -73,6 +73,15 @@ h2 { font-size: 17px; text-wrap: balance; }
 #stseg { flex-wrap: wrap; align-self: flex-start; }
 #stseg button[data-off="true"] { color: var(--muted); }
 #sttable td.up { color: var(--good-text); } #sttable td.down { color: #c2410c; }
+.bdflow { display: grid; gap: 10px; }
+.bdrow { display: grid; grid-template-columns: 72px 1fr; gap: 10px; align-items: center; font-size: 13px; color: var(--ink2); }
+.bdbar { display: flex; height: 34px; border-radius: 6px; overflow: hidden; background: var(--grid); }
+.bdbar span { display: flex; align-items: center; justify-content: center; min-width: 0; overflow: hidden; white-space: nowrap; font-size: 12px; font-weight: 600; color: #fff; }
+.bd-pay { background: var(--keel); } .bd-tax { background: var(--muted); } .bd-buf { background: var(--last); } .bd-draw { background: var(--avg4); } .bd-earn { background: var(--ink2); }
+#bdbody dl { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 8px 16px; margin: 0; }
+#bdbody dt { font-size: 13px; color: var(--ink2); } #bdbody dd { margin: 0; font-size: 18px; font-weight: 600; }
+.bdwarn { border: 1px solid var(--crit); color: var(--crit); border-radius: 8px; padding: 8px 12px; font-size: 14px; }
+@media (max-width: 520px) { .bdrow { grid-template-columns: 1fr; gap: 4px; } }
 .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 #optlist { border: 0; margin: 0; padding: 0; display: grid; gap: 8px; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); }
 #optlist label { display: flex; gap: 8px; align-items: flex-start; border: 1px solid var(--border); border-radius: 8px; padding: 10px; cursor: pointer; }
@@ -233,6 +242,18 @@ footer { color: var(--muted); font-size: 12px; }
     <fieldset id="optlist"><legend class="sr-only">Paycheck and risk options</legend></fieldset>
     <div id="optdetail" aria-live="polite"></div>
     <p class="note" id="optnote"></p>
+  </section>
+
+  <section class="card" aria-labelledby="bd-h">
+    <header>
+      <h2 id="bd-h">Paycheck breakdown and money flow</h2>
+      <p id="bdsub">Where one week's simulated earnings went: paycheck, tax reserve and buffer.</p>
+    </header>
+    <label class="field" for="bdweek">Week
+      <select id="bdweek"></select>
+    </label>
+    <div id="bdbody" aria-live="polite"></div>
+    <p class="note" id="bdnote"></p>
   </section>
 
   <section class="card" aria-labelledby="st-h">
@@ -526,6 +547,7 @@ function render() {
   }).join("");
   renderWhatIf();
   renderOptimizer();
+  renderBreakdown();
   renderReliability();
   renderStress();
   document.getElementById("log").innerHTML = "<thead><tr><th>Week</th><th class=\"num\">Forecast range</th><th class=\"num\">Buffer before</th><th class=\"num\">Paycheck</th><th>Why</th></tr></thead><tbody>" + rows + "</tbody>";
@@ -641,6 +663,54 @@ document.getElementById("optlist").addEventListener("change", function (e) {
   var picked = document.querySelector('#optlist input[value="' + state.risk + '"]');
   if (picked) picked.focus();
 });
+
+// Paycheck breakdown: one week's money flow from stored fields (KeelData.paycheckBreakdown). Nothing is recomputed
+// beyond subtraction, and values the file cannot give (week 1 opening buffer) are shown as not derivable.
+var bdWeek = null;
+function renderBreakdown() {
+  var run = findRun(state.driver, state.scenario, state.risk), TOY = DATA.meta.model === "toy";
+  if (!run) return;
+  if (bdWeek === null || bdWeek > run.weeks.length) bdWeek = Math.min(2, run.weeks.length);
+  document.getElementById("bdweek").innerHTML = run.weeks.map(function (w) {
+    return '<option value="' + w.week + '"' + (w.week === bdWeek ? " selected" : "") + ">Week " + w.week + (w.week_start ? " (" + esc(w.week_start) + ")" : "") + "</option>";
+  }).join("");
+  var b = KeelData.paycheckBreakdown(run, bdWeek), el = document.getElementById("bdbody"), na = "Not derivable";
+  document.getElementById("bdsub").textContent = (TOY ? "Toy sample, not our result. " : "Simulated driver " + state.driver + ". ") +
+    "Where one week's simulated earnings went: paycheck, tax reserve and buffer. Pick a week.";
+  document.getElementById("bdnote").textContent = (TOY ? "Toy data from the prototype simulation. " : "Simulated drivers, no real money. ") +
+    "Read from the results file: tax reserve = gross − take-home as stored (illustrative " + pct(TAX) + " rate), beginning buffer = last week's ending buffer. Not financial or tax advice.";
+  if (!b || b.gross === null) { el.innerHTML = '<p class="note">This week has no gross earnings in the file, so there is no breakdown to show.</p>'; return; }
+  function seg(cls, v, total, label) {
+    if (v <= 0 || total <= 0) return "";
+    var w = 100 * v / total;
+    return '<span class="' + cls + '" style="width:' + w + '%" title="' + esc(label + ": " + money(v)) + '">' + (w > 14 ? esc(money(v)) : "") + "</span>";
+  }
+  var draw = b.flow === "draw" ? -b.bufferChange : 0, toBuf = b.flow === "replenish" ? b.bufferChange : 0;
+  var h = "";
+  if (b.identity === false) h += '<p class="bdwarn" role="alert"><strong>Accounting check failed.</strong> Gross ' + money(b.gross) + " ≠ paycheck + tax reserve + buffer change (off by " + (Math.abs(b.gap) < 1 ? "$" + Math.abs(b.gap).toFixed(2) : money(Math.abs(b.gap))) + "). The numbers below are shown as stored; treat them with care.</p>";
+  if (b.bufferChange !== null) {
+    var total = b.gross + draw, legendItems = [["bd-earn", "Gross earnings"], ["bd-draw", "From buffer"], ["bd-pay", "Paycheck"], ["bd-tax", "Tax reserve"], ["bd-buf", "To buffer"]];
+    h += '<div class="bdflow" role="img" aria-label="' + esc("Money in: " + money(b.gross) + " earnings" + (draw ? " plus " + money(draw) + " from the buffer" : "") + ". Money out: " + money(b.pay) + " paycheck, " + money(b.tax) + " tax reserve" + (toBuf ? ", " + money(toBuf) + " to the buffer" : "") + ".") + '">' +
+      '<div class="bdrow"><span>Money in</span><div class="bdbar">' + seg("bd-earn", b.gross, total, "Gross earnings") + seg("bd-draw", draw, total, "From buffer") + "</div></div>" +
+      '<div class="bdrow"><span>Money out</span><div class="bdbar">' + seg("bd-pay", b.pay, total, "Paycheck") + seg("bd-tax", b.tax, total, "Tax reserve") + seg("bd-buf", toBuf, total, "To buffer") + "</div></div></div>" +
+      '<div class="legend">' + legendItems.map(function (l) { return '<span><i class="swatch ' + l[0] + '" style="opacity:1"></i>' + l[1] + "</span>"; }).join("") + "</div>";
+  }
+  var flowText = {
+    draw: "<strong>The buffer paid in.</strong> Take-home pay (" + money(b.net) + ") fell short of the paycheck, so " + money(draw) + " came out of the buffer.",
+    replenish: "<strong>Earnings refilled the buffer.</strong> Take-home pay (" + money(b.net) + ") was more than the paycheck, so the extra " + money(toBuf) + " went into the buffer.",
+    none: "<strong>Even week.</strong> Take-home pay matched the paycheck; the buffer did not change.",
+    unknown: "<strong>Week 1:</strong> the results file has no opening buffer balance, so the buffer change and the accounting check cannot be shown for this week. Pick week 2 or later."
+  };
+  h += '<p class="note">' + flowText[b.flow] + "</p><dl>" +
+    "<div><dt>Gross earnings (simulated)</dt><dd>" + money(b.gross) + "</dd></div>" +
+    "<div><dt>Paycheck (simulated)</dt><dd>" + money(b.pay) + "</dd></div>" +
+    "<div><dt>Tax reserve</dt><dd>" + money(b.tax) + "</dd></div>" +
+    "<div><dt>Buffer change</dt><dd>" + (b.bufferChange === null ? na : (b.bufferChange > 0 ? "+" : "") + money(b.bufferChange)) + "</dd></div>" +
+    "<div><dt>Buffer start → end</dt><dd>" + (b.bufferStart === null ? na : money(b.bufferStart)) + " → " + money(b.bufferEnd) + "</dd></div>" +
+    "<div><dt>Gross = paycheck + tax + buffer change</dt><dd>" + (b.identity === null ? na : pill(b.identity, "Balances", "Does not balance")) + "</dd></div></dl>";
+  el.innerHTML = h;
+}
+document.getElementById("bdweek").addEventListener("change", function (e) { bdWeek = parseInt(e.target.value, 10); renderBreakdown(); });
 
 // Stress test lab: before (normal weeks) vs after (chosen scenario) for the selected driver and risk limit.
 // Only scenarios with runs in the results file are shown with numbers; the rest say "not evaluated".

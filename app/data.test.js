@@ -215,3 +215,46 @@ test("stressTest: a missing risk estimate makes maxRisk null", () => {
 test("stressTest: catalog offers all four scenarios in order", () => {
   assert.deepEqual(K.STRESS_SCENARIOS.map((s) => s.id), ["normal", "storm", "demand_crash", "high_earnings"]);
 });
+
+// Paycheck breakdown
+const wk = (o) => Object.assign({ net: 0, lo: 0, hi: 0, pay_avg4: 0, pay_last: 0, buf_avg4: 0, buf_last: 0 }, o);
+const bdRun = { weeks: [
+  wk({ week: 1, gross: 1000, net: 850, pay_keel: 700, buf_keel: 500 }),
+  wk({ week: 2, gross: 1000, net: 850, pay_keel: 700, buf_keel: 650 }), // earnings > paycheck: +150 to buffer
+  wk({ week: 3, gross: 400, net: 340, pay_keel: 700, buf_keel: 290 }),  // buffer covers 360
+  wk({ week: 4, gross: 0, net: 0, pay_keel: 250, buf_keel: 40 }),       // zero earnings, buffer pays all
+  wk({ week: 5, gross: 500, net: 425, pay_keel: 300, buf_keel: 200 })   // stored buffer off by 35
+] };
+
+test("breakdown: normal earnings replenish the buffer and the identity holds", () => {
+  const b = K.paycheckBreakdown(bdRun, 2);
+  assert.equal(b.tax, 150); assert.equal(b.bufferStart, 500); assert.equal(b.bufferChange, 150);
+  assert.equal(b.flow, "replenish"); assert.equal(b.identity, true);
+});
+
+test("breakdown: buffer withdrawal when earnings fall short", () => {
+  const b = K.paycheckBreakdown(bdRun, 3);
+  assert.equal(b.flow, "draw"); assert.equal(b.bufferChange, -360); assert.equal(b.identity, true);
+});
+
+test("breakdown: zero earnings, the whole paycheck comes from the buffer", () => {
+  const b = K.paycheckBreakdown(bdRun, 4);
+  assert.equal(b.gross, 0); assert.equal(b.tax, 0); assert.equal(b.bufferChange, -250);
+  assert.equal(b.flow, "draw"); assert.equal(b.identity, true);
+});
+
+test("breakdown: flags an accounting mismatch", () => {
+  const b = K.paycheckBreakdown(bdRun, 5);
+  assert.equal(b.identity, false); assert.equal(Math.round(b.gap), -35);
+});
+
+test("breakdown: week 1 has no opening balance, so nothing is invented", () => {
+  const b = K.paycheckBreakdown(bdRun, 1);
+  assert.equal(b.bufferStart, null); assert.equal(b.bufferChange, null);
+  assert.equal(b.flow, "unknown"); assert.equal(b.identity, null);
+});
+
+test("breakdown: real sample weeks satisfy the identity", () => {
+  const run = SAMPLE.runs[0];
+  for (let w = 2; w <= run.weeks.length; w++) assert.notEqual(K.paycheckBreakdown(run, w).identity, false, "week " + w);
+});

@@ -1,0 +1,4 @@
+driver_id,week_start,gross_payout,hours,trips,temp_c,precip_mm,snow_cm,holiday_days,split,is_simulated
+A,2025-01-06,1333.63,38.0,70,-2.5,3.7,2.6,0,train,true
+B,2025-01-06,772.10,22.0,41,-2.5,3.7,2.6,0,train,true
+C,2025-01-06,421.15,12.0,22,-2.5,3.7,2.6,0,train,true

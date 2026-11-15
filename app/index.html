@@ -69,6 +69,7 @@ h2 { font-size: 17px; text-wrap: balance; }
 .top { display: flex; flex-wrap: wrap; gap: 12px 24px; align-items: flex-end; justify-content: space-between; }
 .badge { display: inline-flex; gap: 8px; align-items: center; border: 1px solid var(--border); background: var(--surface); border-radius: 999px; padding: 4px 12px; font-size: 13px; color: var(--ink2); }
 .badge svg { flex: none; }
+.relh3 { margin: 4px 0 0; font-size: 15px; }
 .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 #optlist { border: 0; margin: 0; padding: 0; display: grid; gap: 8px; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); }
 #optlist label { display: flex; gap: 8px; align-items: flex-start; border: 1px solid var(--border); border-radius: 8px; padding: 10px; cursor: pointer; }
@@ -258,10 +259,21 @@ footer { color: var(--muted); font-size: 12px; }
       <header><h2>Safety checks</h2><p>Plain arithmetic that must hold every week, whatever the model says.</p></header>
       <div class="scroll"><table id="checks"></table></div>
     </div>
-    <div class="card">
-      <header><h2>Is the low case honest?</h2><p>How often actual take-home pay landed at or above the low-case forecast, on weeks the model never saw.</p></header>
-      <div id="calib"></div>
-    </div>
+  </section>
+
+  <section class="card" aria-labelledby="rel-h">
+    <header>
+      <h2 id="rel-h">Forecast reliability</h2>
+      <p id="relsub">How well Keel's forecasts held up on weeks the model never saw.</p>
+    </header>
+    <p class="note" id="relexplain"></p>
+    <div id="calib"></div>
+    <div class="legend" id="rellegend"></div>
+    <div class="plot" id="relchart"></div>
+    <div class="scroll"><table id="relstats"></table></div>
+    <h3 class="relh3">Largest misses</h3>
+    <div class="scroll"><table id="relworst"></table></div>
+    <p class="note" id="relnote"></p>
   </section>
 
   <section class="card">
@@ -470,6 +482,7 @@ function render() {
   }).join("");
   renderWhatIf();
   renderOptimizer();
+  renderReliability();
   document.getElementById("log").innerHTML = "<thead><tr><th>Week</th><th class=\"num\">Forecast range</th><th class=\"num\">Buffer before</th><th class=\"num\">Paycheck</th><th>Why</th></tr></thead><tbody>" + rows + "</tbody>";
 }
 
@@ -480,22 +493,51 @@ function bar(label, v, target, off) {
     (target != null ? '<span class="target" style="left:calc(' + target * 100 + '% - 1px)" title="Target ' + pct(target) + '"></span>' : "") +
     '</span><span class="n">' + pct(v) + "</span></div>";
 }
-function renderCalib(cal) {
-  var el = document.getElementById("calib"), h = "";
-  if (cal) {
-    h += bar("Target", cal.target_low_case, null, true);
-    h += bar("Calibrated", cal.calibrated_hit_rate, cal.target_low_case);
-    h += bar("Before calibration", cal.uncalibrated_hit_rate, cal.target_low_case, true);
-    Object.keys(cal.by_driver || {}).forEach(function (d) { h += bar("Driver " + d, cal.by_driver[d], cal.target_low_case); });
-    h = '<div class="bars">' + h + '</div><p class="note">From outputs/calibration.json (' + esc(cal.model) + " model), " + cal.n_test_weeks + " test weeks. The black tick is the target. Weekly earnings are autocorrelated, so coverage is approximate.</p>";
-  } else {
-    var by = {};
-    DATA.runs.forEach(function (r) { if (r.scenario === "normal" && !(r.driver in by)) by[r.driver] = r.metrics.low_case_hit_rate; });
-    Object.keys(by).forEach(function (d) { h += bar("Driver " + d, by[d], 0.9); });
-    h = '<div class="bars">' + h + '</div><p class="note"><strong>Pending:</strong> outputs/calibration.json is not there yet. Bars show the low-case hit rate in the ' +
-      (DATA.meta.model === "toy" ? "toy" : "results") + " file (normal weeks). The black tick is the 90% target.</p>";
-  }
-  el.innerHTML = h;
+// Forecast reliability: coverage vs target, error metrics, forecast band vs actual, largest misses.
+// Everything is read from results.json (stored forecasts) and calibration.json; nothing is re-estimated here.
+var CAL = null;
+function renderCalib(cal) { CAL = cal; renderReliability(); }
+function renderReliability() {
+  if (!DATA) return;
+  var C = { keel: css("--keel"), avg4: css("--avg4") };
+  var TOY = DATA.meta.model === "toy", rel = KeelData.reliability(DATA, CAL), o = rel.overall, T = rel.targets;
+  var src = TOY ? "Toy sample, not our result: the forecast is the prototype's toy, not the real model. " : "Real evaluation on simulated drivers. ";
+  document.getElementById("relsub").textContent = src + "Normal weeks only, on test weeks the model never saw. The snowstorm is left out because it was added after forecasting.";
+  document.getElementById("relexplain").innerHTML = "<strong>What calibration means:</strong> each week Keel forecasts a low case and a high case for take-home pay. " +
+    "A low case that claims to be right 9 times in 10 should have actual pay at or above it on about 9 weeks in 10. " +
+    "Calibration nudges the forecasts, using weeks held back from training, until that claim is true. If the low case is too high, Keel would pay out money that never arrives.";
+  if (!o) { document.getElementById("calib").innerHTML = '<p class="note">No normal-scenario weeks in the results file, so there is nothing to score.</p>'; return; }
+  var h = bar("Low case right (pay at or above it)", o.lowHit, T && T.low) + bar("High case right (pay at or below it)", o.highHit, T && T.high) + bar("Inside the band (both right)", o.bandHit, T && T.band);
+  if (CAL && typeof CAL.uncalibrated_hit_rate === "number") h += bar("Low case right before calibration", CAL.uncalibrated_hit_rate, T && T.low, true);
+  document.getElementById("calib").innerHTML = '<div class="bars">' + h + '</div><p class="note">' + (T
+    ? "The black tick is the target (" + pct(T.low) + " for each case, so " + pct(T.band) + " for the band), from outputs/calibration.json. "
+    : "<strong>outputs/calibration.json is missing</strong>, so no target is shown and the before-calibration rate is unknown. Bars are computed from the results file. ") +
+    o.n + " test weeks; weekly earnings are autocorrelated, so treat these as approximate.</p>";
+
+  var ws = rel.weeks.filter(function (w) { return w.driver === state.driver; });
+  legend(document.getElementById("rellegend"), [{ name: "Actual take-home pay", color: C.keel }], true);
+  if (ws.length) lineChart(document.getElementById("relchart"), {
+    series: [{ name: "Actual", color: C.keel, values: ws.map(function (w) { return w.actual; }) }].concat(ws[0].mid !== null ? [{ name: "Middle case", color: C.avg4, values: ws.map(function (w) { return w.mid; }) }] : []),
+    band: { lo: ws.map(function (w) { return w.lo; }), hi: ws.map(function (w) { return w.hi; }) }, zero: true, endLabels: false,
+    label: "Driver " + state.driver + ": forecast low-to-high band and actual take-home pay, " + ws.length + " test weeks." });
+
+  var row = function (name, s) {
+    return "<tr><td>" + esc(name) + '</td><td class="num">' + s.n + '</td><td class="num">' + pct(s.lowHit) + '</td><td class="num">' + pct(s.highHit) + '</td><td class="num">' + pct(s.bandHit) +
+      '</td><td class="num">' + money(s.meanWidth) + '</td><td class="num">' + s.missCount + (s.meanMiss === null ? "" : " (avg " + money(s.meanMiss) + ")") +
+      '</td><td class="num">' + (s.maeMid === null ? "Not in file" : money(s.maeMid)) + "</td></tr>";
+  };
+  document.getElementById("relstats").innerHTML = '<thead><tr><th>Driver</th><th class="num">Weeks</th><th class="num">Low case right</th><th class="num">High case right</th><th class="num">Inside band</th>' +
+    '<th class="num">Avg band width</th><th class="num">Weeks outside band (avg miss)</th><th class="num">Avg error vs middle case</th></tr></thead><tbody>' +
+    rel.drivers.map(function (d) { return row(d.label, d.s); }).join("") + row("All drivers", o) + "</tbody>";
+
+  document.getElementById("relworst").innerHTML = rel.worst.length
+    ? '<thead><tr><th>Driver</th><th>Week</th><th class="num">Actual</th><th class="num">Forecast band</th><th>Missed by</th></tr></thead><tbody>' +
+      rel.worst.map(function (w) {
+        return "<tr><td>" + esc(w.driver) + "</td><td>W" + w.week + (w.weekStart ? " (" + esc(w.weekStart) + ")" : "") + '</td><td class="num">' + money(w.actual) + '</td><td class="num">' +
+          money(w.lo) + "–" + money(w.hi) + "</td><td>" + money(w.miss) + (w.side === "above" ? " above the high case" : " below the low case (Keel planned on money that did not come)") + "</td></tr>";
+      }).join("") + "</tbody>"
+    : '<tbody><tr><td>Every test week landed inside the forecast band.</td></tr></tbody>';
+  document.getElementById("relnote").textContent = "Average error against the middle case needs the middle forecast, which the results file does not store (CONTRACT.md has only the low and high case), so it is shown as not in file instead of being estimated.";
 }
 
 // Where Keel loses: scanned from every run, so it cannot be cherry-picked by the filters.

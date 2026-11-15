@@ -110,6 +110,54 @@
       .sort(function (a, b) { return a.riskLimit - b.riskLimit; });
   }
 
+  // Forecast reliability, from the forecasts already stored in the results file (lo/hi per test week, made before
+  // the week). Uses normal-scenario runs only: the storm is injected after forecasting, so it would count as a miss
+  // the model could never see. Forecasts do not depend on the risk limit, so one run per driver is enough.
+  // Target comes from calibration.json (low and high case each right `target` of the time, so the band 2*target-1);
+  // without it targets are null, not assumed. Error vs the middle case only if weeks carry a numeric `mid`.
+  function reliability(data, cal) {
+    var byDriver = {};
+    data.runs.forEach(function (r) {
+      if (r.scenario !== "normal") return;
+      if (!byDriver[r.driver] || r.risk_limit < byDriver[r.driver].risk_limit) byDriver[r.driver] = r;
+    });
+    var weeks = [];
+    Object.keys(byDriver).sort().forEach(function (d) {
+      byDriver[d].weeks.forEach(function (w) {
+        var below = w.net < w.lo, above = w.net > w.hi;
+        weeks.push({
+          driver: d, week: w.week, weekStart: w.week_start || null, actual: w.net, lo: w.lo, hi: w.hi,
+          mid: typeof w.mid === "number" ? w.mid : null,
+          side: below ? "below" : above ? "above" : "inside", miss: below ? w.lo - w.net : above ? w.net - w.hi : 0
+        });
+      });
+    });
+    function summary(ws) {
+      if (!ws.length) return null;
+      var missed = ws.filter(function (w) { return w.side !== "inside"; }), mids = ws.filter(function (w) { return w.mid !== null; });
+      var share = function (f) { return ws.filter(f).length / ws.length; };
+      var mean = function (xs) { return xs.length ? xs.reduce(function (a, b) { return a + b; }, 0) / xs.length : null; };
+      return {
+        n: ws.length,
+        lowHit: share(function (w) { return w.side !== "below"; }),
+        highHit: share(function (w) { return w.side !== "above"; }),
+        bandHit: share(function (w) { return w.side === "inside"; }),
+        meanWidth: mean(ws.map(function (w) { return w.hi - w.lo; })),
+        missCount: missed.length,
+        meanMiss: mean(missed.map(function (w) { return w.miss; })),
+        maeMid: mids.length === ws.length ? mean(mids.map(function (w) { return Math.abs(w.actual - w.mid); })) : null
+      };
+    }
+    var target = cal && typeof cal.target_low_case === "number" ? cal.target_low_case : null;
+    return {
+      weeks: weeks,
+      overall: summary(weeks),
+      drivers: Object.keys(byDriver).sort().map(function (d) { return { driver: d, label: byDriver[d].driver_label || "Driver " + d, s: summary(weeks.filter(function (w) { return w.driver === d; })) }; }),
+      worst: weeks.filter(function (w) { return w.miss > 0; }).sort(function (a, b) { return b.miss - a.miss; }).slice(0, 5),
+      targets: target === null ? null : { low: target, high: target, band: Math.max(0, 2 * target - 1) }
+    };
+  }
+
   // Turn one CONTRACT run into the shape render() uses.
   function fromRun(run) {
     var w = run.weeks, M = run.metrics;
@@ -126,7 +174,7 @@
     };
   }
 
-  var api = { SOURCES: SOURCES, validate: validate, loadData: loadData, findRun: findRun, options: options, stormWeeks: stormWeeks, whatIf: whatIf, paycheckChoices: paycheckChoices, fromRun: fromRun };
+  var api = { SOURCES: SOURCES, validate: validate, loadData: loadData, findRun: findRun, options: options, stormWeeks: stormWeeks, whatIf: whatIf, paycheckChoices: paycheckChoices, reliability: reliability, fromRun: fromRun };
   if (typeof module !== "undefined" && module.exports) module.exports = api;
   else root.KeelData = api;
 })(this);

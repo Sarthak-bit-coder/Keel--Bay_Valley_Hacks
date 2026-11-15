@@ -112,9 +112,21 @@ td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; white-sp
 .note strong { color: var(--ink); }
 ul.plain { margin: 0; padding-left: 18px; color: var(--ink2); font-size: 13px; display: flex; flex-direction: column; gap: 4px; }
 .hidden { display: none; }
+.steps { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; counter-reset: s; }
+.steps li { counter-increment: s; display: flex; flex-direction: column; gap: 4px; font-size: 13px; color: var(--ink2); border-top: 3px solid var(--keel); padding-top: 8px; }
+.steps b { color: var(--ink); font-size: 15px; }
+.steps b::before { content: counter(s) ". "; color: var(--keel); }
+.bars { display: flex; flex-direction: column; gap: 8px; font-size: 13px; }
+.bars .row { display: grid; grid-template-columns: 9.5em 1fr 3em; gap: 8px; align-items: center; color: var(--ink2); }
+.bars .track { position: relative; height: 12px; background: var(--grid); border-radius: 6px; }
+.bars .fill { position: absolute; inset: 0 auto 0 0; border-radius: 6px; background: var(--keel); }
+.bars .fill.off { background: var(--axis); }
+.bars .target { position: absolute; top: -3px; bottom: -3px; width: 2px; background: var(--ink); }
+.bars .n { text-align: right; font-variant-numeric: tabular-nums; color: var(--ink); }
 footer { color: var(--muted); font-size: 12px; }
 @media (max-width: 720px) {
   .tiles, .cols { grid-template-columns: 1fr; }
+  .steps { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   h1 { font-size: 24px; }
 }
 @media (prefers-reduced-motion: no-preference) { .tip { transition: opacity .1s; } }
@@ -181,6 +193,16 @@ footer { color: var(--muted); font-size: 12px; }
     <div class="scroll hidden" id="c2table"></div>
   </section>
 
+  <section class="card" aria-labelledby="how-h">
+    <header><h2 id="how-h">How it works</h2><p>Four steps run every week for each simulated driver.</p></header>
+    <ol class="steps">
+      <li><b>Hold</b><span>Gig payouts land in a buffer, not straight in checking. A share is set aside for tax.</span></li>
+      <li><b>Forecast</b><span>LightGBM predicts a low, middle and high case for next week’s take-home pay.</span></li>
+      <li><b>Calibrate</b><span>Conformal prediction adjusts the low case so it is right as often as it claims.</span></li>
+      <li><b>Pay</b><span>A Monte Carlo test picks the highest salary that keeps the chance of an empty buffer under your limit.</span></li>
+    </ol>
+  </section>
+
   <section class="card">
     <header>
       <h2>Scorecard</h2>
@@ -190,19 +212,19 @@ footer { color: var(--muted); font-size: 12px; }
     <p class="note" id="loses"></p>
   </section>
 
+  <section class="card" aria-labelledby="lose-h">
+    <header><h2 id="lose-h">Where Keel loses</h2><p>Across every driver, scenario and limit in the results file, not only the one selected above.</p></header>
+    <ul class="plain" id="losslist"></ul>
+  </section>
+
   <section class="cols">
     <div class="card">
       <header><h2>Safety checks</h2><p>Plain arithmetic that must hold every week, whatever the model says.</p></header>
       <div class="scroll"><table id="checks"></table></div>
     </div>
     <div class="card">
-      <header><h2>What is real in this draft</h2><p>The page is a placeholder for the finished app.</p></header>
-      <ul class="plain">
-        <li>Placeholder: one simulated driver, a mean-and-spread forecast, a 15% tax set-aside rate.</li>
-        <li>Replaced by: trip data from NYC TLC ride-hail records, weather, and holidays.</li>
-        <li>Replaced by: a LightGBM low, middle and high forecast with conformal calibration.</li>
-        <li>Kept: the salary rule (highest pay that keeps the chance of an empty buffer under your limit) and the same-random-draws comparison.</li>
-      </ul>
+      <header><h2>Is the low case honest?</h2><p>How often actual take-home pay landed at or above the low-case forecast, on weeks the model never saw.</p></header>
+      <div id="calib"></div>
     </div>
   </section>
 
@@ -442,6 +464,49 @@ function render() {
   document.getElementById("log").innerHTML = "<thead><tr><th>Week</th><th class=\"num\">Forecast range</th><th class=\"num\">Buffer before</th><th class=\"num\">Paycheck</th><th>Why</th></tr></thead><tbody>" + rows + "</tbody>";
 }
 
+// Calibration panel: outputs/calibration.json if B has written it, else the low-case hit rates in the results file.
+function bar(label, v, target, off) {
+  return '<div class="row"><span>' + esc(label) + '</span><span class="track" role="img" aria-label="' + esc(label) + ": " + pct(v) + '">' +
+    '<span class="fill' + (off ? " off" : "") + '" style="width:' + Math.max(0, Math.min(1, v)) * 100 + '%"></span>' +
+    (target != null ? '<span class="target" style="left:calc(' + target * 100 + '% - 1px)" title="Target ' + pct(target) + '"></span>' : "") +
+    '</span><span class="n">' + pct(v) + "</span></div>";
+}
+function renderCalib(cal) {
+  var el = document.getElementById("calib"), h = "";
+  if (cal) {
+    h += bar("Target", cal.target_low_case, null, true);
+    h += bar("Calibrated", cal.calibrated_hit_rate, cal.target_low_case);
+    h += bar("Before calibration", cal.uncalibrated_hit_rate, cal.target_low_case, true);
+    Object.keys(cal.by_driver || {}).forEach(function (d) { h += bar("Driver " + d, cal.by_driver[d], cal.target_low_case); });
+    h = '<div class="bars">' + h + '</div><p class="note">From outputs/calibration.json (' + esc(cal.model) + " model), " + cal.n_test_weeks + " test weeks. The black tick is the target. Weekly earnings are autocorrelated, so coverage is approximate.</p>";
+  } else {
+    var by = {};
+    DATA.runs.forEach(function (r) { if (r.scenario === "normal" && !(r.driver in by)) by[r.driver] = r.metrics.low_case_hit_rate; });
+    Object.keys(by).forEach(function (d) { h += bar("Driver " + d, by[d], 0.9); });
+    h = '<div class="bars">' + h + '</div><p class="note"><strong>Pending:</strong> outputs/calibration.json is not there yet. Bars show the low-case hit rate in the ' +
+      (DATA.meta.model === "toy" ? "toy" : "results") + " file (normal weeks). The black tick is the 90% target.</p>";
+  }
+  el.innerHTML = h;
+}
+
+// Where Keel loses: scanned from every run, so it cannot be cherry-picked by the filters.
+function renderLosses() {
+  var name = { avg4: "4-week average", last: "last week’s pay" }, items = [], payGaps = [];
+  DATA.runs.forEach(function (r) {
+    var o = r.metrics.overdraft_weeks, tag = "Driver " + r.driver + ", " + (r.scenario === "storm" ? "snowstorm" : "normal weeks") + ", " + pct(r.risk_limit) + " limit";
+    ["avg4", "last"].forEach(function (k) {
+      if (o.keel > o[k]) items.push(tag + ": Keel had " + o.keel + " empty-buffer week" + (o.keel === 1 ? "" : "s") + ", " + name[k] + " had " + o[k] + ".");
+    });
+    if (!r.checks.buffer_nonnegative && o.keel <= Math.min(o.avg4, o.last)) items.push(tag + ": Keel’s buffer still went below zero (" + o.keel + " week" + (o.keel === 1 ? "" : "s") + ").");
+    payGaps.push(r.metrics.avg_pay.avg4 - r.metrics.avg_pay.keel);
+  });
+  var lower = payGaps.filter(function (g) { return g > 0; });
+  if (lower.length) items.push("Keel paid less on average than the 4-week average in " + lower.length + " of " + DATA.runs.length + " runs, by " + money(Math.min.apply(null, lower)) + " to " + money(Math.max.apply(null, lower)) + " a week. That is the price of a safer buffer.");
+  if (!items.length) items.push("No run in this file where Keel did worse than a simple rule on empty-buffer weeks or average pay.");
+  items.push("Hand-written reasons for each loss go in outputs/failures.md once the real run is done.");
+  document.getElementById("losslist").innerHTML = items.map(function (t) { return "<li>" + esc(t) + "</li>"; }).join("");
+}
+
 function setScenario(s) {
   state.scenario = s;
   document.getElementById("sc-storm").setAttribute("aria-pressed", s === "storm");
@@ -462,6 +527,11 @@ loadData().then(function (d) {
     : "Simulated drivers, real NYC ride-hail data";
   document.getElementById("badge").classList.toggle("toy", d.meta.model === "toy");
   render();
+  renderLosses();
+  fetch("../outputs/calibration.json", { cache: "no-store" })
+    .then(function (r) { return r.ok ? r.json() : null; })
+    .catch(function () { return null; })
+    .then(renderCalib);
 }).catch(function () {
   document.getElementById("badgetext").textContent = "No results file loaded";
   document.getElementById("tiles").innerHTML = '<div class="tile">Could not load outputs/results.json or the sample. Serve the repo root over HTTP (for example <code>python -m http.server</code>) and open /app/.</div>';

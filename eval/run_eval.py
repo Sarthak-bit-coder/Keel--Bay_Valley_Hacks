@@ -1,8 +1,9 @@
 """Replay Keel and the two simple rules on the test weeks; write outputs/results.json (CONTRACT.md section 2).
 
 Run from the repo root: python eval/run_eval.py [--csv data/weekly_earnings.csv]
-Every driver is simulated. The storm scenario is INJECTED: the test window has no real snowstorm big enough,
-so two mid-window weeks are cut to 45% and 60% of normal (same factors as the toy in docs/prototype.html).
+Every driver is simulated. "normal" replays the real test weeks as they are (they already include the real December
+snow, see data/README.md). "storm" is a stress test on top: the two snowiest real test weeks (by snow_cm) are cut to
+45% and 60% of what the driver earned, so the storm lands on the weeks it actually snowed.
 """
 import argparse
 import datetime as dt
@@ -23,9 +24,9 @@ RISK_LIMITS = (0.01, 0.05, 0.10, 0.20)
 HORIZON, NPATH, SEED = 4, 400, 999
 START_BUFFER_WEEKS = 0.5   # starting buffer = half a week of average take-home pay (docs/preregistration.md)
 BUFFER_HISTORY = 8         # weeks before the test window used for that average
-STORM_CUTS = (0.45, 0.60)  # injected storm: share of normal earnings kept in the two storm weeks
+STORM_CUTS = (0.45, 0.60)  # storm stress test: share of earnings kept in the two snowiest test weeks, in date order
 Z90 = 1.2816               # standard-normal 90% quantile: low/high case are the 10% / 90% quantiles
-LABELS = {"A": "Driver A: full-time, steady", "B": "Driver B: part-time", "C": "Driver C: weekends, volatile"}
+LABELS = {"A": "Driver A: full-time, steady", "B": "Driver B: part-time", "C": "Driver C: weekend-only, volatile"}  # data/README.md
 
 
 def draws_from_band(lo, mid, hi, z):
@@ -38,7 +39,7 @@ def draws_from_band(lo, mid, hi, z):
 
 
 def driver_series(g, scenario):
-    """Arrays for one driver; storm scenario cuts two mid-test weeks. Returns arrays, test start, storm weeks."""
+    """Arrays for one driver; storm scenario cuts the two snowiest test weeks. Returns arrays, test start, storm weeks."""
     gross = g["gross_payout"].to_numpy(dtype=float).copy()
     hours = g["hours"].to_numpy(dtype=float).copy()
     test = np.flatnonzero(g["split"].to_numpy() == "test")
@@ -47,8 +48,10 @@ def driver_series(g, scenario):
         raise ValueError(f"test weeks for driver {g['driver_id'].iloc[0]} are not one block at the end")
     storm = []
     if scenario == "storm":
-        for k, cut in enumerate(STORM_CUTS):
-            i = start + n // 2 + k
+        snow = g["snow_cm"].to_numpy(dtype=float)[start:start + n]
+        snowiest = sorted(np.argsort(-snow, kind="stable")[:len(STORM_CUTS)])
+        for k, cut in zip(snowiest, STORM_CUTS):
+            i = start + int(k)
             gross[i] *= cut
             hours[i] *= cut
             storm.append(i - start + 1)
@@ -104,7 +107,8 @@ def main():
     meta = {"model": "real", "is_simulated": True,
             "generated_at": dt.datetime.now().astimezone().isoformat(timespec="seconds"),
             "tax_rate": TAX, "start_buffer_weeks": START_BUFFER_WEEKS, "horizon_weeks": HORIZON,
-            "storm": "injected: two mid-test weeks cut to 45% and 60% of normal earnings"}
+            "storm": "stress test on real snow weeks: the two snowiest test weeks (real Open-Meteo snowfall) cut to 45% and 60% of what the driver earned",
+            "normal": "real test weeks as simulated by Role A, including the real December snow"}
     out = Path(args.out)
     out.mkdir(parents=True, exist_ok=True)
     (out / "results.json").write_text(json.dumps({"meta": meta, "runs": runs}, indent=2) + "\n")

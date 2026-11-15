@@ -1,50 +1,55 @@
 # Where Keel loses
 
-From the real run on 2026-11-15 (`outputs/results.json`, `outputs/calibration.json`): 3 simulated drivers, 11 test weeks each, normal and injected-storm scenarios, risk limits 1/5/10/20%. Pass marks are from `docs/preregistration.md`, set before the run. Nothing was tuned on test weeks.
+From the real run on 2026-11-15 on Role A's `data/weekly_earnings.csv` (3 simulated drivers on real NYC TLC hours, real weather): 11 test weeks per driver (2025-10-20 to 2025-12-29), risk limits 1/5/10/20%.
 
-## Scorecard against the pre-registered questions
+- **normal** = the real test weeks as Role A simulated them, including the real December snow.
+- **storm** = stress test: the two snowiest real test weeks (Dec 8-14, 8.8 cm; Dec 22-28, 10.1 cm) cut to 45% and 60% of what the driver earned.
+
+Pass marks are from `docs/preregistration.md`, set before the run. Nothing was tuned on test weeks.
+
+## Scorecard
 
 | Question | Pass mark | Result | Verdict |
 |---|---|---|---|
-| 1. Calibration | low case right 85-95% of test weeks | 90.9% overall (78.8% before calibration) | **Pass** |
-| 2. Buffer safety | fewer empty-buffer weeks than both simple rules, each limit | Keel 0, 4-week avg 15, last week 4, at every limit | **Pass** |
-| 3. Paycheck steadiness | Keel's paycheck swing at least 30% below earnings swing | passes 2 of 24 runs | **Fail** |
-| 4. Cost (reported either way) | none | Keel pays $73 / $50 / $39 / $20 a week less than the 4-week average, at 1 / 5 / 10 / 20% | Reported |
+| 1. Calibration | low case right 85-95% of test weeks | 90.9% (81.8% before calibration) | **Pass** |
+| 2. Buffer safety | fewer empty-buffer weeks than both simple rules, each limit | Keel 1 / 2 / 2 / 5 vs 4-week avg 17 and last week 12, at 1 / 5 / 10 / 20% | **Pass** |
+| 3. Paycheck steadiness | Keel's paycheck swing at least 30% below earnings swing | passes 14 of 24 runs | **Mixed** |
+| 4. Cost (reported either way) | none | Keel pays $57 / $44 / $38 / $27 a week less than the 4-week average | Reported |
 
-## 1. Keel's paycheck is not steadier than the earnings (question 3 fails)
+## 1. Keel still ran dry, on a week the driver earned $0
 
-Paycheck swing (best week minus worst week) vs take-home earnings swing:
+Driver A took a whole week off in Dec 15-21 (Role A's 4% "week off" chance), so take-home was $0. Keel had already set that week's paycheck ($770 to $1,105), and the buffer went below zero:
 
-| Driver | Normal, 1% → 20% | Storm, 1% → 20% | Earnings swing (normal / storm) |
-|---|---|---|---|
-| A | $630, 485, 425, 340 | $905, 1070, 1080, 1180 | $382 / $848 |
-| B | $610, 630, 705, 840 | $655, 690, 750, 785 | $906 / $906 |
-| C | $410, 430, 450, 490 | $400, 440, 455, 510 | $569 / $569 |
+| Run | Weeks below zero | Lowest buffer |
+|---|---|---|
+| A normal 20% | 1 (Dec 15) | -$35 |
+| A storm 1% / 5% / 10% / 20% | 1 / 2 / 2 / 2 | -$487 / -$722 / -$817 / -$942 |
+| C storm 20% | 2 (both storm weeks) | -$36 |
 
-For driver A, Keel's paycheck swings **more** than the earnings in both scenarios.
+**Why:** the forecast band does not expect a $0 week right after a normal one, and the storm cut on Dec 8 had already drained A's buffer. In the storm runs Keel paid $0 the following week to recover. The simple rules ran dry far more often (17 and 12 weeks at every limit).
 
-**Why:**
-- **It ramps up from a small buffer.** The starting buffer is half a week's pay, so Keel opens low and climbs as the buffer fills. Driver A, normal, 1%: $700 in week 1, $1,330 in week 11. That climb alone is the swing.
-- **It re-picks the salary from scratch every week.** The rule has no limit on how far pay can move from one week to the next, so a wide forecast band one week becomes a pay cut the next. Driver C, storm, 20%, paid $65, 280, 205, 50, 180, 120, 155, 95, 130, 290, 560.
-- **It hoards.** Driver A's buffer never dropped below $1,072 at 1%, so money that could have smoothed pay sat unused.
+## 2. Keel's paycheck is not always steadier than the earnings (question 3)
 
-The 4-week average rule is the steadiest of the three (e.g. driver A normal: $111 swing). It buys that steadiness with 15 empty-buffer weeks.
+Passes 14 of 24. Fails:
+- **Driver A, storm (all 4 limits):** paycheck swing $1,350-1,365 vs earnings swing $1,348. The $0 recovery week after the empty week makes the swing.
+- **Driver B, normal (all 4) and storm at 1% / 5%:** B's earnings are already fairly steady ($341 swing in normal weeks), so Keel's $300-400 swing is not 30% smaller.
 
-## 2. Keel pays less on average
+Driver C (the volatile one) passes in every run: $170-365 swing vs $701.
 
-At 1%, Keel pays about $73 a week less than the 4-week average rule, and $20 less at 20%. The difference goes into the buffer. This is the price of zero empty-buffer weeks.
+## 3. Keel pays less on average
 
-## 3. The low case is too optimistic for the volatile driver
+$57 a week less than the 4-week average at 1%, $27 at 20%. The difference goes into the buffer.
 
-The overall hit rate passes (90.9%), but by driver it is A 100%, B 90.9%, C 81.8%. Driver C (weekends, weeks off) falls below the 85% mark. Calibration is pooled across drivers, so the steady driver hides the volatile one. With only 11 test weeks per driver, one week moves this by 9 points.
+## 4. The low case is too optimistic for the volatile driver
+
+Low-case hit rate by driver: A 90.9%, B 100%, C 81.8%. C is below the 85% mark. Calibration is pooled across drivers, so the steady drivers hide C. With 11 test weeks per driver, one week moves this by 9 points.
 
 ## Limits of this run
 
-- Drivers are simulated. Weekly hours are random draws, and utilization is an assumed 0.55.
-- The storm is injected (two weeks cut to 45% and 60%), not a real storm.
-- 33 test driver-weeks in total, so every rate here is noisy.
-- `data/weekly_earnings.csv` came from Role B's stand-in `src/data/build_weekly.py`, not Role A's final build.
+- Drivers are simulated; schedules, skip chances and the 0.55 utilization are Role A's assumptions (data/README.md).
+- The storm scenario is a stress test placed on the real snow weeks, not the real outcome; the real outcome is the normal scenario.
+- 33 test driver-weeks, so every rate is noisy.
 
 ## Fixes we did not make (they would mean tuning on test weeks)
 
-A cap on week-to-week pay changes, a larger starting buffer, or calibration per driver. Any of these needs new pre-registered pass marks and fresh test weeks.
+A cap on week-to-week pay changes, a larger starting buffer, allowing for $0 weeks in the forecast, per-driver calibration. Each needs new pre-registered pass marks and fresh test weeks.

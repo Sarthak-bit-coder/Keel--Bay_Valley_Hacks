@@ -131,7 +131,12 @@ Every team must submit a video.
 pip install -r requirements.txt
 # macOS: LightGBM also needs `brew install libomp`. Python 3.11-3.13 is safest for wheels.
 python run_all.py          # data -> forecast -> policy -> evaluation -> outputs/
+python3 -m http.server 8000   # from the repo root, then open http://localhost:8000/
 ```
+
+The app fetches `../outputs/results.json` (falling back to `outputs/sample/results.json`), so it must be served over HTTP from the **repo root**. Opening `app/index.html` as a file, or deploying only `app/`, cannot reach `outputs/`. To deploy, publish the whole repo root as a static site (GitHub Pages: Settings → Pages → branch `main`, folder `/`); the root `index.html` forwards to `app/`.
+
+App tests (Node 18+, no install): `node --test app/data.test.js`
 
 `run_all.py` is a skeleton. Each role fills in its step.
 

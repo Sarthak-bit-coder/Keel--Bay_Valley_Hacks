@@ -1,0 +1,8 @@
+data/raw/
+*.parquet
+*.pkl
+*.joblib
+__pycache__/
+.venv/
+.DS_Store
+node_modules/

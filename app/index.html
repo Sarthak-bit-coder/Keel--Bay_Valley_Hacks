@@ -1,0 +1,536 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Keel prototype</title>
+<style>
+/* Plan: a calm instrument-panel look. Blue is Keel everywhere, orange and aqua are the two simple rules it is compared with.
+   Layout: one filter row, three summary tiles, two charts, scorecard, checks, decision log. */
+:root {
+  color-scheme: light;
+  --bg: #f9f9f7;
+  --surface: #fcfcfb;
+  --ink: #0b0b0b;
+  --ink2: #52514e;
+  --muted: #898781;
+  --grid: #e1e0d9;
+  --axis: #c3c2b7;
+  --border: rgba(11, 11, 11, 0.10);
+  --keel: #2a78d6;
+  --avg4: #eb6834;
+  --last: #1baf7a;
+  --crit: #d03b3b;
+  --good-text: #006300;
+  --font: system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --bg: #0d0d0d;
+    --surface: #1a1a19;
+    --ink: #f0efec;
+    --ink2: #c3c2b7;
+    --muted: #898781;
+    --grid: #2c2c2a;
+    --axis: #383835;
+    --border: rgba(255, 255, 255, 0.10);
+    --keel: #3987e5;
+    --avg4: #d95926;
+    --last: #199e70;
+    --crit: #d03b3b;
+    --good-text: #0ca30c;
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #0d0d0d;
+  --surface: #1a1a19;
+  --ink: #f0efec;
+  --ink2: #c3c2b7;
+  --muted: #898781;
+  --grid: #2c2c2a;
+  --axis: #383835;
+  --border: rgba(255, 255, 255, 0.10);
+  --keel: #3987e5;
+  --avg4: #d95926;
+  --last: #199e70;
+  --crit: #d03b3b;
+  --good-text: #0ca30c;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body { background: var(--bg); color: var(--ink); font-family: var(--font); font-size: 15px; line-height: 1.5; }
+.wrap { max-width: 1080px; margin: 0 auto; padding: 24px 16px 48px; display: flex; flex-direction: column; gap: 20px; }
+h1, h2, h3, p { margin: 0; }
+h1 { font-size: 28px; letter-spacing: -0.01em; text-wrap: balance; }
+h2 { font-size: 17px; text-wrap: balance; }
+.sub { color: var(--ink2); max-width: 62ch; }
+.top { display: flex; flex-wrap: wrap; gap: 12px 24px; align-items: flex-end; justify-content: space-between; }
+.badge { display: inline-flex; gap: 8px; align-items: center; border: 1px solid var(--border); background: var(--surface); border-radius: 999px; padding: 4px 12px; font-size: 13px; color: var(--ink2); }
+.badge svg { flex: none; }
+.filters { display: flex; flex-wrap: wrap; gap: 12px 20px; align-items: center; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 12px 16px; }
+.field { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--ink2); }
+select { font: inherit; color: var(--ink); background: var(--surface); border: 1px solid var(--axis); border-radius: 6px; padding: 6px 8px; }
+.seg { display: inline-flex; border: 1px solid var(--axis); border-radius: 6px; overflow: hidden; }
+.seg button { font: inherit; font-size: 13px; color: var(--ink2); background: transparent; border: 0; padding: 6px 12px; cursor: pointer; }
+.seg button + button { border-left: 1px solid var(--axis); }
+.seg button[aria-pressed="true"] { background: var(--keel); color: #fff; }
+.check { display: inline-flex; gap: 6px; align-items: center; cursor: pointer; }
+button:focus-visible, select:focus-visible, input:focus-visible, svg:focus-visible { outline: 2px solid var(--keel); outline-offset: 2px; }
+.tiles { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.tile, .card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 16px; }
+.tile .label { font-size: 13px; color: var(--ink2); }
+.tile .value { font-size: 32px; font-weight: 600; line-height: 1.2; margin: 4px 0; }
+.tile .cmp { font-size: 13px; color: var(--ink2); display: flex; flex-direction: column; gap: 2px; }
+.dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 6px; vertical-align: baseline; }
+.card { display: flex; flex-direction: column; gap: 12px; }
+.card header { display: flex; flex-direction: column; gap: 2px; }
+.card header p { color: var(--ink2); font-size: 13px; }
+.legend { display: flex; flex-wrap: wrap; gap: 6px 18px; font-size: 13px; color: var(--ink2); }
+.legend span { display: inline-flex; align-items: center; gap: 6px; }
+.key { display: inline-block; width: 18px; height: 0; border-top: 2px solid; border-radius: 1px; }
+.swatch { display: inline-block; width: 14px; height: 10px; border-radius: 2px; opacity: .25; }
+.plot { position: relative; }
+.plot svg { display: block; width: 100%; height: auto; }
+.tip { position: absolute; top: 8px; pointer-events: none; background: var(--surface); border: 1px solid var(--axis); border-radius: 8px; padding: 8px 10px; font-size: 12px; line-height: 1.5; min-width: 150px; box-shadow: 0 2px 8px rgba(0,0,0,.12); display: none; z-index: 2; }
+.tip b { display: block; margin-bottom: 2px; }
+.tip div { display: flex; justify-content: space-between; gap: 12px; }
+.tip .n { font-variant-numeric: tabular-nums; }
+.scroll { overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; font-size: 13px; }
+th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--grid); vertical-align: top; }
+th { color: var(--ink2); font-weight: 600; white-space: nowrap; }
+td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.pill { display: inline-flex; gap: 6px; align-items: center; border-radius: 999px; padding: 2px 10px; font-size: 12px; border: 1px solid var(--axis); color: var(--ink2); white-space: nowrap; }
+.pill.ok { color: var(--good-text); border-color: var(--good-text); }
+.pill.bad { color: var(--crit); border-color: var(--crit); }
+.cols { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.note { font-size: 13px; color: var(--ink2); max-width: 75ch; }
+.note strong { color: var(--ink); }
+ul.plain { margin: 0; padding-left: 18px; color: var(--ink2); font-size: 13px; display: flex; flex-direction: column; gap: 4px; }
+.hidden { display: none; }
+footer { color: var(--muted); font-size: 12px; }
+@media (max-width: 720px) {
+  .tiles, .cols { grid-template-columns: 1fr; }
+  h1 { font-size: 24px; }
+}
+@media (prefers-reduced-motion: no-preference) { .tip { transition: opacity .1s; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="top">
+    <div style="display:flex;flex-direction:column;gap:6px">
+      <h1>Keel</h1>
+      <p class="sub">A steady weekly paycheck for people paid by the gig. Keel holds the payouts, pays a salary, and sets tax money aside.</p>
+    </div>
+    <span class="badge" id="badge">
+      <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><path d="M7 1.5 13 12H1z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><path d="M7 5.5v3M7 10v.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+      First draft. Simulated driver and toy forecast, no real data.
+    </span>
+  </div>
+
+  <section class="filters" aria-label="Scenario controls">
+    <label class="field" for="driver">Driver
+      <select id="driver">
+        <option value="A">A: full-time, steady</option>
+        <option value="B">B: evenings, choppy</option>
+        <option value="C">C: weekends, very choppy</option>
+      </select>
+    </label>
+    <div class="field" role="group" aria-label="Scenario">Scenario
+      <div class="seg">
+        <button type="button" id="sc-normal" aria-pressed="false">Normal weeks</button>
+        <button type="button" id="sc-storm" aria-pressed="true">Snowstorm replay</button>
+      </div>
+    </div>
+    <label class="field" for="risk">Allowed chance the buffer runs out
+      <select id="risk">
+        <option value="0.01">1%</option>
+        <option value="0.05" selected>5%</option>
+        <option value="0.10">10%</option>
+        <option value="0.20">20%</option>
+      </select>
+    </label>
+    <label class="field check"><input type="checkbox" id="tableview"> Show data as tables</label>
+  </section>
+
+  <section class="tiles" id="tiles" aria-label="Summary"></section>
+
+  <section class="card">
+    <header>
+      <h2>Earnings swing, the paycheck does not</h2>
+      <p id="c1sub"></p>
+    </header>
+    <div class="legend" id="c1legend"></div>
+    <div class="plot" id="c1"></div>
+    <div class="scroll hidden" id="c1table"></div>
+  </section>
+
+  <section class="card">
+    <header>
+      <h2>Buffer balance under three ways of paying</h2>
+      <p>Same earnings, same starting buffer, three pay rules. Below zero means the account overdrafts.</p>
+    </header>
+    <div class="legend" id="c2legend"></div>
+    <div class="plot" id="c2"></div>
+    <div class="scroll hidden" id="c2table"></div>
+  </section>
+
+  <section class="card">
+    <header>
+      <h2>Scorecard</h2>
+      <p>The three questions we write down before the real run. These numbers come from the toy model in this page, so they show the layout, not our result.</p>
+    </header>
+    <div class="scroll"><table id="score"></table></div>
+    <p class="note" id="loses"></p>
+  </section>
+
+  <section class="cols">
+    <div class="card">
+      <header><h2>Safety checks</h2><p>Plain arithmetic that must hold every week, whatever the model says.</p></header>
+      <div class="scroll"><table id="checks"></table></div>
+    </div>
+    <div class="card">
+      <header><h2>What is real in this draft</h2><p>The page is a placeholder for the finished app.</p></header>
+      <ul class="plain">
+        <li>Placeholder: one simulated driver, a mean-and-spread forecast, a 15% tax set-aside rate.</li>
+        <li>Replaced by: trip data from NYC TLC ride-hail records, weather, and holidays.</li>
+        <li>Replaced by: a LightGBM low, middle and high forecast with conformal calibration.</li>
+        <li>Kept: the salary rule (highest pay that keeps the chance of an empty buffer under your limit) and the same-random-draws comparison.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section class="card">
+    <header>
+      <h2>Decision log</h2>
+      <p>Why Keel chose each week's paycheck. The last eight weeks are shown.</p>
+    </header>
+    <div class="scroll"><table id="log"></table></div>
+  </section>
+
+  <footer>Draft for Bay Valley Hacks. Simulation only: no real money moves and nothing here is financial or tax advice.</footer>
+</div>
+
+<script id="sim">
+"use strict";
+// ---------- Toy simulation (pure functions, no DOM) ----------
+var HIST = 8, WEEKS = 20, TAX = 0.15, HORIZON = 4, NPATH = 400, STORM_AT = 11, START_BUFFER = 0.5; // starting buffer = half a week of take-home pay
+var DRIVERS = {
+  A: { mean: 900, sigma: 0.20, seed: 11 },
+  B: { mean: 540, sigma: 0.30, seed: 23 },
+  C: { mean: 380, sigma: 0.40, seed: 37 }
+};
+function mulberry32(a) {
+  return function () {
+    a |= 0; a = a + 0x6D2B79F5 | 0;
+    var t = Math.imul(a ^ a >>> 15, 1 | a);
+    t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+    return ((t ^ t >>> 14) >>> 0) / 4294967296;
+  };
+}
+function randn(r) {
+  var u = 0, v = 0;
+  while (u === 0) u = r();
+  while (v === 0) v = r();
+  return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);
+}
+function mean(a) { var s = 0; for (var i = 0; i < a.length; i++) s += a[i]; return s / a.length; }
+function sd(a) { var m = mean(a), s = 0; for (var i = 0; i < a.length; i++) s += (a[i] - m) * (a[i] - m); return Math.sqrt(s / (a.length - 1)); }
+
+// Common random numbers: one fixed matrix of normal draws, reused by every salary test.
+var ZMAT = (function () {
+  var r = mulberry32(999), m = [];
+  for (var n = 0; n < NPATH; n++) { var row = []; for (var k = 0; k < HORIZON; k++) row.push(randn(r)); m.push(row); }
+  return m;
+})();
+
+function genGross(driver, scenario) {
+  var d = DRIVERS[driver], r = mulberry32(d.seed), out = [];
+  for (var i = 0; i < HIST + WEEKS; i++) {
+    var z = randn(r);
+    var g = d.mean * Math.exp(d.sigma * z - d.sigma * d.sigma / 2);
+    if (scenario === "storm") {
+      if (i === HIST + STORM_AT) g *= 0.45;
+      if (i === HIST + STORM_AT + 1) g *= 0.60;
+    }
+    out.push(g);
+  }
+  return out;
+}
+
+function keelPay(hist, buffer, alpha) {
+  var mu = mean(hist), s = sd(hist), top = Math.ceil(mu * 1.3 / 5) * 5, best = { pay: 0, risk: 1 };
+  for (var pay = top; pay >= 0; pay -= 5) {
+    var bad = 0;
+    for (var n = 0; n < NPATH; n++) {
+      var b = buffer;
+      for (var k = 0; k < HORIZON; k++) {
+        var x = Math.max(0, mu + s * ZMAT[n][k]);
+        b += x - pay;
+        if (b < 0) { bad++; break; }
+      }
+    }
+    var risk = bad / NPATH;
+    if (risk <= alpha) return { pay: pay, risk: risk };
+    best = { pay: 0, risk: risk };
+  }
+  return best;
+}
+
+function simulate(driver, scenario, alpha) {
+  var gross = genGross(driver, scenario);
+  var net = gross.map(function (g) { return g * (1 - TAX); });
+  var b0 = START_BUFFER * mean(net.slice(0, HIST));
+  var pol = { keel: [], avg4: [], last: [] };
+  var buf = { keel: [], avg4: [], last: [] };
+  var cur = { keel: b0, avg4: b0, last: b0 };
+  var log = [], lo = [], hi = [];
+  for (var t = 0; t < WEEKS; t++) {
+    var i = HIST + t, hist = net.slice(i - HIST, i);
+    var mu = mean(hist), s = sd(hist);
+    var k = keelPay(hist, cur.keel, alpha);
+    var pays = { keel: k.pay, avg4: mean(net.slice(i - 4, i)), last: net[i - 1] };
+    var before = { keel: cur.keel, avg4: cur.avg4, last: cur.last };
+    Object.keys(pays).forEach(function (key) {
+      cur[key] = cur[key] + net[i] - pays[key];
+      pol[key].push(pays[key]);
+      buf[key].push(cur[key]);
+    });
+    lo.push(Math.max(0, mu - 1.28 * s));
+    hi.push(mu + 1.28 * s);
+    log.push({ week: t + 1, lo: lo[t], hi: hi[t], buffer: before.keel, pay: k.pay, risk: k.risk });
+  }
+  var shown = net.slice(HIST), shownGross = gross.slice(HIST);
+  function metrics(key) {
+    var p = pol[key], b = buf[key];
+    return {
+      overdraft: b.filter(function (v) { return v < 0; }).length,
+      avgPay: mean(p),
+      swing: Math.max.apply(null, p) - Math.min.apply(null, p),
+      minBuf: Math.min.apply(null, b)
+    };
+  }
+  var hits = 0;
+  for (var j = 0; j < WEEKS; j++) if (shown[j] >= lo[j]) hits++;
+  var checks = { identity: true, buffer: true, pay: true };
+  var prev = b0;
+  for (var q = 0; q < WEEKS; q++) {
+    var tax = shownGross[q] - shown[q];
+    var dBuf = buf.keel[q] - prev;
+    if (Math.abs(shownGross[q] - (pol.keel[q] + tax + dBuf)) > 0.01) checks.identity = false;
+    if (buf.keel[q] < 0) checks.buffer = false;
+    if (pol.keel[q] < 0) checks.pay = false;
+    prev = buf.keel[q];
+  }
+  return {
+    net: shown, gross: shownGross, pol: pol, buf: buf, lo: lo, hi: hi, log: log, b0: b0,
+    m: { keel: metrics("keel"), avg4: metrics("avg4"), last: metrics("last"),
+         earnSwing: Math.max.apply(null, shown) - Math.min.apply(null, shown),
+         taxTotal: shownGross.reduce(function (a, g, idx) { return a + g - shown[idx]; }, 0),
+         lowHit: hits / WEEKS },
+    checks: checks
+  };
+}
+</script>
+
+<script id="ui">
+"use strict";
+var state = { driver: "A", scenario: "storm", risk: 0.05, tables: false };
+var NS = "http://www.w3.org/2000/svg";
+function money(n) { var r = Math.round(n); return (r < 0 ? "−$" : "$") + Math.abs(r).toLocaleString("en-US"); }
+function pct(n) { return Math.round(n * 100) + "%"; }
+function css(v) { return getComputedStyle(document.documentElement).getPropertyValue(v).trim(); }
+function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]; }); }
+
+function niceTicks(min, max) {
+  var span = Math.max(max - min, 1), raw = span / 4, mag = Math.pow(10, Math.floor(Math.log10(raw))), norm = raw / mag;
+  var step = (norm < 1.5 ? 1 : norm < 3 ? 2 : norm < 7 ? 5 : 10) * mag;
+  var start = Math.floor(min / step) * step, out = [];
+  for (var v = start; ; v += step) { out.push(Math.round(v * 1e6) / 1e6); if (v >= max) break; }
+  return out;
+}
+
+// cfg: {series:[{name,color,values}], band:{lo,hi}|null, zero:bool, storm:bool, label:string, endLabels:bool}
+function lineChart(el, cfg) {
+  var W = 720, H = 300, m = { l: 56, r: cfg.endLabels ? 108 : 16, t: 14, b: 30 };
+  var n = cfg.series[0].values.length, all = [];
+  cfg.series.forEach(function (s) { all = all.concat(s.values); });
+  if (cfg.band) all = all.concat(cfg.band.lo, cfg.band.hi);
+  var ticks = niceTicks(Math.min.apply(null, all.concat(cfg.zero ? [0] : [])), Math.max.apply(null, all));
+  var y0 = ticks[0], y1 = ticks[ticks.length - 1];
+  var X = function (i) { return m.l + i * (W - m.l - m.r) / (n - 1); };
+  var Y = function (v) { return m.t + (1 - (v - y0) / (y1 - y0)) * (H - m.t - m.b); };
+  var surface = css("--surface"), grid = css("--grid"), axis = css("--axis"), muted = css("--muted"), ink2 = css("--ink2");
+  var g = "";
+  ticks.forEach(function (v) {
+    g += '<line x1="' + m.l + '" x2="' + (W - m.r) + '" y1="' + Y(v) + '" y2="' + Y(v) + '" stroke="' + (v === 0 && cfg.zero ? axis : grid) + '" stroke-width="1"/>';
+    g += '<text x="' + (m.l - 8) + '" y="' + (Y(v) + 4) + '" text-anchor="end" font-size="11" fill="' + muted + '">' + money(v) + '</text>';
+  });
+  for (var i = 0; i < n; i += 1) {
+    if (i % 4 === 0 || i === n - 1) g += '<text x="' + X(i) + '" y="' + (H - 8) + '" text-anchor="middle" font-size="11" fill="' + muted + '">W' + (i + 1) + '</text>';
+  }
+  if (cfg.zero && y0 < 0) {
+    g += '<rect x="' + m.l + '" y="' + Y(0) + '" width="' + (W - m.l - m.r) + '" height="' + (Y(y0) - Y(0)) + '" fill="' + css("--crit") + '" opacity="0.07"/>';
+    g += '<g transform="translate(' + (m.l + 8) + ',' + (Y(y0) - 18) + ')"><path d="M6 1 11 10H1z" fill="none" stroke="' + css("--crit") + '" stroke-width="1.4" stroke-linejoin="round"/><path d="M6 4.2v2.6M6 8.3v.3" stroke="' + css("--crit") + '" stroke-width="1.4" stroke-linecap="round"/><text x="16" y="10" font-size="11" fill="' + ink2 + '">Overdraft zone</text></g>';
+  }
+  if (cfg.storm) {
+    var sx = (W - m.l - m.r) / (n - 1);
+    g += '<rect x="' + (X(STORM_AT) - sx / 2) + '" y="' + m.t + '" width="' + (sx * 2) + '" height="' + (H - m.t - m.b) + '" fill="' + ink2 + '" opacity="0.08"/>';
+    g += '<text x="' + (X(STORM_AT) + sx / 2) + '" y="' + (m.t + 11) + '" text-anchor="middle" font-size="11" fill="' + ink2 + '">Snowstorm</text>';
+  }
+  if (cfg.band) {
+    var up = cfg.band.hi.map(function (v, i) { return X(i) + "," + Y(v); }).join(" ");
+    var dn = cfg.band.lo.map(function (v, i) { return X(i) + "," + Y(v); }).reverse().join(" ");
+    g += '<polygon points="' + up + " " + dn + '" fill="' + cfg.series[0].color + '" opacity="0.10"/>';
+  }
+  cfg.series.forEach(function (s) {
+    var pts = s.values.map(function (v, i) { return X(i) + "," + Y(v); }).join(" ");
+    g += '<polyline points="' + pts + '" fill="none" stroke="' + s.color + '" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>';
+  });
+  var showEnds = cfg.endLabels;
+  if (showEnds && cfg.series.length > 1) {
+    var ys = cfg.series.map(function (s) { return Y(s.values[n - 1]); }).sort(function (a, b) { return a - b; });
+    for (var k = 1; k < ys.length; k++) if (ys[k] - ys[k - 1] < 16) showEnds = false;
+  }
+  cfg.series.forEach(function (s) {
+    var yy = Y(s.values[n - 1]);
+    g += '<circle cx="' + X(n - 1) + '" cy="' + yy + '" r="4" fill="' + s.color + '" stroke="' + surface + '" stroke-width="2"/>';
+    if (showEnds) g += '<text x="' + (X(n - 1) + 10) + '" y="' + (yy + 4) + '" font-size="12" fill="' + ink2 + '">' + esc(s.short || s.name) + " " + money(s.values[n - 1]) + "</text>";
+  });
+  g += '<g id="cross" style="display:none"><line y1="' + m.t + '" y2="' + (H - m.b) + '" stroke="' + axis + '" stroke-width="1"/></g>';
+  el.innerHTML = '<svg viewBox="0 0 ' + W + " " + H + '" tabindex="0" role="group" aria-label="' + esc(cfg.label) + ' Use the left and right arrow keys to read each week.">' + g + '</svg><div class="tip" role="status"></div>';
+  var svg = el.querySelector("svg"), tip = el.querySelector(".tip"), cross = svg.querySelector("#cross"), dots = [];
+  cfg.series.forEach(function (s) {
+    var c = document.createElementNS(NS, "circle");
+    c.setAttribute("r", 4); c.setAttribute("fill", s.color); c.setAttribute("stroke", surface); c.setAttribute("stroke-width", 2); c.style.display = "none";
+    svg.appendChild(c); dots.push(c);
+  });
+  var cur = n - 1;
+  function show(i) {
+    i = Math.max(0, Math.min(n - 1, i)); cur = i;
+    var x = X(i), line = cross.firstChild;
+    line.setAttribute("x1", x); line.setAttribute("x2", x); cross.style.display = "";
+    var html = "<b>Week " + (i + 1) + "</b>";
+    cfg.series.forEach(function (s, k) {
+      dots[k].setAttribute("cx", x); dots[k].setAttribute("cy", Y(s.values[i])); dots[k].style.display = "";
+      html += '<div><span><span class="dot" style="background:' + s.color + '"></span>' + esc(s.short || s.name) + '</span><span class="n">' + money(s.values[i]) + "</span></div>";
+    });
+    if (cfg.band) html += '<div><span>Forecast range</span><span class="n">' + money(cfg.band.lo[i]) + "–" + money(cfg.band.hi[i]) + "</span></div>";
+    tip.innerHTML = html; tip.style.display = "block";
+    var pxl = x / W * 100; tip.style.left = pxl > 60 ? "auto" : "calc(" + pxl + "% + 12px)"; tip.style.right = pxl > 60 ? "calc(" + (100 - pxl) + "% + 12px)" : "auto";
+  }
+  function hide() { cross.style.display = "none"; tip.style.display = "none"; dots.forEach(function (d) { d.style.display = "none"; }); }
+  svg.addEventListener("mousemove", function (e) {
+    var r = svg.getBoundingClientRect(), x = (e.clientX - r.left) / r.width * W;
+    show(Math.round((x - m.l) / ((W - m.l - m.r) / (n - 1))));
+  });
+  svg.addEventListener("mouseleave", hide);
+  svg.addEventListener("blur", hide);
+  svg.addEventListener("keydown", function (e) {
+    if (e.key === "ArrowRight") { show(cur + 1); e.preventDefault(); }
+    if (e.key === "ArrowLeft") { show(cur - 1); e.preventDefault(); }
+  });
+}
+
+function tableView(el, cols, rows) {
+  var h = "<table><thead><tr><th>Week</th>" + cols.map(function (c) { return '<th class="num">' + esc(c) + "</th>"; }).join("") + "</tr></thead><tbody>";
+  rows.forEach(function (r, i) { h += "<tr><td>W" + (i + 1) + "</td>" + r.map(function (v) { return '<td class="num">' + money(v) + "</td>"; }).join("") + "</tr>"; });
+  el.innerHTML = h + "</tbody></table>";
+}
+
+function legend(el, items, band) {
+  el.innerHTML = items.map(function (s) { return '<span><i class="key" style="border-color:' + s.color + '"></i>' + esc(s.name) + "</span>"; }).join("") +
+    (band ? '<span><i class="swatch" style="background:' + css("--keel") + '"></i>Forecast range (toy: mean ± 1.28 spread)</span>' : "");
+}
+
+function pill(ok, yes, no) {
+  var icon = ok
+    ? '<svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M2 6.5 5 9.5 10 3" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>'
+    : '<svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M3 3l6 6M9 3l-6 6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>';
+  return '<span class="pill ' + (ok ? "ok" : "bad") + '">' + icon + (ok ? yes : no) + "</span>";
+}
+
+function render() {
+  var R = simulate(state.driver, state.scenario, state.risk), M = R.m;
+  var C = { keel: css("--keel"), avg4: css("--avg4"), last: css("--last"), ink2: css("--ink2") };
+
+  document.getElementById("tiles").innerHTML =
+    '<div class="tile"><div class="label">Weeks with an empty buffer</div><div class="value">' + M.keel.overdraft + ' of ' + WEEKS + '</div><div class="cmp">' +
+    '<span><i class="dot" style="background:' + C.keel + '"></i>Keel: ' + M.keel.overdraft + '</span>' +
+    '<span><i class="dot" style="background:' + C.avg4 + '"></i>4-week average: ' + M.avg4.overdraft + '</span>' +
+    '<span><i class="dot" style="background:' + C.last + '"></i>Last week’s pay: ' + M.last.overdraft + '</span></div></div>' +
+    '<div class="tile"><div class="label">Paycheck swing, best to worst week</div><div class="value">' + money(M.keel.swing) + '</div><div class="cmp">' +
+    '<span><i class="dot" style="background:' + C.keel + '"></i>Keel paycheck: ' + money(M.keel.swing) + '</span>' +
+    '<span><i class="dot" style="background:' + C.ink2 + '"></i>Take-home earnings: ' + money(M.earnSwing) + '</span></div></div>' +
+    '<div class="tile"><div class="label">Average weekly paycheck</div><div class="value">' + money(M.keel.avgPay) + '</div><div class="cmp">' +
+    '<span><i class="dot" style="background:' + C.keel + '"></i>Keel: ' + money(M.keel.avgPay) + '</span>' +
+    '<span><i class="dot" style="background:' + C.avg4 + '"></i>4-week average: ' + money(M.avg4.avgPay) + '</span>' +
+    '<span>Tax set aside over ' + WEEKS + ' weeks: ' + money(M.taxTotal) + ' (illustrative ' + pct(TAX) + ')</span></div></div>';
+
+  document.getElementById("c1sub").textContent = "Weekly take-home earnings after the tax set-aside, next to the paycheck Keel pays. Simulated driver " + state.driver + (state.scenario === "storm" ? ", snowstorm in weeks 12 and 13." : ", normal weeks.");
+  var s1 = [{ name: "Take-home earnings", short: "Earnings", color: C.ink2, values: R.net }, { name: "Keel paycheck", short: "Keel", color: C.keel, values: R.pol.keel }];
+  legend(document.getElementById("c1legend"), [{ name: "Keel paycheck", color: C.keel }, { name: "Take-home earnings", color: C.ink2 }], true);
+  lineChart(document.getElementById("c1"), { series: [s1[1], s1[0]], band: { lo: R.lo, hi: R.hi }, zero: true, storm: state.scenario === "storm", endLabels: true, label: "Weekly take-home earnings and Keel paycheck for 20 weeks." });
+  tableView(document.getElementById("c1table"), ["Take-home earnings", "Keel paycheck", "Forecast low", "Forecast high"], R.net.map(function (v, i) { return [v, R.pol.keel[i], R.lo[i], R.hi[i]]; }));
+
+  legend(document.getElementById("c2legend"), [{ name: "Keel", color: C.keel }, { name: "4-week average", color: C.avg4 }, { name: "Last week’s pay", color: C.last }], false);
+  lineChart(document.getElementById("c2"), { series: [
+    { name: "Keel", color: C.keel, values: R.buf.keel },
+    { name: "4-week average", color: C.avg4, values: R.buf.avg4 },
+    { name: "Last week’s pay", color: C.last, values: R.buf.last }], zero: true, storm: state.scenario === "storm", endLabels: false, label: "Buffer balance for three pay rules over 20 weeks." });
+  tableView(document.getElementById("c2table"), ["Keel", "4-week average", "Last week’s pay"], R.buf.keel.map(function (v, i) { return [v, R.buf.avg4[i], R.buf.last[i]]; }));
+  ["c1", "c2"].forEach(function (id) {
+    document.getElementById(id).classList.toggle("hidden", state.tables);
+    document.getElementById(id + "table").classList.toggle("hidden", !state.tables);
+  });
+
+  var better = M.keel.overdraft < Math.min(M.avg4.overdraft, M.last.overdraft);
+  var tied = M.keel.overdraft === Math.min(M.avg4.overdraft, M.last.overdraft);
+  var steadier = M.keel.swing < M.earnSwing;
+  document.getElementById("score").innerHTML =
+    "<thead><tr><th>Question we wrote down first</th><th>Real model</th><th>Toy model in this page</th></tr></thead><tbody>" +
+    "<tr><td>Is the low-case forecast right as often as it claims (target 90%)?</td><td>" + '<span class="pill">Pending: needs the real forecaster</span>' + "</td><td>" + pct(M.lowHit) + " of weeks at or above the low case</td></tr>" +
+    "<tr><td>Does Keel run out of buffer less often than the two simple rules?</td><td>" + '<span class="pill">Pending</span>' + "</td><td>" + pill(better, "Yes: " + M.keel.overdraft + " vs " + M.avg4.overdraft + " and " + M.last.overdraft, tied ? "Tie: " + M.keel.overdraft + " weeks each" : "No: " + M.keel.overdraft + " vs " + M.avg4.overdraft + " and " + M.last.overdraft) + "</td></tr>" +
+    "<tr><td>Is the paycheck steadier than the earnings?</td><td>" + '<span class="pill">Pending</span>' + "</td><td>" + pill(steadier, "Yes: swing " + money(M.keel.swing) + " vs " + money(M.earnSwing), "No: swing " + money(M.keel.swing) + " vs " + money(M.earnSwing)) + "</td></tr></tbody>";
+
+  var cost = M.avg4.avgPay - M.keel.avgPay;
+  var txt = "<strong>Where Keel pays a price.</strong> ";
+  if (cost > 1) txt += "Keel pays " + money(cost) + " less per week on average than the 4-week average. That is the cost of a safer buffer. ";
+  else txt += "Keel pays about the same on average as the 4-week average (" + money(M.keel.avgPay) + " vs " + money(M.avg4.avgPay) + "). ";
+  if (!better) txt += "Here it did not beat the simple rules on empty-buffer weeks, and the real report will say so too.";
+  else txt += "The real report will list the cases where it loses, not only the ones it wins.";
+  document.getElementById("loses").innerHTML = txt;
+
+  document.getElementById("checks").innerHTML =
+    "<tbody>" +
+    "<tr><td>Every week: payout = paycheck + tax set-aside + change in buffer</td><td class=\"num\">" + pill(R.checks.identity, "Passed", "Failed") + "</td></tr>" +
+    "<tr><td>Keel buffer never below zero</td><td class=\"num\">" + pill(R.checks.buffer, "Passed", "Failed") + "</td></tr>" +
+    "<tr><td>Paycheck never negative</td><td class=\"num\">" + pill(R.checks.pay, "Passed", "Failed") + "</td></tr></tbody>";
+
+  var rows = R.log.slice(-8).map(function (r) {
+    return "<tr><td>W" + r.week + "</td><td class=\"num\">" + money(r.lo) + "–" + money(r.hi) + "</td><td class=\"num\">" + money(r.buffer) + "</td><td class=\"num\">" + money(r.pay) + "</td><td>Chose " + money(r.pay) + " so the chance of running dry in the next " + HORIZON + " weeks is about " + pct(r.risk) + " (limit " + pct(state.risk) + ").</td></tr>";
+  }).join("");
+  document.getElementById("log").innerHTML = "<thead><tr><th>Week</th><th class=\"num\">Forecast range</th><th class=\"num\">Buffer before</th><th class=\"num\">Paycheck</th><th>Why</th></tr></thead><tbody>" + rows + "</tbody>";
+}
+
+function setScenario(s) {
+  state.scenario = s;
+  document.getElementById("sc-storm").setAttribute("aria-pressed", s === "storm");
+  document.getElementById("sc-normal").setAttribute("aria-pressed", s === "normal");
+  render();
+}
+document.getElementById("driver").addEventListener("change", function (e) { state.driver = e.target.value; render(); });
+document.getElementById("risk").addEventListener("change", function (e) { state.risk = parseFloat(e.target.value); render(); });
+document.getElementById("tableview").addEventListener("change", function (e) { state.tables = e.target.checked; render(); });
+document.getElementById("sc-storm").addEventListener("click", function () { setScenario("storm"); });
+document.getElementById("sc-normal").addEventListener("click", function () { setScenario("normal"); });
+if (window.matchMedia) { try { window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", render); } catch (e) {} }
+new MutationObserver(render).observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+render();
+</script>
+</body>
+</html>

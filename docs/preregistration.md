@@ -21,7 +21,7 @@ All three rules start with the same buffer (half a week of average take-home pay
 
 ## Data split
 
-- Time-ordered: oldest weeks for training, the next block for calibration, the newest ____ weeks for the test (pending: Role A to confirm how many weeks the data covers). Never shuffle.
+- Time-ordered: oldest weeks for training, the next block for calibration, the newest 11 weeks for the test (52 weeks, 2025-01-06 to 2026-01-04: 31 train, 10 calib, 11 test, per `data/README.md` on `a/data`). Never shuffle.
 - The test weeks are looked at once, at the end.
 
 ## What we report
@@ -35,3 +35,4 @@ All three rules start with the same buffer (half a week of average take-home pay
 (date, what changed, why)
 
 - 2026-11-15: pass marks for questions 1 to 3 set before the real run. Test-week count still pending from Role A.
+- 2026-11-15: test-week count set to 11 from Role A's data README, before the real run. The snowstorm scenario is injected (two mid-test weeks cut to 45% and 60%), not a real storm.

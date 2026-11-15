@@ -68,6 +68,7 @@ Prompts for each role are in `prompts/`. Start every agent session with `prompts
 
 ```bash
 pip install -r requirements.txt
+# macOS: LightGBM also needs `brew install libomp`. Python 3.11-3.13 is safest for wheels.
 python run_all.py          # data -> forecast -> policy -> evaluation -> outputs/
 # open app/index.html in a browser (or deploy the app/ folder as a static site)
 ```

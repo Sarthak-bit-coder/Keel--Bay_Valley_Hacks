@@ -186,3 +186,32 @@ test("reliability on the real file matches calibration.json's low-case hit rate"
     for (const x of runs) assert.deepEqual(x.weeks.map((w) => [w.lo, w.hi]), runs[0].weeks.map((w) => [w.lo, w.hi]), "forecasts must not depend on the risk limit");
   }
 });
+
+test("stressTest: scenarios without runs are unavailable, never simulated", () => {
+  for (const id of ["demand_crash", "high_earnings"]) {
+    const r = K.stressTest(SAMPLE, "A", 0.05, id);
+    assert.equal(r.available, false);
+    assert.equal(r.after, undefined);
+  }
+});
+
+test("stressTest: storm vs normal uses the two runs' own numbers", () => {
+  const r = K.stressTest(SAMPLE, "A", 0.05, "storm");
+  const n = K.findRun(SAMPLE, "A", "normal", 0.05), s = K.findRun(SAMPLE, "A", "storm", 0.05);
+  assert.equal(r.available, true);
+  assert.equal(r.after.avgPay.keel, s.metrics.avg_pay.keel);
+  assert.equal(r.before.empty.avg4, n.metrics.overdraft_weeks.avg4);
+  assert.equal(r.after.minBuf.last, Math.min(...s.weeks.map((w) => w.buf_last)));
+  assert.equal(r.delta.avgPayKeel, s.metrics.avg_pay.keel - n.metrics.avg_pay.keel);
+  assert.equal(r.after.maxRisk, Math.max(...s.weeks.map((w) => w.risk)));
+});
+
+test("stressTest: a missing risk estimate makes maxRisk null", () => {
+  const d = clone(SAMPLE);
+  delete K.findRun(d, "A", "storm", 0.05).weeks[3].risk;
+  assert.equal(K.stressTest(d, "A", 0.05, "storm").after.maxRisk, null);
+});
+
+test("stressTest: catalog offers all four scenarios in order", () => {
+  assert.deepEqual(K.STRESS_SCENARIOS.map((s) => s.id), ["normal", "storm", "demand_crash", "high_earnings"]);
+});

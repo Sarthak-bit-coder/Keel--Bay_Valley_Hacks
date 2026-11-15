@@ -141,3 +141,77 @@ test("paycheckChoices works on the real results file when it is present", { skip
   assert.equal(opts.length, 4);
   assert.ok(opts.every((o) => typeof o.risk === "number" && o.risk <= o.riskLimit + 1e-9), "estimated risk stays within its limit");
 });
+
+const REAL_PATH = path.join(__dirname, "../outputs/results.json");
+const CAL_PATH = path.join(__dirname, "../outputs/calibration.json");
+const tiny = (weeks) => ({ meta: { model: "real" }, runs: [
+  { driver: "A", scenario: "normal", risk_limit: 0.05, weeks },
+  { driver: "A", scenario: "storm", risk_limit: 0.05, weeks: [{ week: 1, net: 0, lo: 100, hi: 200 }] }] });
+
+test("reliability: counts below / inside / above and miss sizes from stored forecasts only", () => {
+  const r = K.reliability(tiny([
+    { week: 1, net: 50, lo: 100, hi: 200 },   // below by 50
+    { week: 2, net: 150, lo: 100, hi: 200 },  // inside
+    { week: 3, net: 260, lo: 100, hi: 200 },  // above by 60
+    { week: 4, net: 120, lo: 100, hi: 200 }]), { target_low_case: 0.9 });
+  assert.equal(r.overall.n, 4, "storm runs are excluded");
+  assert.equal(r.overall.lowHit, 0.75);
+  assert.equal(r.overall.highHit, 0.75);
+  assert.equal(r.overall.bandHit, 0.5);
+  assert.equal(r.overall.meanWidth, 100);
+  assert.equal(r.overall.meanMiss, 55);
+  assert.deepEqual(r.worst.map((w) => [w.week, w.side, w.miss]), [[3, "above", 60], [1, "below", 50]]);
+  assert.ok(Math.abs(r.targets.band - 0.8) < 1e-9);
+});
+
+test("reliability: no calibration file means no targets, and no middle case means no MAE", () => {
+  const r = K.reliability(tiny([{ week: 1, net: 150, lo: 100, hi: 200 }, { week: 2, net: 90, lo: 100, hi: 200 }]), null);
+  assert.equal(r.targets, null);
+  assert.equal(r.overall.maeMid, null);
+});
+
+test("reliability: MAE vs middle case only when every week has one", () => {
+  const r = K.reliability(tiny([{ week: 1, net: 150, lo: 100, hi: 200, mid: 140 }, { week: 2, net: 90, lo: 100, hi: 200, mid: 120 }]), null);
+  assert.equal(r.overall.maeMid, 20);
+});
+
+test("reliability on the real file matches calibration.json's low-case hit rate", { skip: !fs.existsSync(REAL_PATH) || !fs.existsSync(CAL_PATH) }, () => {
+  const real = JSON.parse(fs.readFileSync(REAL_PATH, "utf8"));
+  const cal = JSON.parse(fs.readFileSync(CAL_PATH, "utf8"));
+  const r = K.reliability(real, cal);
+  assert.equal(r.overall.n, cal.n_test_weeks);
+  assert.ok(Math.abs(r.overall.lowHit - cal.calibrated_hit_rate) < 0.001, `${r.overall.lowHit} vs ${cal.calibrated_hit_rate}`);
+  for (const d of r.drivers) {
+    const runs = real.runs.filter((x) => x.driver === d.driver && x.scenario === "normal");
+    for (const x of runs) assert.deepEqual(x.weeks.map((w) => [w.lo, w.hi]), runs[0].weeks.map((w) => [w.lo, w.hi]), "forecasts must not depend on the risk limit");
+  }
+});
+
+test("stressTest: scenarios without runs are unavailable, never simulated", () => {
+  for (const id of ["demand_crash", "high_earnings"]) {
+    const r = K.stressTest(SAMPLE, "A", 0.05, id);
+    assert.equal(r.available, false);
+    assert.equal(r.after, undefined);
+  }
+});
+
+test("stressTest: storm vs normal uses the two runs' own numbers", () => {
+  const r = K.stressTest(SAMPLE, "A", 0.05, "storm");
+  const n = K.findRun(SAMPLE, "A", "normal", 0.05), s = K.findRun(SAMPLE, "A", "storm", 0.05);
+  assert.equal(r.available, true);
+  assert.equal(r.after.avgPay.keel, s.metrics.avg_pay.keel);
+  assert.equal(r.before.empty.avg4, n.metrics.overdraft_weeks.avg4);
+  assert.equal(r.after.minBuf.last, Math.min(...s.weeks.map((w) => w.buf_last)));
+  assert.equal(r.delta.avgPayKeel, s.metrics.avg_pay.keel - n.metrics.avg_pay.keel);
+  assert.equal(r.after.maxRisk, Math.max(...s.weeks.map((w) => w.risk)));
+});
+
+test("stressTest: a missing risk estimate makes maxRisk null", () => {
+  const d = clone(SAMPLE);
+  delete K.findRun(d, "A", "storm", 0.05).weeks[3].risk;
+  assert.equal(K.stressTest(d, "A", 0.05, "storm").after.maxRisk, null);
+});
+
+test("stressTest: catalog offers all four scenarios in order", () => {
+  assert.deepEqual(K.STRESS_SCENARIOS.map((s) => s.id), ["normal", "storm", "demand_crash", "high_earnings"]);
+});

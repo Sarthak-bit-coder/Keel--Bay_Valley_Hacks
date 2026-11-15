@@ -69,6 +69,10 @@ h2 { font-size: 17px; text-wrap: balance; }
 .top { display: flex; flex-wrap: wrap; gap: 12px 24px; align-items: flex-end; justify-content: space-between; }
 .badge { display: inline-flex; gap: 8px; align-items: center; border: 1px solid var(--border); background: var(--surface); border-radius: 999px; padding: 4px 12px; font-size: 13px; color: var(--ink2); }
 .badge svg { flex: none; }
+.relh3 { margin: 4px 0 0; font-size: 15px; }
+#stseg { flex-wrap: wrap; align-self: flex-start; }
+#stseg button[data-off="true"] { color: var(--muted); }
+#sttable td.up { color: var(--good-text); } #sttable td.down { color: #c2410c; }
 .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 #optlist { border: 0; margin: 0; padding: 0; display: grid; gap: 8px; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); }
 #optlist label { display: flex; gap: 8px; align-items: flex-start; border: 1px solid var(--border); border-radius: 8px; padding: 10px; cursor: pointer; }
@@ -220,6 +224,24 @@ footer { color: var(--muted); font-size: 12px; }
     <p class="note" id="optnote"></p>
   </section>
 
+  <section class="card" aria-labelledby="st-h">
+    <header>
+      <h2 id="st-h">Stress test lab</h2>
+      <p id="stsub">Pick a scenario to see what it does to earnings, paychecks and the buffer, against normal weeks.</p>
+    </header>
+    <div class="seg" id="stseg" role="group" aria-label="Stress scenario"></div>
+    <div id="stbody" aria-live="polite"></div>
+    <div id="stcharts">
+      <h3 class="relh3">Take-home pay and Keel paycheck</h3>
+      <div class="legend" id="stleg1"></div>
+      <div class="plot" id="stc1"></div>
+      <h3 class="relh3">Buffer under each pay rule</h3>
+      <div class="legend" id="stleg2"></div>
+      <div class="plot" id="stc2"></div>
+    </div>
+    <p class="note" id="stnote"></p>
+  </section>
+
   <section class="card" aria-labelledby="whatif-h">
     <header>
       <h2 id="whatif-h">What if?</h2>
@@ -258,10 +280,21 @@ footer { color: var(--muted); font-size: 12px; }
       <header><h2>Safety checks</h2><p>Plain arithmetic that must hold every week, whatever the model says.</p></header>
       <div class="scroll"><table id="checks"></table></div>
     </div>
-    <div class="card">
-      <header><h2>Is the low case honest?</h2><p>How often actual take-home pay landed at or above the low-case forecast, on weeks the model never saw.</p></header>
-      <div id="calib"></div>
-    </div>
+  </section>
+
+  <section class="card" aria-labelledby="rel-h">
+    <header>
+      <h2 id="rel-h">Forecast reliability</h2>
+      <p id="relsub">How well Keel's forecasts held up on weeks the model never saw.</p>
+    </header>
+    <p class="note" id="relexplain"></p>
+    <div id="calib"></div>
+    <div class="legend" id="rellegend"></div>
+    <div class="plot" id="relchart"></div>
+    <div class="scroll"><table id="relstats"></table></div>
+    <h3 class="relh3">Largest misses</h3>
+    <div class="scroll"><table id="relworst"></table></div>
+    <p class="note" id="relnote"></p>
   </section>
 
   <section class="card">
@@ -338,7 +371,7 @@ function lineChart(el, cfg) {
   }
   cfg.series.forEach(function (s) {
     var pts = s.values.map(function (v, i) { return X(i) + "," + Y(v); }).join(" ");
-    g += '<polyline points="' + pts + '" fill="none" stroke="' + s.color + '" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>';
+    g += '<polyline points="' + pts + '" fill="none" stroke="' + s.color + '" stroke-width="2"' + (s.dash ? ' stroke-dasharray="6 5"' : "") + ' stroke-linejoin="round" stroke-linecap="round"/>';
   });
   var showEnds = cfg.endLabels;
   if (showEnds && cfg.series.length > 1) {
@@ -470,6 +503,8 @@ function render() {
   }).join("");
   renderWhatIf();
   renderOptimizer();
+  renderReliability();
+  renderStress();
   document.getElementById("log").innerHTML = "<thead><tr><th>Week</th><th class=\"num\">Forecast range</th><th class=\"num\">Buffer before</th><th class=\"num\">Paycheck</th><th>Why</th></tr></thead><tbody>" + rows + "</tbody>";
 }
 
@@ -480,22 +515,51 @@ function bar(label, v, target, off) {
     (target != null ? '<span class="target" style="left:calc(' + target * 100 + '% - 1px)" title="Target ' + pct(target) + '"></span>' : "") +
     '</span><span class="n">' + pct(v) + "</span></div>";
 }
-function renderCalib(cal) {
-  var el = document.getElementById("calib"), h = "";
-  if (cal) {
-    h += bar("Target", cal.target_low_case, null, true);
-    h += bar("Calibrated", cal.calibrated_hit_rate, cal.target_low_case);
-    h += bar("Before calibration", cal.uncalibrated_hit_rate, cal.target_low_case, true);
-    Object.keys(cal.by_driver || {}).forEach(function (d) { h += bar("Driver " + d, cal.by_driver[d], cal.target_low_case); });
-    h = '<div class="bars">' + h + '</div><p class="note">From outputs/calibration.json (' + esc(cal.model) + " model), " + cal.n_test_weeks + " test weeks. The black tick is the target. Weekly earnings are autocorrelated, so coverage is approximate.</p>";
-  } else {
-    var by = {};
-    DATA.runs.forEach(function (r) { if (r.scenario === "normal" && !(r.driver in by)) by[r.driver] = r.metrics.low_case_hit_rate; });
-    Object.keys(by).forEach(function (d) { h += bar("Driver " + d, by[d], 0.9); });
-    h = '<div class="bars">' + h + '</div><p class="note"><strong>Pending:</strong> outputs/calibration.json is not there yet. Bars show the low-case hit rate in the ' +
-      (DATA.meta.model === "toy" ? "toy" : "results") + " file (normal weeks). The black tick is the 90% target.</p>";
-  }
-  el.innerHTML = h;
+// Forecast reliability: coverage vs target, error metrics, forecast band vs actual, largest misses.
+// Everything is read from results.json (stored forecasts) and calibration.json; nothing is re-estimated here.
+var CAL = null;
+function renderCalib(cal) { CAL = cal; renderReliability(); }
+function renderReliability() {
+  if (!DATA) return;
+  var C = { keel: css("--keel"), avg4: css("--avg4") };
+  var TOY = DATA.meta.model === "toy", rel = KeelData.reliability(DATA, CAL), o = rel.overall, T = rel.targets;
+  var src = TOY ? "Toy sample, not our result: the forecast is the prototype's toy, not the real model. " : "Real evaluation on simulated drivers. ";
+  document.getElementById("relsub").textContent = src + "Normal weeks only, on test weeks the model never saw. The snowstorm is left out because it was added after forecasting.";
+  document.getElementById("relexplain").innerHTML = "<strong>What calibration means:</strong> each week Keel forecasts a low case and a high case for take-home pay. " +
+    "A low case that claims to be right 9 times in 10 should have actual pay at or above it on about 9 weeks in 10. " +
+    "Calibration nudges the forecasts, using weeks held back from training, until that claim is true. If the low case is too high, Keel would pay out money that never arrives.";
+  if (!o) { document.getElementById("calib").innerHTML = '<p class="note">No normal-scenario weeks in the results file, so there is nothing to score.</p>'; return; }
+  var h = bar("Low case right (pay at or above it)", o.lowHit, T && T.low) + bar("High case right (pay at or below it)", o.highHit, T && T.high) + bar("Inside the band (both right)", o.bandHit, T && T.band);
+  if (CAL && typeof CAL.uncalibrated_hit_rate === "number") h += bar("Low case right before calibration", CAL.uncalibrated_hit_rate, T && T.low, true);
+  document.getElementById("calib").innerHTML = '<div class="bars">' + h + '</div><p class="note">' + (T
+    ? "The black tick is the target (" + pct(T.low) + " for each case, so " + pct(T.band) + " for the band), from outputs/calibration.json. "
+    : "<strong>outputs/calibration.json is missing</strong>, so no target is shown and the before-calibration rate is unknown. Bars are computed from the results file. ") +
+    o.n + " test weeks; weekly earnings are autocorrelated, so treat these as approximate.</p>";
+
+  var ws = rel.weeks.filter(function (w) { return w.driver === state.driver; });
+  legend(document.getElementById("rellegend"), [{ name: "Actual take-home pay", color: C.keel }], true);
+  if (ws.length) lineChart(document.getElementById("relchart"), {
+    series: [{ name: "Actual", color: C.keel, values: ws.map(function (w) { return w.actual; }) }].concat(ws[0].mid !== null ? [{ name: "Middle case", color: C.avg4, values: ws.map(function (w) { return w.mid; }) }] : []),
+    band: { lo: ws.map(function (w) { return w.lo; }), hi: ws.map(function (w) { return w.hi; }) }, zero: true, endLabels: false,
+    label: "Driver " + state.driver + ": forecast low-to-high band and actual take-home pay, " + ws.length + " test weeks." });
+
+  var row = function (name, s) {
+    return "<tr><td>" + esc(name) + '</td><td class="num">' + s.n + '</td><td class="num">' + pct(s.lowHit) + '</td><td class="num">' + pct(s.highHit) + '</td><td class="num">' + pct(s.bandHit) +
+      '</td><td class="num">' + money(s.meanWidth) + '</td><td class="num">' + s.missCount + (s.meanMiss === null ? "" : " (avg " + money(s.meanMiss) + ")") +
+      '</td><td class="num">' + (s.maeMid === null ? "Not in file" : money(s.maeMid)) + "</td></tr>";
+  };
+  document.getElementById("relstats").innerHTML = '<thead><tr><th>Driver</th><th class="num">Weeks</th><th class="num">Low case right</th><th class="num">High case right</th><th class="num">Inside band</th>' +
+    '<th class="num">Avg band width</th><th class="num">Weeks outside band (avg miss)</th><th class="num">Avg error vs middle case</th></tr></thead><tbody>' +
+    rel.drivers.map(function (d) { return row(d.label, d.s); }).join("") + row("All drivers", o) + "</tbody>";
+
+  document.getElementById("relworst").innerHTML = rel.worst.length
+    ? '<thead><tr><th>Driver</th><th>Week</th><th class="num">Actual</th><th class="num">Forecast band</th><th>Missed by</th></tr></thead><tbody>' +
+      rel.worst.map(function (w) {
+        return "<tr><td>" + esc(w.driver) + "</td><td>W" + w.week + (w.weekStart ? " (" + esc(w.weekStart) + ")" : "") + '</td><td class="num">' + money(w.actual) + '</td><td class="num">' +
+          money(w.lo) + "–" + money(w.hi) + "</td><td>" + money(w.miss) + (w.side === "above" ? " above the high case" : " below the low case (Keel planned on money that did not come)") + "</td></tr>";
+      }).join("") + "</tbody>"
+    : '<tbody><tr><td>Every test week landed inside the forecast band.</td></tr></tbody>';
+  document.getElementById("relnote").textContent = "Average error against the middle case needs the middle forecast, which the results file does not store (CONTRACT.md has only the low and high case), so it is shown as not in file instead of being estimated.";
 }
 
 // Where Keel loses: scanned from every run, so it cannot be cherry-picked by the filters.
@@ -553,6 +617,78 @@ document.getElementById("optlist").addEventListener("change", function (e) {
   render();
   var picked = document.querySelector('#optlist input[value="' + state.risk + '"]');
   if (picked) picked.focus();
+});
+
+// Stress test lab: before (normal weeks) vs after (chosen scenario) for the selected driver and risk limit.
+// Only scenarios with runs in the results file are shown with numbers; the rest say "not evaluated".
+var stScenario = "storm";
+function renderStress() {
+  if (!DATA) return;
+  var TOY = DATA.meta.model === "toy", C = { keel: css("--keel"), avg4: css("--avg4"), last: css("--last"), muted: css("--muted") };
+  var res = KeelData.stressTest(DATA, state.driver, state.risk, stScenario), sc = res.scenario;
+  document.getElementById("stseg").innerHTML = KeelData.STRESS_SCENARIOS.map(function (s) {
+    var ok = KeelData.stressTest(DATA, state.driver, state.risk, s.id).available;
+    return '<button type="button" data-st="' + s.id + '" aria-pressed="' + (s.id === stScenario) + '" data-off="' + !ok + '">' + esc(s.name) + (ok ? "" : " (not evaluated)") + "</button>";
+  }).join("");
+  document.getElementById("stsub").textContent = (TOY ? "Toy sample, not our result. " : "Simulated drivers, real evaluation runs. ") +
+    "Driver " + state.driver + " at a " + pct(state.risk) + " limit (change both above). Before = normal weeks, after = the chosen scenario.";
+  document.getElementById("stnote").textContent = "Every number comes from runs in the results file; nothing is simulated in the browser. " +
+    (DATA.meta.storm ? "Snowstorm: " + DATA.meta.storm + ". " : "") + "Depletion risk is the policy's own estimate for the next " + DATA.meta.horizon_weeks + " weeks. Not financial or tax advice.";
+  var charts = document.getElementById("stcharts"), body = document.getElementById("stbody");
+  if (!res.available) {
+    charts.classList.add("hidden");
+    body.innerHTML = '<p class="note"><strong>' + esc(sc.name) + " was not evaluated.</strong> The results file has no runs for this scenario, so there are no numbers to show. " +
+      "Adding it means running eval/run_eval.py with this scenario, not estimating it here.</p>";
+    return;
+  }
+  charts.classList.remove("hidden");
+  var A = res.after, B = res.before, D = res.delta, same = stScenario === "normal" || !B;
+  function chg(v, fmt, goodUp) {
+    if (same || v === null) return "<td></td>";
+    var r = Math.round(v), cls = r === 0 ? "" : (r > 0) === goodUp ? "up" : "down";
+    return '<td class="num ' + cls + '">' + (r > 0 ? "+" : r < 0 ? "−" : "") + fmt(Math.abs(v)) + "</td>";
+  }
+  var cnt = function (n) { return String(n); };
+  function line(label, b, a, d, fmt, goodUp) {
+    return "<tr><th scope=\"row\">" + esc(label) + "</th>" + (same ? "" : '<td class="num">' + (b === null ? "—" : fmt(b)) + "</td>") + '<td class="num">' + (a === null ? "Not in file" : fmt(a)) + "</td>" + (same ? "" : chg(d, fmt, goodUp)) + "</tr>";
+  }
+  var rk = function (r) { return r === null ? "Not in file" : pct(r); };
+  var h = same ? "" : '<p class="note"><strong>Financial impact:</strong> ' + esc(sc.name) + " changes average take-home pay by " + (D.avgNet < 0 ? "−" : "+") + money(Math.abs(D.avgNet)) +
+    " a week. Keel's paycheck moves by " + (D.avgPayKeel < 0 ? "−" : "+") + money(Math.abs(D.avgPayKeel)) + " and its lowest buffer by " + (D.minBufKeel < 0 ? "−" : "+") + money(Math.abs(D.minBufKeel)) +
+    ". Empty-buffer weeks: Keel " + B.empty.keel + " → " + A.empty.keel + ", 4-week average " + B.empty.avg4 + " → " + A.empty.avg4 + ", last week's pay " + B.empty.last + " → " + A.empty.last + ".</p>";
+  h += '<div class="scroll"><table id="sttable"><thead><tr><th>Average over ' + A.weeks + " weeks</th>" + (same ? "" : '<th class="num">Normal weeks</th>') + '<th class="num">' + esc(sc.name) + "</th>" + (same ? "" : '<th class="num">Change</th>') + "</tr></thead><tbody>" +
+    line("Take-home pay", B && B.avgNet, A.avgNet, D && D.avgNet, money, true) +
+    line("Forecast low case", B && B.avgLo, A.avgLo, D && A.avgLo - B.avgLo, money, true) +
+    line("Paycheck: Keel", B && B.avgPay.keel, A.avgPay.keel, D && D.avgPayKeel, money, true) +
+    line("Paycheck: 4-week average", B && B.avgPay.avg4, A.avgPay.avg4, D && A.avgPay.avg4 - B.avgPay.avg4, money, true) +
+    line("Paycheck: last week's pay", B && B.avgPay.last, A.avgPay.last, D && A.avgPay.last - B.avgPay.last, money, true) +
+    line("Lowest buffer: Keel", B && B.minBuf.keel, A.minBuf.keel, D && D.minBufKeel, money, true) +
+    line("Lowest buffer: 4-week average", B && B.minBuf.avg4, A.minBuf.avg4, D && A.minBuf.avg4 - B.minBuf.avg4, money, true) +
+    line("Lowest buffer: last week's pay", B && B.minBuf.last, A.minBuf.last, D && A.minBuf.last - B.minBuf.last, money, true) +
+    line("Empty-buffer weeks: Keel", B && B.empty.keel, A.empty.keel, D && D.emptyKeel, cnt, false) +
+    line("Empty-buffer weeks: 4-week average", B && B.empty.avg4, A.empty.avg4, D && D.emptyAvg4, cnt, false) +
+    line("Empty-buffer weeks: last week's pay", B && B.empty.last, A.empty.last, D && D.emptyLast, cnt, false) +
+    "<tr><th scope=\"row\">Highest estimated depletion risk: Keel</th>" + (same ? "" : '<td class="num">' + rk(B.maxRisk) + "</td>") + '<td class="num">' + rk(A.maxRisk) + "</td>" + (same ? "" : "<td></td>") + "</tr>" +
+    "</tbody></table></div>";
+  body.innerHTML = h;
+  var aw = res.afterRun.weeks, bw = res.beforeRun ? res.beforeRun.weeks : null, storm = KeelData.stormWeeks(res.afterRun, DATA.meta);
+  var col = function (ws, k) { return ws.map(function (x) { return x[k]; }); };
+  var s1 = [{ name: "Take-home, " + sc.name, short: "Take-home", color: C.muted, values: col(aw, "net") }, { name: "Keel paycheck, " + sc.name, short: "Keel", color: C.keel, values: col(aw, "pay_keel") }];
+  if (!same && bw) s1 = s1.concat([{ name: "Take-home, normal", color: C.muted, dash: true, values: col(bw, "net") }, { name: "Keel paycheck, normal", color: C.keel, dash: true, values: col(bw, "pay_keel") }]);
+  legend(document.getElementById("stleg1"), s1.map(function (s) { return { name: s.name + (s.dash ? " (dashed)" : ""), color: s.color }; }), false);
+  lineChart(document.getElementById("stc1"), { series: s1, zero: true, stormWeeks: storm, endLabels: false, label: "Take-home pay and Keel paycheck, " + sc.name + (same ? "" : " vs normal weeks (dashed)") + "." });
+  var s2 = [{ name: "Keel", color: C.keel, values: col(aw, "buf_keel") }, { name: "4-week average", color: C.avg4, values: col(aw, "buf_avg4") }, { name: "Last week’s pay", color: C.last, values: col(aw, "buf_last") }];
+  if (!same && bw) s2.push({ name: "Keel, normal weeks", color: C.keel, dash: true, values: col(bw, "buf_keel") });
+  legend(document.getElementById("stleg2"), s2.map(function (s) { return { name: s.name + (s.dash ? " (dashed)" : ""), color: s.color }; }), false);
+  lineChart(document.getElementById("stc2"), { series: s2, zero: true, stormWeeks: storm, endLabels: false, label: "Buffer balance under three pay rules, " + sc.name + ". Below zero means overdraft." });
+}
+document.getElementById("stseg").addEventListener("click", function (e) {
+  var b = e.target.closest("button[data-st]");
+  if (!b) return;
+  stScenario = b.dataset.st;
+  renderStress();
+  var again = document.querySelector('#stseg button[data-st="' + stScenario + '"]');
+  if (again) again.focus();
 });
 
 // What-if: compares precomputed runs for the selected driver; the badge text says whether they are toy or real.

@@ -215,3 +215,36 @@ test("stressTest: a missing risk estimate makes maxRisk null", () => {
 test("stressTest: catalog offers all four scenarios in order", () => {
   assert.deepEqual(K.STRESS_SCENARIOS.map((s) => s.id), ["normal", "storm", "demand_crash", "high_earnings"]);
 });
+
+const mkRun = (weeks, risk_limit = 0.05) => ({ driver: "A", scenario: "normal", risk_limit, weeks });
+const wk = (o) => Object.assign({ week: 1, net: 500, lo: 400, hi: 700, pay_keel: 450, buf_keel: 300, risk: 0.04, reason: "Chose $450." }, o);
+
+test("explainWeek: copies the week's stored values and derives buffer before", () => {
+  const e = K.explainWeek(mkRun([wk({}), wk({ week: 2, pay_keel: 420, risk: 0.03 })]), 1);
+  assert.equal(e.pay, 450); assert.equal(e.risk, 0.04); assert.equal(e.limit, 0.05);
+  assert.equal(e.bufferBefore, 250); assert.equal(e.bufferAfter, 300);
+  assert.equal(e.constraint, "limit_met");
+  assert.equal(e.fellShort, false);
+  assert.equal(e.nextPay, 420);
+});
+
+test("explainWeek: earnings under the low case are flagged with the shortfall", () => {
+  const e = K.explainWeek(mkRun([wk({ net: 250 })]), 1);
+  assert.equal(e.fellShort, true); assert.equal(e.shortfall, 150); assert.equal(e.nextPay, null);
+});
+
+test("explainWeek: $0 paycheck with risk over the limit is the floor case", () => {
+  assert.equal(K.explainWeek(mkRun([wk({ pay_keel: 0, risk: 0.3 })]), 1).constraint, "floor");
+});
+
+test("explainWeek: missing risk, band or reason stay null; bad week gives null", () => {
+  const e = K.explainWeek(mkRun([wk({ risk: undefined, lo: undefined, reason: "" })]), 1);
+  assert.equal(e.risk, null); assert.equal(e.lo, null); assert.equal(e.reason, null);
+  assert.equal(e.constraint, "unknown"); assert.equal(e.fellShort, false);
+  assert.equal(K.explainWeek(mkRun([wk({})]), 5), null);
+});
+
+test("explainWeek: every real-file week either meets its limit or is the $0 floor", { skip: !fs.existsSync(REAL_PATH) }, () => {
+  const real = JSON.parse(fs.readFileSync(REAL_PATH, "utf8"));
+  for (const r of real.runs) for (const w of r.weeks) assert.notEqual(K.explainWeek(r, w.week).constraint, "unknown");
+});

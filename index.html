@@ -12,23 +12,23 @@
 <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=block" rel="stylesheet">
 <link rel="stylesheet" href="app/tokens.css">
 <link rel="stylesheet" href="app/home.css">
+<script src="app/signedin.js"></script>
 </head>
 <body>
 <a class="skip" href="#main">Skip to content</a>
 <div class="progress" aria-hidden="true"></div>
-<p class="strip">Financial planning &amp; simulation demo. No real money moves. Not financial or tax advice.</p>
+<p class="strip">Practice demo. No real money moves. Not financial or tax advice.</p>
 
 <header class="top">
   <div class="topin">
     <a class="brand" href="./" aria-label="Keel home"><span class="logo"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M2 6h16M10 6v6M4 12c1.5 3 4 4 6 4s4.5-1 6-4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></span>Keel</a>
     <nav class="links" aria-label="Main">
-      <a href="#how">How it works</a>
-            <a href="#storm">Bad weeks</a>
-            <a href="app/">See the research</a>
-      <a href="app/my-pay.html">Log in</a>
+      <a href="./" aria-current="page">Home</a>
+      <a href="app/my-pay.html">My pay</a>
     </nav>
-    <a class="btn small" href="app/my-pay.html#signup">Sign up</a>
-    <a class="iconlink" href="app/my-pay.html#settings" aria-label="Your account"><span class="ms">person</span></a>
+    <a class="btn small ghostlight auth-out" href="app/my-pay.html">Log in</a>
+    <a class="btn small auth-out" href="app/my-pay.html#signup">Sign up</a>
+    <a class="btn quiet small2 auth-in" href="app/my-pay.html#settings"><span class="ms">person</span>My account</a>
   </div>
 </header>
 
@@ -40,8 +40,8 @@
         <h1 id="hero-h" class="kinetic"><span class="sr-only">Your work changes. Your payday shouldn’t.</span><span aria-hidden="true"><span class="w" style="--d:0">Your</span> <span class="w" style="--d:1">work</span> <span class="w" style="--d:2">changes.</span></span> <span aria-hidden="true"><span class="w" style="--d:4">Your</span> <span class="w" style="--d:5">payday</span> <span class="w" style="--d:6">shouldn’t.</span></span></h1>
         <p class="lede">Gig and freelance pay goes up and down. Keel turns it into one steady paycheck every week, with money set aside for taxes and slow weeks.</p>
         <div class="cta">
-          <a class="btn" href="app/my-pay.html">Plan my paycheck<span class="ms">arrow_forward</span></a>
-          <a class="btn ghost" href="app/">See how it works</a>
+          <a class="btn" href="app/my-pay.html#signup">Sign up free<span class="ms">arrow_forward</span></a>
+          <a class="btn ghost" href="app/my-pay.html">Log in</a>
         </div>
         <ul class="trust">
           <li><span class="ms">verified_user</span>Free, sign in with Google or email</li>
@@ -95,38 +95,23 @@
         <span class="simchip light"><span class="dot"></span>Example driver, tested on real data</span>
       </div>
       <p class="sub" id="proofsub"></p>
+      <p class="sub">The example drivers are made up, but they earn what real New York ride-share drivers earned each hour.</p>
       <div class="figures" id="figures"></div>
-    </section>
-
-    <section class="wrap storm" data-reveal id="storm" aria-labelledby="storm-h">
+    <div class="storm" id="storm">
       <div class="stormtext">
-        <p class="eyebrow">A bad week</p>
-        <h2 id="storm-h">The week the snow came</h2>
+        <h3 id="storm-h">Example: the week it snowed</h3>
         <p id="stormcopy"></p>
         <p class="fine" id="stormfine"></p>
-        <a class="textlink" href="app/#plan">Try it yourself</a>
       </div>
       <div class="flow" id="stormflow"></div>
+    </div>
+      <p class="fine honestline" id="honest" data-needs-data hidden><b>Good to know:</b> <span id="honestcopy"></span> This is a demo: no real money moves, and it's not financial or tax advice.</p>
     </section>
+
+
   </div>
 
-  <section class="night" data-currents="dark" data-keel="0.94" aria-labelledby="data-h">
-    <div class="wrap nightin">
-      <div>
-        <p class="eyebrow">Real data</p>
-        <h2 id="data-h">Tested on a year of real New York ride-share trips.</h2>
-        <p class="lede">Our example drivers earn what real NYC drivers earned each hour, with real weather and holidays. The drivers themselves are made up.</p>
-        
-      </div>
-      <div class="ngrid">
-        <div class="ncard"><b><span class="ms">tune</span>Honest guesses</b><span>Keel guesses a low, middle and high week ahead, and checks that its low guess is right as often as it says.</span></div>
-        <div class="ncard"><b><span class="ms">function</span>A simple rule</b><span>Your paycheck is the most Keel can pay while keeping your savings cushion safe. No hidden tricks.</span></div>
-        <div class="ncard wide" id="honest" data-needs-data hidden><b><span class="ms">gavel</span>Where Keel falls short</b><span id="honestcopy"></span></div>
-        <div class="ncard wide warnc"><b><span class="ms">info</span>Good to know</b><span><strong>This is a demo. No real money moves. Not financial or tax advice.</strong> Ask a tax pro about your real taxes.</span></div>
-        <div class="nlinks"><a href="app/#evidence"><span class="ms">open_in_new</span>See the proof</a><a href="https://www.nyc.gov/site/tlc/about/tlc-trip-record-data.page" rel="noopener"><span class="ms">dataset</span>NYC TLC trip records</a></div>
-      </div>
-    </div>
-  </section>
+
 
   <section class="wrap closer" aria-labelledby="close-h">
     <div class="ctaband" data-currents="light" data-keel="0.9">
@@ -146,7 +131,7 @@
   <div class="footin">
     <a class="brand" href="./"><span class="logo"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M2 6h16M10 6v6M4 12c1.5 3 4 4 6 4s4.5-1 6-4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></span>Keel</a>
     <p>Built for Bay Valley Hacks 2026. Simulation only: drivers are simulated on real NYC ride-hail data and no real money moves. Keel does not promise income. Not financial or tax advice.</p>
-    <nav aria-label="Footer"><a href="#how">Methodology</a><a href="app/#evidence">Evidence</a><a href="app/my-pay.html">My pay</a></nav>
+    <nav aria-label="Footer"><a href="app/my-pay.html">My pay</a><a href="app/">How we tested Keel</a></nav>
   </div>
 </footer>
 

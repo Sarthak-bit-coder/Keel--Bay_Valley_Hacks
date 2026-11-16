@@ -37,7 +37,8 @@
 
   function show(view) {
     ["v-signin", "v-profile", "v-dash"].forEach(function (v) { $(v).hidden = v !== view; });
-    $("tb-avatar").hidden = view !== "v-dash";
+    $("tb-avatar").hidden = view !== "v-dash" && view !== "v-profile";
+    document.documentElement.classList.toggle("signed-in", view !== "v-signin");
     msg("g-msg", "");
     window.scrollTo(0, 0);
     if (window.KeelCurrents) window.KeelCurrents.init();
@@ -50,6 +51,10 @@
   if (accountsOn) {
     try { client = window.supabase.createClient(cfg.url, cfg.anonKey, { auth: { flowType: "pkce", persistSession: true, detectSessionInUrl: true } }); } catch (e) { accountsOn = false; }
   }
+
+  // No cloud project: accounts live on this device (app/localauth.js). Google sign-in uses the public client ID.
+  var LA = window.KeelLocalAuth, localOn = !accountsOn && !!(LA && LA.available);
+  var GID = window.KEEL_GOOGLE_CLIENT_ID || "";
 
   function setAuthTab(t) {
     st.authTab = t;
@@ -66,8 +71,10 @@
     $("a-forgot").hidden = up;
     msg("a-msg", "");
     checkRules();
+    if (!$("g-gis").hidden) setupGoogle();
   }
   $("tab-in").addEventListener("click", function () { setAuthTab("in"); });
+  window.addEventListener("hashchange", function () { if (!$("v-signin").hidden) setAuthTab(/signup/.test(location.hash) ? "up" : "in"); });
   $("tab-up").addEventListener("click", function () { setAuthTab("up"); });
   $("a-eye").addEventListener("click", function () {
     var on = $("a-pass").type === "password";
@@ -98,8 +105,28 @@
     return m;
   }
 
+  // Google without a cloud project: Google Identity Services draws its own button and hands back a signed token.
+  function setupGoogle() {
+    if (accountsOn || !GID) return;
+    var tries = 0;
+    (function wait() {
+      var g = window.google && window.google.accounts && window.google.accounts.id;
+      if (!g) { if (++tries < 50) setTimeout(wait, 200); return; }
+      g.initialize({ client_id: GID, callback: function (resp) {
+        msg("a-msg", "Signing you in with Google…");
+        LA.google(resp.credential).then(function (store) { setMode("local"); begin(store, store.email); })
+          .catch(function (e) { msg("a-msg", "Google sign-in didn't work: " + e.message, "err"); });
+      } });
+      var box = $("g-gis");
+      box.innerHTML = "";
+      g.renderButton(box, { theme: "outline", size: "large", width: Math.min(370, box.clientWidth || 370), text: st.authTab === "up" ? "signup_with" : "signin_with", shape: "rectangular" });
+      box.hidden = false;
+      $("b-google").hidden = true;
+    })();
+  }
+
   $("b-google").addEventListener("click", function () {
-    if (!accountsOn) return msg("a-msg", "Accounts aren't turned on yet. Try it without an account below.", "err");
+    if (!accountsOn) return msg("a-msg", GID ? "Google sign-in is still loading. Try again in a moment." : "Google sign-in isn't set up yet. Use your email instead.", "err");
     msg("a-msg", "Opening Google…");
     client.auth.signInWithOAuth({ provider: "google", options: { redirectTo: location.origin + location.pathname } })
       .then(function (res) { if (res.error) msg("a-msg", friendlyAuthError(res.error.message), "err"); })
@@ -108,7 +135,7 @@
 
   $("a-forgot").addEventListener("click", function () {
     var email = $("a-email").value.trim();
-    if (!accountsOn) return msg("a-msg", "Accounts aren't turned on yet, so there's no password to reset.", "err");
+    if (!accountsOn) return msg("a-msg", "Accounts on this device can't be reset by email, because your password locks your data. Use Google, or sign up again with another email.", "err");
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { $("a-email").focus(); return msg("a-msg", "Type your email above, then press \"Forgot it?\" again.", "err"); }
     client.auth.resetPasswordForEmail(email, { redirectTo: location.origin + location.pathname }).then(function (res) {
       if (res.error) return msg("a-msg", friendlyAuthError(res.error.message), "err");
@@ -118,7 +145,7 @@
 
   $("f-auth").addEventListener("submit", function (ev) {
     ev.preventDefault();
-    if (!accountsOn) return msg("a-msg", "Accounts aren't turned on yet. Try it without an account below.", "err");
+    if (!accountsOn && !localOn) return msg("a-msg", "This browser can't create accounts. Try it without an account below.", "err");
     if (Date.now() < st.lockUntil) return msg("a-msg", "Too many tries. Please wait " + Math.ceil((st.lockUntil - Date.now()) / 1000) + " seconds.", "err");
     var up = st.authTab === "up";
     var email = $("a-email").value.trim(), pass = $("a-pass").value, r = rules(pass);
@@ -130,6 +157,18 @@
     if (up && pass !== $("a-pass2").value) return msg("a-msg", "The two passwords don't match.", "err");
     $("a-submit").disabled = true;
     msg("a-msg", up ? "Creating your account…" : "Logging in…");
+    if (!accountsOn) {
+      (up ? LA.signUp(email, pass) : LA.logIn(email, pass)).then(function (store) {
+        $("a-submit").disabled = false; st.fails = 0;
+        $("a-pass").value = ""; $("a-pass2").value = "";
+        setMode("local"); begin(store, store.email);
+      }).catch(function (e) {
+        $("a-submit").disabled = false;
+        if (!up && ++st.fails >= 5) { st.lockUntil = Date.now() + 30000; st.fails = 0; }
+        msg("a-msg", friendlyAuthError(e.message), "err");
+      });
+      return;
+    }
     var call = up
       ? client.auth.signUp({ email: email, password: pass, options: { emailRedirectTo: location.origin + location.pathname } })
       : client.auth.signInWithPassword({ email: email, password: pass });
@@ -161,7 +200,7 @@
   var idleTimer = null;
   function bumpIdle() {
     clearTimeout(idleTimer);
-    if (!st.store || st.store.kind !== "account") return;
+    if (!st.store || st.store.kind === "guest") return;
     idleTimer = setTimeout(function () { signOut(); setTimeout(function () { msg("a-msg", "You were logged out after 30 minutes of no activity, to keep your info safe.", "ok"); }, 50); }, IDLE_MS);
   }
   ["click", "keydown", "pointermove", "scroll"].forEach(function (t) { document.addEventListener(t, bumpIdle, { passive: true }); });
@@ -237,7 +276,7 @@
 
   function openProfile(editing, step) {
     st.editing = editing;
-    var p = st.profile || { display_name: "", job: "driver", tax_rate: 0.15, risk_limit: 0.05, expenses: {} };
+    var p = st.profile || { display_name: (st.store && st.store.googleName) || "", job: "driver", tax_rate: 0.15, risk_limit: 0.05, expenses: {} };
     $("p-title").textContent = editing ? "Update your answers" : "Let's set up your paycheck";
     $("p-name").value = p.display_name || "";
     pickJob(J.byId(p.job) ? p.job : "other");
@@ -304,12 +343,14 @@
     var p = st.profile, guest = st.store.kind === "guest";
     var name = p.display_name || (st.email ? st.email.split("@")[0] : "");
     $("d-hello").textContent = greeting() + (name ? ", " + name : "");
-    $("tb-avatar").textContent = (name || "K").charAt(0).toUpperCase();
     $("d-out-t").textContent = guest ? "Leave" : "Log out";
     $("s-out-label").textContent = guest ? "Stop using this browser" : "Log out";
     $("s-out-hint").textContent = guest ? "Your info stays saved in this browser until you delete it." : "For your safety, Keel logs you out after 30 minutes of no activity.";
-    $("set-session").textContent = guest ? "You're trying Keel without an account. Your info is saved only in this browser." : "Logged in as " + st.email + ". Only you can see your info.";
-    $("s-where").textContent = guest ? "Saved in this browser." : "Saved to your account.";
+    var local = st.store.kind === "local";
+    $("set-session").textContent = guest ? "You're trying Keel without an account. Your info is saved only in this browser."
+      : local ? "Logged in as " + (st.email || "your Google account") + ". Your account is saved on this device" + (st.store.key ? " and locked with your password." : ".")
+      : "Logged in as " + st.email + ". Only you can see your info.";
+    $("s-where").textContent = guest ? "Saved in this browser." : local ? "Saved on this device." : "Saved to your account.";
     fillSettings();
     show("v-dash");
     showSection();
@@ -320,7 +361,8 @@
     setMode(null);
     clearTimeout(idleTimer);
     var done = function () { st.store = null; show("v-signin"); };
-    if (st.store && st.store.kind === "account") client.auth.signOut().then(done, done); else done();
+    if (st.store && st.store.kind === "account") client.auth.signOut().then(done, done);
+    else { if (LA) LA.signOut(); if (window.google && google.accounts && google.accounts.id) google.accounts.id.disableAutoSelect(); done(); }
   }
   $("d-out").addEventListener("click", signOut);
   document.addEventListener("click", function (ev) {
@@ -367,6 +409,19 @@
     var last = st.entries[st.entries.length - 1];
     $("k-tax").textContent = money(last.gross * p.tax_rate);
     $("k-taxsub").textContent = pct(p.tax_rate) + " of last week's pay";
+
+    // Cushion explainer: how full it is and what happened last week, in plain numbers.
+    var cover = nx.pay > 0 ? nx.buffer_before / nx.pay : 0;
+    $("cbar").style.width = Math.max(2, Math.min(100, cover / 4 * 100)) + "%";
+    $("cbar").className = "cbarfill" + (cover < 1 ? " low" : "");
+    $("cnow").innerHTML = "Right now your cushion has <b>" + money(nx.buffer_before) + "</b>" +
+      (nx.pay > 0 ? ", enough to pay you for about <b>" + cover.toFixed(1) + " weeks</b> even if you earned nothing." + (cover < 1 ? " That's low, so Keel is being careful." : cover >= 4 ? " That's a healthy cushion." : "") : ". Keel is rebuilding it before paying you again.");
+    var lw = pl.weeks[pl.weeks.length - 1];
+    if (lw) {
+      var t = lw.gross - lw.net, d = lw.net - lw.pay_keel;
+      $("lastweek").innerHTML = "<b>Last week (" + fmtWeek(lw.week_start, true) + "):</b> you earned " + money(lw.gross) + ". We set aside " + money(t) + " for taxes, so " + money(lw.net) + " went into your cushion. Keel paid you " + money(lw.pay_keel) + ", so your cushion " +
+        (Math.round(d) > 0 ? "<span class=\"good\">grew by " + money(d) + "</span>." : Math.round(d) < 0 ? "<span class=\"bad\">went down by " + money(-d) + "</span>." : "stayed the same.");
+    }
 
     $("d-warn").innerHTML = pl.warnings.length ? '<p class="warn"><span class="ms">info</span>Some weeks are missing. Add them (even as $0) for a better paycheck.</p>' : "";
     $("ph-reason").textContent = plainReason(nx, p.risk_limit);
@@ -553,9 +608,11 @@
 
   // ---- Start -------------------------------------------------------------------------------------
   setAuthTab(/signup/.test(location.hash) ? "up" : "in");
-  if (!accountsOn) $("a-off").hidden = false;  // the form stays visible; pressing it explains accounts are off
+  if (!accountsOn && !localOn) $("a-off").hidden = false;
+  setupGoogle();
   function start() {
     if (getMode() === "guest") return begin(new S.GuestStore());
+    if (getMode() === "local" && localOn) return LA.resume().then(function (s) { if (s) begin(s, s.email); else show("v-signin"); });
     if (!accountsOn) return show("v-signin");
     client.auth.getSession().then(function (res) {
       var s = res.data && res.data.session;

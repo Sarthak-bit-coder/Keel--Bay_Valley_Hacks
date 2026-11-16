@@ -14,26 +14,27 @@
 <link rel="stylesheet" href="ds.css">
 <link rel="stylesheet" href="site.css">
 <script src="theme.js"></script>
+<script src="signedin.js"></script>
 </head>
 <body>
 <a class="skip" href="#main">Skip to content</a>
-<p class="strip">Financial planning &amp; simulation demo. No real money moves. Not financial or tax advice.</p>
+<p class="strip">Practice demo. No real money moves. Not financial or tax advice.</p>
 <header class="top"><div class="topin">
   <a class="brand" href="../" aria-label="Keel home"><span class="logo"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M2 6h16M10 6v6M4 12c1.5 3 4 4 6 4s4.5-1 6-4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></span>Keel</a>
-  <nav class="links" aria-label="Main"><a href="../">Home</a><a href="../#how">How it works</a><a href="./" aria-current="page">See the research</a><a href="my-pay.html#home">My pay</a></nav>
-  <div class="acts2"><button type="button" class="iconbtn" data-theme-toggle><span class="ms"></span></button><a class="btn primary" href="my-pay.html#signup">Sign up</a></div>
+  <nav class="links" aria-label="Main"><a href="../">Home</a><a href="my-pay.html">My pay</a></nav>
+  <div class="acts2"><a class="btn quiet small2 auth-out" href="my-pay.html">Log in</a><a class="btn primary small2 auth-out" href="my-pay.html#signup">Sign up</a><a class="btn quiet small2 auth-in" href="my-pay.html#settings"><span class="ms">person</span>My account</a></div>
 </div></header>
 <section class="phero" data-currents="dark" data-keel="0.93">
   <div class="pheroin">
     <span class="kicker"><span class="badge" id="badge"><span id="badgetext">Loading…</span></span></span>
     <div class="pagehead">
       <div class="t">
-        <h1>Does Keel really work?</h1>
-        <p class="lede">We tested Keel on made-up drivers who earn what real New York ride-share drivers earned. Pick a driver and watch their pay week by week.</p>
+        <h1>How we tested Keel</h1>
+        <p class="lede">This page is optional. It shows how Keel did for three example drivers whose pay comes from a year of real New York ride-share trips.</p>
         <div class="meta"><span><span class="ms">block</span>No real money moves</span><span><span class="ms">insights</span>Not financial or tax advice</span></div>
       </div>
       <div class="acts">
-        <a class="btn quiet" href="../outputs/results.json" download="keel-results.json"><span class="ms">download</span>Download the data</a>
+        
       </div>
     </div>
 
@@ -53,7 +54,7 @@
       <button type="button" class="btn primary" id="runreplay" style="margin-left:auto;align-self:end"><span class="ms">play_arrow</span>Play payday</button>
     </section>
 
-    <nav class="tabs" aria-label="Research views">
+    <nav class="tabs expert" aria-label="Research views" hidden>
       <a href="#paycheck" data-view="paycheck"><span class="ms">show_chart</span>1. Paycheck</a>
       <a href="#plan" data-view="plan"><span class="ms">compare_arrows</span>2. Compare</a>
       <a href="#evidence" data-view="evidence"><span class="ms">gavel</span>3. Proof &amp; weak spots</a>
@@ -62,6 +63,16 @@
 </section>
 
 <div class="content">
+    <section class="card pad simplecard">
+      <h2>The short version</h2>
+      <ol class="simple3">
+        <li><b>We made three example drivers</b> (full-time, part-time, weekends only). Their pay each hour comes from real New York ride-share trips in 2025, with real weather and holidays.</li>
+        <li><b>We paid them with Keel</b> and with two simple ways people often pay themselves: "last week's pay" and "the average of the last 4 weeks".</li>
+        <li><b>We compared.</b> Keel's paycheck swings much less, and the savings cushion runs out less often. Keel sometimes pays a little less on average. That's the cost of the cushion.</li>
+      </ol>
+      <p class="hint">Below: pick a driver and press <b>Play payday</b> to see one week at a time.</p>
+      <button type="button" class="linkbtn" id="expert-toggle" aria-expanded="false" style="justify-self:start">Show all the detailed numbers (for experts) ↓</button>
+    </section>
     <p class="note loaderr hidden" id="loaderr" role="alert"></p>
 
       <main id="main">
@@ -284,11 +295,6 @@
         </section>
       </main>
 
-    <section class="ctaband" data-currents="light" data-keel="0.9">
-      <h2>Try it with your own pay.</h2>
-      <p>Sign up and see your own steady weekly paycheck.</p>
-      <div class="row"><a class="btn primary" href="my-pay.html#signup">Sign up free<span class="ms">arrow_forward</span></a><a class="btn quiet" href="../">Back to homepage</a></div>
-    </section>
 </div>
 <footer class="foot"><div class="footin"><a class="brand" href="../"><span class="logo"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M2 6h16M10 6v6M4 12c1.5 3 4 4 6 4s4.5-1 6-4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></span>Keel</a><p>Built for Bay Valley Hacks 2026. Simulation only: drivers are simulated on real NYC ride-hail data and no real money moves. Keel does not promise income. Not financial or tax advice.</p><nav aria-label="Footer"><a href="../#how">Methodology</a><a href="index.html#evidence">Evidence</a><a href="my-pay.html">My pay</a></nav></div></footer>
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
@@ -302,6 +308,19 @@
 <script src="motion.js"></script>
 <script src="bg.js"></script>
 <script>
+// Detailed research is optional: the extra tabs and cards show only when someone asks for them.
+(function () {
+  var b = document.getElementById("expert-toggle");
+  function set(on) {
+    document.documentElement.classList.toggle("expert-on", on);
+    document.querySelector(".tabs.expert").hidden = !on;
+    b.setAttribute("aria-expanded", String(on));
+    b.textContent = on ? "Hide the detailed numbers ↑" : "Show all the detailed numbers (for experts) ↓";
+    if (!on && location.hash && location.hash !== "#paycheck") showView("paycheck");
+  }
+  b.addEventListener("click", function () { set(!document.documentElement.classList.contains("expert-on")); });
+  if (/#(plan|evidence)/.test(location.hash)) set(true);
+})();
 // "Run simulated payday" in the control bar: opens the Paycheck view and presses the same button as the hero card.
 document.getElementById("runreplay").addEventListener("click", function () {
   if (location.hash.slice(1) !== "paycheck") showView("paycheck");

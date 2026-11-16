@@ -1,5 +1,17 @@
 # "My pay": accounts for any freelancer
 
+## Accounts with no setup (on by default)
+
+With no Supabase project in `app/config.js`, people can still **sign up with email + password** or **Google**.
+These accounts are saved on the device (`app/localauth.js`): the password is never stored (salted PBKDF2-SHA256 hash,
+250,000 rounds) and each email account's data is encrypted with AES-GCM using a key from the password.
+Google sign-in uses Google Identity Services with the **public** client ID in `app/config.js`.
+For the Google button to work, that OAuth client in Google Cloud must list these *Authorized JavaScript origins*:
+`http://localhost:8765`, `http://localhost:8000`, `https://sarthak-bit-coder.github.io`.
+Never put the Google client **secret** in this repo; a website with no server never needs it.
+
+To move accounts to the cloud (same login on every device), follow the Supabase steps below.
+
 `app/my-pay.html` lets a person sign in, pick their job (driver, plumber, gardener, cleaner, handyman, designer, tutor, other), log what they earn each week, and see the paycheck Keel would pay them next week. It uses the same salary rule as the main results (`src/policy/salary.py`), ported to `app/engine.js` and tested against the Python code.
 
 **Without any setup it runs in guest mode**: data is saved only in that browser. Accounts need a free Supabase project (about 10 minutes).

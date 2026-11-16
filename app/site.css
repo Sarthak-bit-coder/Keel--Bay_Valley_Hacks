@@ -129,3 +129,22 @@ header.top .avatar { width: 36px; height: 36px; }
 .phero .kpi.accent .v small { color: #5d7080; }
 .phero .confirm .hint { color: var(--on-navy-2); }
 .phero .chip { white-space: normal; max-width: 100%; height: auto; min-height: 32px; padding-top: 4px; padding-bottom: 4px; }
+/* One header everywhere: logo, Home, My pay, then Log in / Sign up (or your initial once logged in). */
+.links { margin-left: 32px; margin-right: auto; }
+.btn.small2 { min-height: 38px; padding: 0 16px; font-size: 14px; }
+body.in .auth-out { display: none; }
+@media (max-width: 900px) { .links { order: 0; width: auto; margin-left: 12px; padding-bottom: 0; } .topin { flex-wrap: nowrap; height: 64px; padding-top: 0; padding-bottom: 0; } }
+@media (max-width: 560px) { header.top .acts2 .btn.quiet { display: none; } header.top .acts2 .btn.primary { display: inline-flex; } }
+.auth-in { display: none; }
+.signed-in .auth-out { display: none !important; }
+.signed-in .auth-in { display: inline-flex; }
+.btn.small2 .ms { font-size: 18px; }
+/* Research page: simple by default; the detailed cards appear only after "Show all the detailed numbers". */
+html:not(.expert-on) #headsup, html:not(.expert-on) #tiles, html:not(.expert-on) section[aria-labelledby="c2-h"], html:not(.expert-on) section[aria-labelledby="wk-h"], html:not(.expert-on) .cardtop .check { display: none !important; }
+.simplecard { display: grid; gap: 12px; }
+.simple3 { margin: 0; padding-left: 20px; display: grid; gap: 8px; color: var(--ink2); }
+.simple3 b { color: var(--ink); }
+.linkbtn { font: inherit; font-size: 14px; font-weight: 600; color: var(--keel); background: none; border: 0; padding: 0; cursor: pointer; }
+.linkbtn:hover { text-decoration: underline; }
+.pad { padding: 20px; }
+.hint { font-size: 14px; color: var(--ink2); }

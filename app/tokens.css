@@ -1,0 +1,49 @@
+/* Shared palette and type for the homepage, app, and My pay. */
+:root {
+  color-scheme: light;
+  --bg: #f6f7f3;
+  --surface: #fffefb;
+  --surface-2: #eff3ef;
+  --ink: #15273b;
+  --ink2: #40566a;
+  --muted: #5d7080;
+  --grid: #dee6e2;
+  --axis: #8295a0;
+  --border: #d3dfda;
+  --keel: #0a6d65;
+  --on-keel: #fffefb;
+  --keel-soft: #dff1ea;
+  --avg4: #a55c25;
+  --last: #5269a0;
+  --crit: #b52e37;
+  --warn: #8e581a;
+  --good-text: #0a6d65;
+  --navy: #0c1c2d;
+  --navy-2: #13253a;
+  --navy-3: #1c324a;
+  --navy-line: rgba(223, 234, 238, .15);
+  --on-navy: #f6f7f3;
+  --on-navy-2: #c5d3dd;
+  --on-navy-3: #aabdc9;
+  --teal: #66d7be;
+  --on-teal: #0b2825;
+  --font: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --shadow: 0 1px 2px rgba(21, 39, 59, .04), 0 8px 24px -12px rgba(21, 39, 59, .12);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not(.home):not([data-theme="light"]) {
+    color-scheme: dark;
+    --bg: #0d1a2a; --surface: #152538; --surface-2: #1b2e42; --ink: #f5f7f3; --ink2: #c9d6dd; --muted: #a6bbc7;
+    --grid: #2a4051; --axis: #6f8797; --border: #33495a; --keel: #66d7be; --on-keel: #0b2825; --keel-soft: #173e3c;
+    --avg4: #e8ab72; --last: #acbdeb; --crit: #ff8d8f; --warn: #efc181; --good-text: #70dcc8;
+    --shadow: 0 1px 2px rgba(0, 0, 0, .3), 0 8px 24px -12px rgba(0, 0, 0, .6);
+  }
+}
+:root:not(.home)[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #0d1a2a; --surface: #152538; --surface-2: #1b2e42; --ink: #f5f7f3; --ink2: #c9d6dd; --muted: #a6bbc7;
+  --grid: #2a4051; --axis: #6f8797; --border: #33495a; --keel: #66d7be; --on-keel: #0b2825; --keel-soft: #173e3c;
+  --avg4: #e8ab72; --last: #acbdeb; --crit: #ff8d8f; --warn: #efc181; --good-text: #70dcc8;
+  --shadow: 0 1px 2px rgba(0, 0, 0, .3), 0 8px 24px -12px rgba(0, 0, 0, .6);
+}
+:root { --display: "Instrument Serif", Georgia, "Times New Roman", serif; }

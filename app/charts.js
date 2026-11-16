@@ -20,7 +20,7 @@ function reducedMotion() { return window.matchMedia && window.matchMedia("(prefe
 // before the week, dashed line = a comparison (another rule or scenario). Drawn at the container's real pixel width so
 // labels stay readable on phones.
 // cfg: {series:[{name,short,color,values,dash,thin}], band:{lo,hi}|null, zero, stormWeeks, dates:[iso], now:week, label, endLabels}
-var CHART_FALLBACK_WIDTH = 720, CHART_MAX_WIDTH = 1100, CHART_SMALL = 520;
+var CHART_DRAW_MS = 600, CHART_FALLBACK_WIDTH = 720, CHART_MAX_WIDTH = 1100, CHART_SMALL = 520;
 function lineChart(el, cfg) {
   var W = Math.max(300, Math.min(el.clientWidth || CHART_FALLBACK_WIDTH, CHART_MAX_WIDTH)), small = W < CHART_SMALL, H = small ? 240 : 300;
   var ends = cfg.endLabels && !small, m = { l: 54, r: ends ? 116 : 14, t: 20, b: 30 };
@@ -58,7 +58,7 @@ function lineChart(el, cfg) {
   if (cfg.now >= 1 && cfg.now <= n) g += '<line x1="' + X(cfg.now - 1) + '" x2="' + X(cfg.now - 1) + '" y1="' + m.t + '" y2="' + (H - m.b) + '" stroke="' + ink + '" stroke-width="1" stroke-dasharray="3 3"/>';
   cfg.series.forEach(function (s) {
     var pts = s.values.map(function (v, i) { return X(i) + "," + Y(v); }).join(" ");
-    g += '<polyline points="' + pts + '" fill="none" stroke="' + s.color + '" stroke-width="' + (s.thin || s.dash ? 1.5 : 2.5) + '"' + (s.dash ? ' stroke-dasharray="6 5"' : "") + ' stroke-linejoin="round" stroke-linecap="round"/>';
+    g += '<polyline points="' + pts + '" fill="none" stroke="' + s.color + '" stroke-width="' + (s.thin || s.dash ? 1.5 : 2.5) + '"' + (s.dash ? ' stroke-dasharray="6 5"' : "") + ' stroke-linejoin="round" stroke-linecap="round"' + (s.dash ? "" : ' pathLength="1" class="ln"') + '/>';
   });
   var showEnds = ends;
   if (showEnds && cfg.series.length > 1) {
@@ -71,7 +71,12 @@ function lineChart(el, cfg) {
     if (showEnds) g += '<text x="' + (X(n - 1) + 10) + '" y="' + (yy + 4) + '" font-size="12" fill="' + ink2 + '">' + esc(s.short || s.name) + " " + money(s.values[n - 1]) + "</text>";
   });
   g += '<g class="cross" style="display:none"><line y1="' + m.t + '" y2="' + (H - m.b) + '" stroke="' + axis + '" stroke-width="1"/></g>';
-  el.innerHTML = '<svg viewBox="0 0 ' + W + " " + H + '" tabindex="0" role="group" aria-label="' + esc(cfg.label) + ' Use the left and right arrow keys to read each week.">' + g + '</svg><div class="tip" role="status"></div>';
+  // Lines draw in only when the data changes (new driver, scenario or rule), not when the selected week moves.
+  // A redraw within the draw time (ui.js renders twice on load) keeps the animation going.
+  var sig = JSON.stringify(cfg.series.map(function (s) { return s.values; })), now = Date.now();
+  if (el.dataset.sig !== sig) { el.dataset.sig = sig; el.dataset.drawn = now; }
+  var fresh = now - Number(el.dataset.drawn) < CHART_DRAW_MS;
+  el.innerHTML = '<svg' + (fresh ? ' class="draw"' : "") + ' viewBox="0 0 ' + W + " " + H + '" tabindex="0" role="group" aria-label="' + esc(cfg.label) + ' Use the left and right arrow keys to read each week.">' + g + '</svg><div class="tip" role="status"></div>';
   var svg = el.querySelector("svg"), tip = el.querySelector(".tip"), cross = svg.querySelector(".cross"), dots = [];
   cfg.series.forEach(function (s) {
     var c = document.createElementNS(NS, "circle");

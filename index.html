@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="home">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
@@ -8,13 +8,16 @@
 <!-- Serve or deploy the repo root: this page and app/ both read outputs/results.json. -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400..700&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="app/tokens.css">
 <link rel="stylesheet" href="app/home.css">
+<link rel="preload" as="image" href="app/media/photo-drive.webp">
 </head>
 <body>
 <a class="skip" href="#main">Skip to content</a>
+<div class="progress" aria-hidden="true"></div>
 
-<div class="night">
+<div class="opening">
   <header class="top">
     <a class="brand" href="./" aria-label="Keel home">
       <svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true"><path d="M2 6h16M10 6v6M4 12c1.5 3 4 4 6 4s4.5-1 6-4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
@@ -31,19 +34,28 @@
   <main id="main">
     <section class="hero" aria-labelledby="hero-h">
       <p class="kicker"><span id="datalabel">Simulation</span></p>
-      <h1 id="hero-h"><span class="dim">Your work changes.</span> <span>Your payday shouldn’t.</span></h1>
+      <h1 id="hero-h" class="kinetic"><span class="sr-only">Your work changes. Your payday shouldn’t.</span><span class="dim" aria-hidden="true"><span class="w" style="--d:0">Your</span> <span class="w" style="--d:1">work</span> <span class="w" style="--d:2">changes.</span></span> <span aria-hidden="true"><span class="w" style="--d:4">Your</span> <span class="w" style="--d:5">payday</span> <span class="w" style="--d:6">shouldn’t.</span></span></h1>
       <p class="lede">Keel holds your gig payouts in a buffer, forecasts the week ahead, and pays you the steadiest paycheck it can without running the buffer dry.</p>
       <div class="cta">
         <a class="btn" href="app/">Open the simulation</a>
         <a class="btn ghost" href="app/my-pay.html">Try it with your own pay</a>
       </div>
+      <div class="film" aria-hidden="true">
+        <img src="app/media/photo-drive.webp" width="1344" height="752" alt="" fetchpriority="high" decoding="async">
+      </div>
 
       <figure class="stage" id="stage">
         <div class="chart">
+          <div class="heroswitch" id="heroswitch" hidden></div>
           <div class="legend">
             <span><i class="key earn"></i>What the driver earned, after tax</span>
             <span><i class="key keel"></i>Keel paycheck</span>
           </div>
+          <ol class="beats" id="beats" aria-hidden="true">
+            <li>Earnings swing</li>
+            <li>The buffer absorbs the bad weeks</li>
+            <li>One steady paycheck</li>
+          </ol>
           <div class="plot" id="heroplot"><p class="wait" id="herowait">Loading the simulation…</p></div>
           <div class="capline">
             <figcaption id="herocap"></figcaption>
@@ -60,13 +72,13 @@
 </div>
 
 <div class="day" data-needs-data hidden>
-  <section class="wrap proof" aria-labelledby="proof-h">
+  <section class="wrap proof" data-reveal aria-labelledby="proof-h">
     <h2 id="proof-h">Same earnings. A calmer paycheck.</h2>
     <p class="sub" id="proofsub"></p>
     <div class="figures" id="figures"></div>
   </section>
 
-  <section class="wrap how" id="how" aria-labelledby="how-h">
+  <section class="wrap how" data-reveal id="how" aria-labelledby="how-h">
     <h2 id="how-h">Four steps, every week</h2>
     <ol class="steps">
       <li><b>Hold</b><span>Gig payouts land in a buffer, not straight in checking. A share is set aside for tax.</span></li>
@@ -76,7 +88,8 @@
     </ol>
   </section>
 
-  <section class="wrap storm" id="storm" aria-labelledby="storm-h">
+  <div class="photoband" aria-hidden="true"><img src="app/media/photo-storm.webp" alt="" loading="lazy" width="1344" height="576"></div>
+  <section class="wrap storm" data-reveal id="storm" aria-labelledby="storm-h">
     <div class="stormtext">
       <p class="eyebrow">Stress test</p>
       <h2 id="storm-h">The week the snow came</h2>
@@ -89,7 +102,7 @@
 </div>
 
 <div class="night close" data-needs-data hidden>
-  <section class="wrap honest" id="honest" aria-labelledby="honest-h">
+  <section class="wrap honest" data-reveal id="honest" aria-labelledby="honest-h">
     <p class="eyebrow">Evidence</p>
     <h2 id="honest-h">We publish where Keel loses.</h2>
     <p class="lede" id="honestcopy"></p>
@@ -101,11 +114,12 @@
 </div>
 
 <footer class="foot">
-  <p>Built for Bay Valley Hacks 2026. Simulation only: drivers are simulated on real NYC ride-hail data and no real money moves. Keel does not promise income. Not financial or tax advice.</p>
+  <p>Built for Bay Valley Hacks 2026. Simulation only: drivers are simulated on real NYC ride-hail data and no real money moves. Keel does not promise income. Not financial or tax advice. Photos are AI-generated illustrations, not real drivers.</p>
 </footer>
 
 <script src="app/data.js"></script>
 <script src="app/paycheck.js"></script>
 <script src="app/home.js"></script>
+<script src="app/motion.js"></script>
 </body>
 </html>

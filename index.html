@@ -12,6 +12,8 @@
 <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=block" rel="stylesheet">
 <link rel="stylesheet" href="app/tokens.css">
 <link rel="stylesheet" href="app/home.css">
+<link rel="stylesheet" href="app/home-extra.css">
+<link rel="stylesheet" href="app/fx.css">
 </head>
 <body>
 <a class="skip" href="#main">Skip to content</a>
@@ -74,6 +76,11 @@
     </div>
   </section>
 
+  <section class="tape" aria-label="Week by week for the example driver" data-needs-data hidden>
+    <div class="ticker" tabindex="0" aria-label="Week by week, scrolls sideways; hover or focus to pause">
+      <ul class="ticker-track" id="ticker"></ul>
+    </div>
+  </section>
   <section class="wrap how" data-reveal id="how" aria-labelledby="how-h">
     <div class="sechead">
       <div><p class="eyebrow">How it works</p><h2 id="how-h">Three simple steps.</h2></div>
@@ -104,6 +111,44 @@
     </div>
       <p class="fine honestline" id="honest" data-needs-data hidden><b>Good to know:</b> <span id="honestcopy"></span> This is a demo: no real money moves, and it's not financial or tax advice.</p>
     </section>
+
+    <section class="wrap compare" id="compare" data-fx aria-labelledby="compare-h">
+      <div class="sechead"><div><p class="eyebrow">Compare</p><h2 id="compare-h">Three ways to get paid.</h2></div></div>
+      <p class="sub" id="comparesub"></p>
+      <div class="ctable" id="ctable" role="table" aria-labelledby="compare-h"></div>
+    </section>
+
+    <section class="wrap walk" id="walk" aria-labelledby="walk-h">
+      <div class="sechead"><div><p class="eyebrow">One real week</p><h2 id="walk-h">What Keel does on payday.</h2></div></div>
+      <div class="calls" id="calls"></div>
+    </section>
+
+    <section class="labsec" id="lab" data-currents="dark" aria-labelledby="lab-h">
+      <div class="labin">
+        <div class="labhead" data-fx>
+          <p class="eyebrow">Try it</p>
+          <h2 id="lab-h">Test a bad stretch.</h2>
+          <p class="sub">Pick a driver, normal or snowy weeks, and how much risk you are okay with. Every number comes from a test we already ran.</p>
+        </div>
+        <div class="labgrid">
+          <div class="labctl" data-tilt>
+            <div class="ctl" role="group" aria-label="Example driver" id="labdriver"></div>
+            <div class="ctl" role="group" aria-label="Weeks" id="labscen"></div>
+            <label class="slider" for="labrisk"><span>Risk you accept <b id="labriskv">5%</b></span>
+              <input type="range" id="labrisk" min="0" max="3" step="1" value="1" aria-describedby="labriskhint">
+            </label>
+            <p class="hint" id="labriskhint">The chance your cushion runs out that you are okay with.</p>
+          </div>
+          <div class="labout" aria-live="polite">
+            <div class="lfig"><span>Average paycheck</span><b id="lab-pay"></b></div>
+            <div class="lfig"><span>Paycheck swing</span><b id="lab-swing"></b></div>
+            <div class="lfig"><span>Weeks the cushion ran out</span><b id="lab-od"></b></div>
+            <div class="lspark" id="lab-spark"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
 
 
   </div>
@@ -137,5 +182,6 @@
 <script src="app/home.js"></script>
 <script src="app/motion.js"></script>
 <script src="app/bg.js"></script>
+<script src="app/fx.js"></script>
 </body>
 </html>

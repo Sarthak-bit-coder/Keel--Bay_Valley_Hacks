@@ -42,7 +42,7 @@ One page, no install, no build step. It reads `outputs/results.json` and redraws
 
 ### Settings (always visible)
 - **Simulated driver:** A (full-time, steady), B (part-time) or C (weekend-only, volatile).
-- **Weeks to replay:** normal weeks or the **snowstorm** weeks.
+- **Weeks to replay:** normal weeks or the **snowstorm stress test**.
 - **Risk limit:** the chance of an empty buffer you accept: 1%, 5%, 10% or 20%.
 
 ### 1. Paycheck
@@ -50,11 +50,13 @@ The first screen answers five questions: how much the next simulated paycheck is
 - **Run simulated payday** replays that week from the results file: what was earned, what was set aside for tax, what was paid, and what the buffer covered. Step week by week through the replay. No real money moves.
 - **Earnings swing, the paycheck holds steady:** earnings next to the Keel paycheck, with the forecast range and the snowstorm weeks marked.
 - **The buffer absorbs the bad weeks:** Keel's buffer against two simple rules (pay last week's earnings, pay the 4-week average). Below zero means overdraft.
+- **Heads-up for next week:** next week's forecast low against this paycheck and the buffer.
+- **Week by week:** every paycheck, what was earned, the buffer and Keel's reason, in one table.
 - **Show as tables** swaps the charts for tables.
 
 ### 2. Plan
 - **Choose a paycheck:** the paycheck Keel set under each risk limit, for any week.
-- **Stress test:** normal weeks against the snowstorm, for earnings, paychecks and the buffer.
+- **Stress test:** normal weeks against the snowstorm stress test, for earnings, paychecks and the buffer.
 - **Buffer recovery:** how far the buffer fell and how fast it came back.
 - **Where the money went:** one week's earnings split into paycheck, tax reserve and buffer.
 - **Why this paycheck?:** how one week's amount was chosen, plus the decision log for every week.
@@ -146,7 +148,7 @@ The app fetches `../outputs/results.json` (falling back to `outputs/sample/resul
 
 App tests (Node 18+, no install): `node --test app/`
 
-App files: `app/index.html` (markup), `app/keel.css` (design system), `app/ui.js` (rendering), and the tested data helpers `data.js`, `paycheck.js`, `benchmark.js`, `recovery.js`.
+App files: `app/index.html` (markup), `app/keel.css` (design system), `app/ui.js` and `app/charts.js` (rendering), and the tested data helpers `data.js`, `paycheck.js`, `benchmark.js`, `recovery.js`.
 
 `run_all.py` is a skeleton. Each role fills in its step.
 

@@ -31,18 +31,18 @@
 
 <div class="wrap">
   <section class="controls" aria-label="Simulation settings">
-    <label class="field wide" for="driver">Simulated driver
+    <label class="field" for="driver">Simulated driver
       <select id="driver"></select>
     </label>
-    <div class="field" role="group" aria-label="Weeks to replay">Weeks to replay
-      <div class="seg">
-        <button type="button" id="sc-normal" aria-pressed="false">Normal</button>
-        <button type="button" id="sc-storm" aria-pressed="true">Snowstorm</button>
-      </div>
-    </div>
     <label class="field" for="risk" title="The chance of the buffer running out that you are willing to accept. Keel pays the most it can within it.">Risk limit
       <select id="risk"></select>
     </label>
+    <div class="field wide" role="group" aria-label="Weeks to replay">Weeks to replay
+      <div class="seg">
+        <button type="button" id="sc-normal" aria-pressed="false">Normal</button>
+        <button type="button" id="sc-storm" aria-pressed="true">Snowstorm stress test</button>
+      </div>
+    </div>
   </section>
 
   <p class="note loaderr hidden" id="loaderr" role="alert"></p>
@@ -53,6 +53,7 @@
       <h1 class="sr-only" id="paycheck-h">My paycheck</h1>
       <div id="hero" aria-live="polite"><p class="skeleton">Loading the simulation…</p></div>
       <div id="payday" aria-live="polite"></div>
+      <section class="card headsup" id="headsup" aria-labelledby="hu-h" aria-live="polite"></section>
       <section class="tiles" id="tiles" aria-label="How steady the paycheck was"></section>
 
       <section class="card" aria-labelledby="c1-h">
@@ -76,6 +77,11 @@
         <div class="legend" id="c2legend"></div>
         <div class="plot" id="c2"></div>
         <div class="scroll hidden" id="c2table"></div>
+      </section>
+
+      <section class="card" aria-labelledby="wk-h">
+        <header><h2 id="wk-h">Week by week</h2><p id="wksub"></p></header>
+        <div class="scroll"><table id="weektable"></table></div>
       </section>
     </section>
 
@@ -159,7 +165,7 @@
                 <li><b>Forecast a range.</b> Keel estimates a low and a high case for next week's take-home pay. The wider the range, the less sure it is.</li>
                 <li><b>Imagine many possible weeks.</b> It plays out hundreds of possible next few weeks inside that range.</li>
                 <li><b>Try paychecks from high to low.</b> It starts at a cap and steps down $5 at a time.</li>
-                <li><b>Stop at the first safe one.</b> It keeps the first paycheck where the chance of the buffer running dry stays within your limit.</li>
+                <li><b>Stop at the first one within your limit.</b> It keeps the first paycheck where the chance of the buffer running dry stays within your limit.</li>
               </ol>
               <p class="note">More uncertainty (a wider range) or a smaller buffer means a lower paycheck. A bigger buffer or a looser limit means a higher one. Keel does not show which model inputs mattered most, because the results file does not record that.</p>
             </details>
@@ -261,13 +267,14 @@
     </section>
   </main>
 
-  <footer>Built for Bay Valley Hacks 2026. Simulation only: drivers are simulated on real NYC ride-hail data, no real money moves, and nothing here is financial or tax advice.</footer>
+  <footer>Built for Bay Valley Hacks 2026. Simulation only: drivers are simulated on real NYC ride-hail data, no real money moves. Not financial or tax advice.</footer>
 </div>
 
 <script src="data.js"></script>
 <script src="benchmark.js"></script>
 <script src="recovery.js"></script>
 <script src="paycheck.js"></script>
+<script src="charts.js"></script>
 <script src="ui.js"></script>
 </body>
 </html>

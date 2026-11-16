@@ -7,130 +7,17 @@ var fromRun = KeelData.fromRun;
 // Opens on the most volatile driver in the storm. week = the payday shown on the Paycheck view (null = pick a default),
 // ran = whether that simulated payday has been run.
 var state = { driver: "C", scenario: "storm", risk: 0.05, tables: false, week: null, ran: false, view: "paycheck" };
-var NAMES = { normal: "Normal weeks", storm: "Snowstorm weeks" };
+var NAMES = { normal: "Normal weeks", storm: "Snowstorm stress test" };
 var NS = "http://www.w3.org/2000/svg";
 function money(n) { var r = Math.round(n); return (r < 0 ? "−$" : "$") + Math.abs(r).toLocaleString("en-US"); }
 function pct(n) { return Math.round(n * 100) + "%"; }
 function css(v) { return getComputedStyle(document.documentElement).getPropertyValue(v).trim(); }
 function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]; }); }
 
-function niceTicks(min, max) {
-  var span = Math.max(max - min, 1), raw = span / 4, mag = Math.pow(10, Math.floor(Math.log10(raw))), norm = raw / mag;
-  var step = (norm < 1.5 ? 1 : norm < 3 ? 2 : norm < 7 ? 5 : 10) * mag;
-  var start = Math.floor(min / step) * step, out = [];
-  for (var v = start; ; v += step) { out.push(Math.round(v * 1e6) / 1e6); if (v >= max) break; }
-  return out;
-}
-
-// "2025-10-20" -> "Oct 20". Empty string if the date is missing, so callers can fall back to week numbers.
-function fmtDate(iso, opts) {
-  if (!iso) return "";
-  var d = new Date(iso + "T00:00:00Z");
-  return isNaN(d.getTime()) ? "" : d.toLocaleDateString("en-US", Object.assign({ month: "short", day: "numeric", timeZone: "UTC" }, opts));
-}
-function reducedMotion() { return window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches; }
-
-// One chart grammar for the whole app: solid line = replayed actuals, shaded band with dashed edges = forecast made
-// before the week, dashed line = a comparison (another rule or scenario). Drawn at the container's real pixel width so
-// labels stay readable on phones.
-// cfg: {series:[{name,short,color,values,dash,thin}], band:{lo,hi}|null, zero, stormWeeks, dates:[iso], now:week, label, endLabels}
-var CHART_FALLBACK_WIDTH = 720, CHART_MAX_WIDTH = 1100, CHART_SMALL = 520;
-function lineChart(el, cfg) {
-  var W = Math.max(300, Math.min(el.clientWidth || CHART_FALLBACK_WIDTH, CHART_MAX_WIDTH)), small = W < CHART_SMALL, H = small ? 240 : 300;
-  var ends = cfg.endLabels && !small, m = { l: 54, r: ends ? 116 : 14, t: 20, b: 30 };
-  var n = cfg.series[0].values.length, all = [];
-  cfg.series.forEach(function (s) { all = all.concat(s.values); });
-  if (cfg.band) all = all.concat(cfg.band.lo, cfg.band.hi);
-  var ticks = niceTicks(Math.min.apply(null, all.concat(cfg.zero ? [0] : [])), Math.max.apply(null, all));
-  var y0 = ticks[0], y1 = ticks[ticks.length - 1], step = (W - m.l - m.r) / (n - 1);
-  var X = function (i) { return m.l + i * step; };
-  var Y = function (v) { return m.t + (1 - (v - y0) / (y1 - y0)) * (H - m.t - m.b); };
-  var weekLabel = function (i) { return (cfg.dates && fmtDate(cfg.dates[i])) || "W" + (i + 1); };
-  var surface = css("--surface"), grid = css("--grid"), axis = css("--axis"), muted = css("--muted"), ink = css("--ink"), ink2 = css("--ink2"), keel = css("--keel"), crit = css("--crit");
-  var g = "";
-  ticks.forEach(function (v) {
-    g += '<line x1="' + m.l + '" x2="' + (W - m.r) + '" y1="' + Y(v) + '" y2="' + Y(v) + '" stroke="' + (v === 0 && cfg.zero ? axis : grid) + '" stroke-width="1"/>';
-    g += '<text x="' + (m.l - 10) + '" y="' + (Y(v) + 4) + '" text-anchor="end" font-size="12" fill="' + muted + '">' + money(v) + '</text>';
-  });
-  var every = Math.max(1, Math.ceil(n / (small ? 4 : 6)));
-  for (var i = 0; i < n; i += every) {
-    g += '<text x="' + X(i) + '" y="' + (H - 8) + '" text-anchor="' + (i === 0 ? "start" : !ends && i === n - 1 ? "end" : "middle") + '" font-size="12" fill="' + muted + '">' + esc(weekLabel(i)) + '</text>';
-  }
-  if (cfg.zero && y0 < 0) {
-    g += '<rect x="' + m.l + '" y="' + Y(0) + '" width="' + (W - m.l - m.r) + '" height="' + (Y(y0) - Y(0)) + '" fill="' + crit + '" opacity="0.07"/>';
-    g += '<text x="' + (m.l + 8) + '" y="' + (Y(y0) - 8) + '" font-size="12" fill="' + crit + '">Overdraft</text>';
-  }
-  (cfg.stormWeeks || []).forEach(function (w, k) {
-    g += '<rect x="' + (X(w - 1) - step / 2) + '" y="' + m.t + '" width="' + step + '" height="' + (H - m.t - m.b) + '" fill="' + ink2 + '" opacity="0.08"/>';
-    if (k === 0) g += '<text x="' + X(w - 1) + '" y="' + (m.t - 6) + '" text-anchor="middle" font-size="12" fill="' + ink2 + '">Snowstorm</text>';
-  });
-  if (cfg.band) {
-    var up = cfg.band.hi.map(function (v, i) { return X(i) + "," + Y(v); }), dn = cfg.band.lo.map(function (v, i) { return X(i) + "," + Y(v); });
-    g += '<polygon points="' + up.join(" ") + " " + dn.slice().reverse().join(" ") + '" fill="' + keel + '" opacity="0.10"/>';
-    [up, dn].forEach(function (edge) { g += '<polyline points="' + edge.join(" ") + '" fill="none" stroke="' + keel + '" stroke-width="1" stroke-dasharray="2 4" opacity="0.6"/>'; });
-  }
-  if (cfg.now >= 1 && cfg.now <= n) g += '<line x1="' + X(cfg.now - 1) + '" x2="' + X(cfg.now - 1) + '" y1="' + m.t + '" y2="' + (H - m.b) + '" stroke="' + ink + '" stroke-width="1" stroke-dasharray="3 3"/>';
-  cfg.series.forEach(function (s) {
-    var pts = s.values.map(function (v, i) { return X(i) + "," + Y(v); }).join(" ");
-    g += '<polyline points="' + pts + '" fill="none" stroke="' + s.color + '" stroke-width="' + (s.thin || s.dash ? 1.5 : 2.5) + '"' + (s.dash ? ' stroke-dasharray="6 5"' : "") + ' stroke-linejoin="round" stroke-linecap="round"/>';
-  });
-  var showEnds = ends;
-  if (showEnds && cfg.series.length > 1) {
-    var ys = cfg.series.map(function (s) { return Y(s.values[n - 1]); }).sort(function (a, b) { return a - b; });
-    for (var k = 1; k < ys.length; k++) if (ys[k] - ys[k - 1] < 16) showEnds = false;
-  }
-  cfg.series.forEach(function (s) {
-    var yy = Y(s.values[n - 1]);
-    if (!s.dash) g += '<circle cx="' + X(n - 1) + '" cy="' + yy + '" r="4" fill="' + s.color + '" stroke="' + surface + '" stroke-width="2"/>';
-    if (showEnds) g += '<text x="' + (X(n - 1) + 10) + '" y="' + (yy + 4) + '" font-size="12" fill="' + ink2 + '">' + esc(s.short || s.name) + " " + money(s.values[n - 1]) + "</text>";
-  });
-  g += '<g class="cross" style="display:none"><line y1="' + m.t + '" y2="' + (H - m.b) + '" stroke="' + axis + '" stroke-width="1"/></g>';
-  el.innerHTML = '<svg viewBox="0 0 ' + W + " " + H + '" tabindex="0" role="group" aria-label="' + esc(cfg.label) + ' Use the left and right arrow keys to read each week.">' + g + '</svg><div class="tip" role="status"></div>';
-  var svg = el.querySelector("svg"), tip = el.querySelector(".tip"), cross = svg.querySelector(".cross"), dots = [];
-  cfg.series.forEach(function (s) {
-    var c = document.createElementNS(NS, "circle");
-    c.setAttribute("r", 4); c.setAttribute("fill", s.color); c.setAttribute("stroke", surface); c.setAttribute("stroke-width", 2); c.style.display = "none";
-    svg.appendChild(c); dots.push(c);
-  });
-  var cur = n - 1;
-  function show(i) {
-    i = Math.max(0, Math.min(n - 1, i)); cur = i;
-    var x = X(i), line = cross.firstChild, date = cfg.dates && fmtDate(cfg.dates[i]);
-    line.setAttribute("x1", x); line.setAttribute("x2", x); cross.style.display = "";
-    var html = "<b>Week " + (i + 1) + (date ? " · week of " + esc(date) : "") + "</b>";
-    cfg.series.forEach(function (s, k) {
-      dots[k].setAttribute("cx", x); dots[k].setAttribute("cy", Y(s.values[i])); dots[k].style.display = "";
-      html += '<div><span><span class="dot" style="background:' + s.color + '"></span>' + esc(s.short || s.name) + '</span><span class="n">' + money(s.values[i]) + "</span></div>";
-    });
-    if (cfg.band) html += '<div><span>Forecast range</span><span class="n">' + money(cfg.band.lo[i]) + "–" + money(cfg.band.hi[i]) + "</span></div>";
-    if ((cfg.stormWeeks || []).indexOf(i + 1) >= 0) html += "<div><span>Snowstorm week</span></div>";
-    tip.innerHTML = html; tip.style.display = "block";
-    var pxl = x / W * 100; tip.style.left = pxl > 55 ? "auto" : "calc(" + pxl + "% + 12px)"; tip.style.right = pxl > 55 ? "calc(" + (100 - pxl) + "% + 12px)" : "auto";
-  }
-  function hide() { cross.style.display = "none"; tip.style.display = "none"; dots.forEach(function (d) { d.style.display = "none"; }); }
-  function at(e) { var r = svg.getBoundingClientRect(); show(Math.round(((e.clientX - r.left) / r.width * W - m.l) / step)); }
-  svg.addEventListener("pointermove", at);
-  svg.addEventListener("pointerdown", at);
-  svg.addEventListener("pointerleave", function (e) { if (e.pointerType === "mouse") hide(); });
-  svg.addEventListener("blur", hide);
-  svg.addEventListener("keydown", function (e) {
-    if (e.key === "ArrowRight") { show(cur + 1); e.preventDefault(); }
-    if (e.key === "ArrowLeft") { show(cur - 1); e.preventDefault(); }
-    if (e.key === "Escape") hide();
-  });
-}
-
 function tableView(el, cols, rows) {
   var h = "<table><thead><tr><th>Week</th>" + cols.map(function (c) { return '<th class="num">' + esc(c) + "</th>"; }).join("") + "</tr></thead><tbody>";
   rows.forEach(function (r, i) { h += "<tr><td>W" + (i + 1) + "</td>" + r.map(function (v) { return '<td class="num">' + money(v) + "</td>"; }).join("") + "</tr>"; });
   el.innerHTML = h + "</tbody></table>";
-}
-
-// items: [{name, color, dash}]. band adds the forecast-range swatch, now adds the selected-payday marker.
-function legend(el, items, band, now) {
-  el.innerHTML = items.map(function (s) { return '<span><i class="key' + (s.dash ? " dash" : "") + '" style="border-color:' + s.color + '"></i>' + esc(s.name) + "</span>"; }).join("") +
-    (band ? '<span><i class="swatch band"></i>' + (DATA && DATA.meta.model === "toy" ? "Forecast range (toy: mean ± 1.28 spread)" : "Forecast range, made before each week") + '</span>' : "") +
-    (now ? '<span><i class="key dash" style="border-color:' + css("--ink") + '"></i>Selected payday</span>' : "");
 }
 
 function pill(ok, yes, no) {
@@ -155,7 +42,7 @@ function renderHero(run, R, storm) {
     unknown: ['<span class="state warn">Not estimated</span>', "The results file has no risk estimate for this week, so we do not guess."]
   }[s.status];
   var next = {
-    steady: ["Nothing. You’re covered.", "The paycheck fits your limit and the buffer is at or above where it started.", "why", "See why Keel chose " + money(s.pay)],
+    steady: ["Nothing needed this week", "This paycheck fits your limit and the buffer is at or above where it started.", "why", "See why Keel chose " + money(s.pay)],
     rebuilding: ["Let the buffer refill", "The buffer is " + money(s.bufferTarget - s.bufferBefore) + " under where it started, so Keel keeps the paycheck within your limit while it recovers.", "rec", "See how the buffer recovers"],
     over_limit: ["Expect smaller paychecks", "Keel could not bring the risk under your limit this week. Paychecks stay low until the buffer recovers.", "why", "See why Keel chose " + money(s.pay)],
     unknown: ["Check the details", "This week is missing its risk estimate.", "why", "See what the file has for this week"]
@@ -169,7 +56,7 @@ function renderHero(run, R, storm) {
     '<span class="stepper"><button type="button" data-step="-1" aria-label="Previous week"' + (s.week === 1 ? " disabled" : "") + '><svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><path d="M9 2 4 7l5 5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button>' +
     "<span>Week " + s.week + " of " + s.weeks + '</span><button type="button" data-step="1" aria-label="Next week"' + (s.isLast ? " disabled" : "") + '><svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><path d="m5 2 5 5-5 5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button></span></div>' +
     '<div class="figure">' + money(s.pay) + "</div>" +
-    '<p class="when">' + (paid ? "Paid " : "Payday ") + "<strong>" + esc(when) + "</strong>" + (isStorm ? " · snowstorm week" : "") + "</p>" +
+    '<p class="when">' + (paid ? "Paid " : "Payday ") + "<strong>" + esc(when) + "</strong>" + (isStorm ? " · snowstorm stress test week" : "") + "</p>" +
     (paid ? '<p class="note"><strong>' + line + "</strong></p>" : s.lo === null || s.hi === null ? "" : '<p class="note">Keel’s forecast for this week’s earnings, after tax: ' + money(s.lo) + " to " + money(s.hi) + ".</p>") +
     '<div class="actions"><button type="button" class="btn primary" id="runpay">' + (!paid ? "Run simulated payday" : s.isLast ? "Restart the replay" : "Go to next week") + "</button>" +
     '<span class="note">Simulated driver ' + esc(state.driver) + ". No real money moves.</span></div></div>" +
@@ -181,7 +68,7 @@ function renderHero(run, R, storm) {
     '<div class="fact"><span class="eyebrow">What to do next</span><span class="big">' + next[0] + "</span><p>" + next[1] + ' <button type="button" class="link" data-go="' + next[2] + '">' + esc(next[3]) + "</button></p></div>" +
     "</div></div>";
   if (!paid) { rc.innerHTML = ""; return; }
-  rc.innerHTML = '<div class="receipt"><h2>' + (isStorm ? "Snowstorm week" : "Week " + s.week) + ": where the money went</h2><dl>" +
+  rc.innerHTML = '<div class="receipt"><h2>' + (isStorm ? "Snowstorm stress test week" : "Week " + s.week) + ": where the money went</h2><dl>" +
     "<div><dt>Earned, after tax</dt><dd>" + money(s.net) + "</dd></div>" +
     "<div><dt>Set aside for tax</dt><dd>" + (s.tax === null ? "Not in file" : money(s.tax)) + "</dd></div>" +
     "<div><dt>Paycheck paid</dt><dd>" + money(s.pay) + "</dd></div>" +
@@ -235,7 +122,28 @@ function render() {
     '<span><i class="dot" style="background:' + C.avg4 + '"></i>Paying the 4-week average: ' + money(M.avg4.avgPay) + '</span>' +
     '<span>Set aside for tax over ' + WEEKS + ' weeks: ' + money(M.taxTotal) + ' (illustrative ' + pct(TAX) + ')</span></div></div>';
 
-  document.getElementById("c1sub").textContent = "What the driver earned each week after the tax set-aside, next to the paycheck Keel paid. Simulated driver " + state.driver + (state.scenario !== "storm" ? ", normal weeks." : storm.length ? ", snowstorm in week" + (storm.length > 1 ? "s " + storm.slice(0, -1).join(", ") + " and " + storm[storm.length - 1] : " " + storm[0]) + "." : ", snowstorm scenario (the results file does not mark which weeks).");
+  // Heads-up: the week after the selected payday. Stored forecast low vs this paycheck. Reads lo, pay_keel, buf_keel only.
+  var cw = run.weeks[state.week - 1], nw = run.weeks[state.week], hu = '<header><h2 id="hu-h">Heads-up for next week</h2></header>';
+  if (!nw) {
+    hu += '<p class="msg">No forecast for the week after this replay.</p><p class="note">The results file ends at week ' + WEEKS + ".</p>";
+  } else {
+    var gap = cw.pay_keel - nw.lo;
+    hu += '<p class="msg">' + (gap > 0 ? "Next week could come in below your paycheck. " + (cw.buf_keel >= gap ? "The buffer is larger than the gap." : "Your buffer may not cover all of it.") : "The low case for next week is at or above your paycheck.") + "</p>" +
+      '<p class="note">Forecast low for week ' + nw.week + ": " + money(nw.lo) + " · this week’s paycheck: " + money(cw.pay_keel) + " · buffer after payday: " + money(cw.buf_keel) + "</p>";
+  }
+  hu += '<p class="note">The forecast low is calibrated to hold about 90% of the time' + (CAL && typeof CAL.calibrated_hit_rate === "number" ? " (" + pct(CAL.calibrated_hit_rate) + " on test weeks)" : "") + ", so about 1 week in 10 can come in lower. Nothing here is a promise or financial advice.</p>";
+  document.getElementById("headsup").innerHTML = hu;
+
+  // Week by week: stored values only. "Buffer empty" uses the same test as the empty-buffer figure (below zero).
+  var emptyIcon = '<svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M6 1 11 10.5H1z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><path d="M6 4.5v3M6 9v.3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>';
+  document.getElementById("wksub").textContent = "Simulated driver " + state.driver + ", " + (state.scenario === "storm" ? "snowstorm stress test" : "normal weeks") + ", " + pct(state.risk) + " limit. Straight from the results file.";
+  document.getElementById("weektable").innerHTML = '<thead><tr><th scope="col">Week</th><th scope="col" class="num">Paycheck</th><th scope="col" class="num">Earned after tax</th><th scope="col" class="num">Buffer after payday</th><th scope="col">Why</th></tr></thead><tbody>' +
+    run.weeks.map(function (w) {
+      return "<tr" + (w.week === state.week ? ' aria-current="true"' : "") + '><th scope="row">Week ' + w.week + (storm.indexOf(w.week) >= 0 ? " (snowstorm stress test)" : "") + '</th><td class="num">' + money(w.pay_keel) + '</td><td class="num">' + money(w.net) + '</td><td class="num">' + money(w.buf_keel) +
+        (w.buf_keel < 0 ? '<br><span class="empty">' + emptyIcon + "Buffer empty</span>" : "") + "</td><td>" + esc(w.reason) + "</td></tr>";
+    }).join("") + "</tbody>";
+
+  document.getElementById("c1sub").textContent = "What the driver earned each week after the tax set-aside, next to the paycheck Keel paid. Simulated driver " + state.driver + (state.scenario !== "storm" ? ", normal weeks." : storm.length ? ", snowstorm stress test in week" + (storm.length > 1 ? "s " + storm.slice(0, -1).join(", ") + " and " + storm[storm.length - 1] : " " + storm[0]) + "." : ", snowstorm stress test (the results file does not mark which weeks).");
   var dates = run.weeks.map(function (w) { return w.week_start; });
   var s1 = [{ name: "What you earned (after tax)", short: "Earned", color: C.ink2, thin: true, values: R.net }, { name: "Keel paycheck", short: "Keel", color: C.keel, values: R.pol.keel }];
   legend(document.getElementById("c1legend"), [s1[1], s1[0]], true, true);
@@ -310,7 +218,7 @@ function renderReliability() {
   var C = { keel: css("--keel"), avg4: css("--avg4") };
   var TOY = DATA.meta.model === "toy", rel = KeelData.reliability(DATA, CAL), o = rel.overall, T = rel.targets;
   var src = TOY ? "Toy sample, not our result: the forecast is the prototype's toy, not the real model. " : "Real evaluation on simulated drivers. ";
-  document.getElementById("relsub").textContent = src + "Normal weeks only, on test weeks the model never saw. The snowstorm is left out because it was added after forecasting.";
+  document.getElementById("relsub").textContent = src + "Normal weeks only, on test weeks the model never saw. The snowstorm stress test is left out because it was added after forecasting.";
   document.getElementById("relexplain").innerHTML = "<strong>What calibration means:</strong> each week Keel forecasts a low case and a high case for take-home pay. " +
     "A low case that claims to be right 9 times in 10 should have actual pay at or above it on about 9 weeks in 10. " +
     "Calibration nudges the forecasts, using weeks held back from training, until that claim is true. If the low case is too high, Keel would pay out money that never arrives.";
@@ -353,7 +261,7 @@ function renderReliability() {
 function renderLosses() {
   var name = { avg4: "4-week average", last: "last week’s pay" }, items = [], payGaps = [];
   DATA.runs.forEach(function (r) {
-    var o = r.metrics.overdraft_weeks, tag = "Driver " + r.driver + ", " + (r.scenario === "storm" ? "snowstorm" : "normal weeks") + ", " + pct(r.risk_limit) + " limit";
+    var o = r.metrics.overdraft_weeks, tag = "Driver " + r.driver + ", " + (r.scenario === "storm" ? "snowstorm stress test" : "normal weeks") + ", " + pct(r.risk_limit) + " limit";
     ["avg4", "last"].forEach(function (k) {
       if (o.keel > o[k]) items.push(tag + ": Keel had " + o.keel + " empty-buffer week" + (o.keel === 1 ? "" : "s") + ", " + name[k] + " had " + o[k] + ".");
     });
@@ -470,7 +378,7 @@ function renderStress() {
   document.getElementById("stsub").textContent = (TOY ? "Toy sample, not our result. " : "Simulated drivers, real evaluation runs. ") +
     "Driver " + state.driver + " at a " + pct(state.risk) + " limit (change both above). Before = normal weeks, after = the chosen scenario.";
   document.getElementById("stnote").textContent = "Every number comes from runs in the results file; nothing is simulated in the browser. " +
-    (DATA.meta.storm ? "Snowstorm: " + DATA.meta.storm + ". " : "") + "Depletion risk is the policy's own estimate for the next " + DATA.meta.horizon_weeks + " weeks. Not financial or tax advice.";
+    (DATA.meta.storm ? "Snowstorm stress test: " + DATA.meta.storm + ". " : "") + "Depletion risk is the policy's own estimate for the next " + DATA.meta.horizon_weeks + " weeks. Not financial or tax advice.";
   var charts = document.getElementById("stcharts"), body = document.getElementById("stbody");
   if (!res.available) {
     charts.classList.add("hidden");
@@ -551,7 +459,7 @@ function renderWhy(run) {
     unknown: "<strong>The rule it had to meet:</strong> the risk estimate is not in the file, so we do not guess."
   };
   h += '<p class="note">' + limits[e.constraint] + "</p>";
-  h += '<p class="note"><strong>If earnings fall unexpectedly:</strong> the paycheck for the week is already set, so the buffer covers the gap. ' +
+  h += '<p class="note"><strong>If earnings fall unexpectedly:</strong> the paycheck for the week is already set, so the gap is drawn from the buffer. ' +
     "Next week Keel sees the smaller buffer and the weaker earnings, and may lower the paycheck to keep the risk within your limit. ";
   if (e.fellShort) h += "That happened here: take-home pay was " + money(e.net) + ", " + money(e.shortfall) + " under the low case. The buffer went from " + money(e.bufferBefore) + " to " + money(e.bufferAfter) +
     (e.nextPay === null ? "." : ", and next week's paycheck was " + money(e.nextPay) + " (" + (e.nextPay < e.pay ? "down " : e.nextPay > e.pay ? "up " : "no change") + (e.nextPay === e.pay ? "" : money(Math.abs(e.nextPay - e.pay))) + ").");

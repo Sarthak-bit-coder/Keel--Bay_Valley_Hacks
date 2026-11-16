@@ -162,7 +162,7 @@
   // evaluated. The rest come back available:false and are never simulated in the browser.
   var STRESS_SCENARIOS = [
     { id: "normal", name: "Normal weeks" },
-    { id: "storm", name: "Snowstorm" },
+    { id: "storm", name: "Snowstorm stress test" },
     { id: "demand_crash", name: "Demand crash" },
     { id: "high_earnings", name: "High earnings" }
   ];

@@ -8,7 +8,8 @@ const path = require("node:path");
 const K = require("./data.js");
 
 const ROOT = path.join(__dirname, "..");
-const HTML = fs.readFileSync(path.join(__dirname, "index.html"), "utf8");
+// The page is markup plus app/ui.js and app/charts.js (rendering), so wording rules are checked across both.
+const HTML = fs.readFileSync(path.join(__dirname, "index.html"), "utf8") + fs.readFileSync(path.join(__dirname, "ui.js"), "utf8") + fs.readFileSync(path.join(__dirname, "charts.js"), "utf8");
 // fetch over the repo on disk, resolving URLs the way the browser does from app/index.html.
 const diskFetch = (skip) => (url) => {
   const file = path.join(__dirname, url);
@@ -29,10 +30,10 @@ test("index still loads when results.json is missing", async () => {
   assert.equal(res.data.meta.model, "toy");
 });
 
-test("index has the controls and tabs the script wires up", () => {
-  for (const id of ["driver", "risk", "sc-normal", "sc-storm", "tab-pay", "tab-more", "panel-pay", "panel-more", "tiles", "badgetext"])
+test("index has the controls and views the script wires up", () => {
+  for (const id of ["driver", "risk", "sc-normal", "sc-storm", "view-paycheck", "view-plan", "view-evidence", "hero", "headsup", "weektable", "tiles", "badgetext"])
     assert.match(HTML, new RegExp('id="' + id + '"'), id);
-  assert.match(HTML, /role="tablist"/);
+  for (const view of ["paycheck", "plan", "evidence"]) assert.match(HTML, new RegExp('data-view="' + view + '"'), view);
 });
 
 test("index wording and data rules", () => {

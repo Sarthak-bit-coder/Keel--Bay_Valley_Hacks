@@ -56,7 +56,7 @@
   var css = function (v) { return getComputedStyle(document.documentElement).getPropertyValue(v).trim(); };
   var ease = function (t) { return t < .5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2; };
 
-  var DRAW_MS = 900, MORPH_MS = 1500, HOLD_MS = 250;
+  var DRAW_MS = 1100, MORPH_MS = 1700, HOLD_MS = 450, INTRO_MS = 650;
   var frame = null;
 
   // The hero chart. Motion: the earnings line draws in, then a teal copy of it settles into the Keel paycheck,
@@ -90,19 +90,82 @@
       area.setAttribute("opacity", .09 * t);
       dot.setAttribute("cy", Y(vals[n - 1]));
     }
-    function cards() { ["paycard", "bufcard"].forEach(function (id) { $(id).hidden = false; $(id).classList.add("in"); }); $("replay").hidden = reduced(); }
+    // Story beats under the legend follow the motion: earnings swing, the buffer absorbs it, a steady paycheck.
+    function beat(i) { var b = $("beats"); if (b) b.setAttribute("data-beat", i); }
+    function cards() { scrubber(el, run, X, Y, W, n); beat(2); ["paycard", "bufcard"].forEach(function (id) { $(id).hidden = false; $(id).classList.add("in"); }); $("replay").hidden = reduced(); }
     cancelAnimationFrame(frame);
     if (!animate || reduced()) { set(1); cards(); return; }
     ["paycard", "bufcard"].forEach(function (id) { $(id).hidden = true; $(id).classList.remove("in"); });
     var len = earn.getTotalLength(), start = null;
+    beat(0);
     earn.style.strokeDasharray = len; keel.style.opacity = 0; dot.style.opacity = 0;
     (function tick(now) {
       if (start === null) start = now;
       var e = now - start, a = Math.min(1, e / DRAW_MS), b = Math.min(1, Math.max(0, (e - DRAW_MS - HOLD_MS) / MORPH_MS));
       earn.style.strokeDashoffset = len * (1 - ease(a));
-      if (e >= DRAW_MS) { keel.style.opacity = 1; dot.style.opacity = 1; set(ease(b)); }
+      if (e >= DRAW_MS) { if (b === 0) beat(1); keel.style.opacity = 1; dot.style.opacity = 1; set(ease(b)); }
       if (b < 1) frame = requestAnimationFrame(tick); else cards();
     })(performance.now());
+  }
+
+  // Hover, tap or arrow keys read one week: what was earned, what Keel paid, and the buffer after payday.
+  // The matching bar in the buffer card lights up. Enabled once the story animation has settled.
+  function scrubber(el, run, X, Y, W, n) {
+    var svg = el.querySelector("svg"), ws = run.weeks, NSV = "http://www.w3.org/2000/svg", cur = n - 1;
+    if (!svg) return;
+    var mk = function (tag, attrs) { var e = document.createElementNS(NSV, tag); Object.keys(attrs).forEach(function (k) { e.setAttribute(k, attrs[k]); }); svg.appendChild(e); return e; };
+    var rule = mk("line", { y1: 16, y2: Y(0), stroke: css("--on-navy-3"), "stroke-dasharray": "2 4", "class": "scrub" });
+    var dE = mk("circle", { r: 4, fill: css("--navy-2"), stroke: css("--on-navy-2"), "stroke-width": 2, "class": "scrub" });
+    var dK = mk("circle", { r: 5, fill: css("--teal"), stroke: css("--navy-2"), "stroke-width": 2.5, "class": "scrub" });
+    var tip = document.createElement("div"); tip.className = "htip"; tip.setAttribute("role", "status"); el.appendChild(tip);
+    svg.setAttribute("tabindex", "0"); svg.setAttribute("role", "group");
+    svg.setAttribute("aria-label", svg.getAttribute("aria-label") + " Use the left and right arrow keys to read each week.");
+    var bars = function () { return document.querySelectorAll("#bufcard .bufbars i"); };
+    function show(i) {
+      i = Math.max(0, Math.min(n - 1, i)); cur = i;
+      var w = ws[i], x = X(i), gap = w.pay_keel - w.net;
+      rule.setAttribute("x1", x); rule.setAttribute("x2", x);
+      dE.setAttribute("cx", x); dE.setAttribute("cy", Y(w.net)); dK.setAttribute("cx", x); dK.setAttribute("cy", Y(w.pay_keel));
+      el.classList.add("scrubbing");
+      tip.innerHTML = "<b>" + esc(fmtDate(w.week_start) ? "Week of " + fmtDate(w.week_start) : "Week " + (i + 1)) + "</b>" +
+        '<div><span>Earned, after tax</span><span class="n">' + money(w.net) + "</span></div>" +
+        '<div class="k"><span>Keel paid</span><span class="n">' + money(w.pay_keel) + "</span></div>" +
+        '<div><span>' + (gap > 0 ? "From the buffer" : "Into the buffer") + '</span><span class="n">' + money(Math.abs(gap)) + "</span></div>" +
+        '<div><span>Buffer after payday</span><span class="n">' + money(w.buf_keel) + "</span></div>";
+      var pc = x / W * 100; tip.style.left = pc > 60 ? "auto" : "calc(" + pc + "% + 14px)"; tip.style.right = pc > 60 ? "calc(" + (100 - pc) + "% + 14px)" : "auto";
+      [].forEach.call(bars(), function (b, k) { b.classList.toggle("on", k === i); });
+    }
+    function hide() { el.classList.remove("scrubbing"); [].forEach.call(bars(), function (b) { b.classList.remove("on"); }); }
+    function at(e) { var r = svg.getBoundingClientRect(); show(Math.round(((e.clientX - r.left) / r.width * W - X(0)) / ((X(n - 1) - X(0)) / (n - 1)))); }
+    svg.addEventListener("pointermove", at);
+    svg.addEventListener("pointerdown", at);
+    svg.addEventListener("pointerleave", function (e) { if (e.pointerType === "mouse") hide(); });
+    svg.addEventListener("blur", hide);
+    svg.addEventListener("keydown", function (e) {
+      if (e.key === "ArrowRight" || e.key === "ArrowLeft") { show(cur + (e.key === "ArrowRight" ? 1 : -1)); e.preventDefault(); }
+      if (e.key === "Escape") hide();
+    });
+  }
+
+  // Driver and scenario switches above the hero chart. Each choice is a real run in the results file.
+  function buildSwitch(data, pick, onPick) {
+    var box = $("heroswitch"), drivers = [], seen = {};
+    data.runs.forEach(function (r) { if (!seen[r.driver]) { seen[r.driver] = 1; drivers.push(r); } });
+    var btn = function (key, val, label, title) { return '<button type="button" data-k="' + key + '" data-v="' + esc(val) + '" aria-pressed="' + (pick[key] === val) + '"' + (title ? ' title="' + esc(title) + '"' : "") + ">" + esc(label) + "</button>"; };
+    box.innerHTML = '<div class="sw" role="group" aria-label="Simulated driver"><span class="swl">Driver</span>' +
+      drivers.map(function (r) { return btn("driver", r.driver, r.driver, (r.driver_label || "").replace(/^Driver \w+: /, "")); }).join("") +
+      '</div><div class="sw" role="group" aria-label="Weeks"><span class="swl">Weeks</span>' + btn("scenario", "normal", "Normal") + btn("scenario", "storm", "Snowstorm") + "</div>";
+    box.hidden = false;
+    box.addEventListener("click", function (e) {
+      var b = e.target.closest("button");
+      if (!b || b.getAttribute("aria-pressed") === "true") return;
+      var next = Object.assign({}, pick); next[b.dataset.k] = b.dataset.v;
+      var run = K.findRun(data, next.driver, next.scenario, next.risk);
+      if (!run) return;
+      pick = next;
+      [].forEach.call(box.querySelectorAll("button"), function (x) { x.setAttribute("aria-pressed", String(pick[x.dataset.k] === x.dataset.v)); });
+      onPick(run);
+    });
   }
 
   function fillCards(run) {
@@ -160,12 +223,18 @@
     var data = res.data, toy = data.meta.model === "toy";
     var run = K.findRun(data, HERO.driver, HERO.scenario, HERO.risk) || data.runs[0];
     $("datalabel").textContent = toy ? "Toy data. Not our result." : "Simulation · simulated drivers on real NYC ride-hail data";
-    $("herocap").textContent = (toy ? "Toy sample, not our result. " : "") + "Simulated " + (run.driver_label || "driver " + run.driver).replace(/^Driver/, "driver") + ". " + run.weeks.length +
+    var cal = null;
+    function caption(run) { $("herocap").textContent = (toy ? "Toy sample, not our result. " : "") + "Simulated " + (run.driver_label || "driver " + run.driver).replace(/^Driver/, "driver") + ". " + run.weeks.length +
       " held-out weeks" + (run.weeks[0].week_start ? " from " + fmtDate(run.weeks[0].week_start, { year: "numeric" }) : "") + ", " + (run.scenario === "storm" ? "snowstorm stress test" : "normal weeks") + ", " + pct(run.risk_limit) +
-      " risk limit. The smooth line passes through every weekly paycheck in the results file. No real money moved.";
+      " risk limit. The smooth line passes through every weekly paycheck in the results file. No real money moved."; }
+    caption(run);
     $("proofsub").textContent = "The same simulated driver and weeks as the chart above, read from the results file.";
     fillCards(run);
-    drawHero(run, true);
+    buildSwitch(data, Object.assign({}, HERO), function (next) {
+      run = next; caption(run); fillCards(run); drawHero(run, true); fillHonest(data, run); fillProof(run, cal);
+    });
+    // Tell the story once the headline has landed; reduced motion draws the settled chart at once.
+    if (reduced()) drawHero(run, false); else setTimeout(function () { drawHero(run, true); }, INTRO_MS);
     $("replay").addEventListener("click", function () { drawHero(run, true); });
     root.addEventListener("resize", function () {
       if (root.innerWidth === lastWidth) return;
@@ -176,7 +245,7 @@
     fillHonest(data, run);
     fillProof(run, null);
     document.querySelectorAll("[data-needs-data]").forEach(function (el) { el.hidden = false; });
-    return root.fetch(CALIBRATION, { cache: "no-store" }).then(function (r) { return r.ok ? r.json() : null; }).catch(function () { return null; }).then(function (cal) { fillProof(run, cal); });
+    return root.fetch(CALIBRATION, { cache: "no-store" }).then(function (r) { return r.ok ? r.json() : null; }).catch(function () { return null; }).then(function (c) { cal = c; fillProof(run, cal); });
   }).catch(function () {
     $("datalabel").textContent = "Simulation";
     $("herowait").innerHTML = 'The simulation results could not be loaded. Serve the repo root over HTTP (<code>python3 -m http.server</code>), or <a href="app/">open the app</a>.';

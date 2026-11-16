@@ -4,35 +4,18 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Keel · My pay</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400..700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="tokens.css">
 <style>
-:root {
-  color-scheme: light;
-  --bg: #f9f9f7; --surface: #fcfcfb; --ink: #0b0b0b; --ink2: #52514e; --muted: #898781;
-  --grid: #e1e0d9; --axis: #c3c2b7; --border: rgba(11, 11, 11, 0.10);
-  --keel: #2a78d6; --avg4: #eb6834; --last: #1baf7a; --crit: #d03b3b; --good-text: #006300; --warn: #9a5b00;
-  --font: system-ui, -apple-system, "Segoe UI", sans-serif;
-}
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) {
-    color-scheme: dark;
-    --bg: #0d0d0d; --surface: #1a1a19; --ink: #f0efec; --ink2: #b5b3ad; --muted: #898781;
-    --grid: #2c2c2a; --axis: #383835; --border: rgba(255, 255, 255, 0.10);
-    --keel: #3987e5; --avg4: #e8703f; --last: #199e70; --crit: #e05252; --good-text: #0ca30c; --warn: #f0b45a;
-  }
-}
-:root[data-theme="dark"] {
-  color-scheme: dark;
-  --bg: #0d0d0d; --surface: #1a1a19; --ink: #f0efec; --ink2: #b5b3ad; --muted: #898781;
-  --grid: #2c2c2a; --axis: #383835; --border: rgba(255, 255, 255, 0.10);
-  --keel: #3987e5; --avg4: #e8703f; --last: #199e70; --crit: #e05252; --good-text: #0ca30c; --warn: #f0b45a;
-}
 * { box-sizing: border-box; }
 html, body { margin: 0; }
-body { background: var(--bg); color: var(--ink); font-family: var(--font); font-size: 15px; line-height: 1.5; }
+body { background: var(--bg); color: var(--ink); font-family: var(--font); font-optical-sizing: auto; font-size: 16px; line-height: 1.5; }
 .wrap { max-width: 1080px; margin: 0 auto; padding: 24px 16px 48px; display: flex; flex-direction: column; gap: 20px; }
 h1, h2, h3, p { margin: 0; }
-h1 { font-size: 28px; letter-spacing: -0.01em; text-wrap: balance; }
-h2 { font-size: 17px; text-wrap: balance; }
+h1 { font-size: 32px; font-weight: 650; letter-spacing: -.035em; line-height: 1.2; text-wrap: balance; }
+h2 { font-size: 19px; font-weight: 600; letter-spacing: -.02em; text-wrap: balance; }
 a { color: var(--keel); }
 .sub { color: var(--ink2); max-width: 62ch; }
 .top { display: flex; flex-wrap: wrap; gap: 12px 24px; align-items: flex-end; justify-content: space-between; }
@@ -49,7 +32,7 @@ input[aria-invalid="true"] { border-color: var(--crit); }
 .row { display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end; }
 .row > label.f { flex: 1 1 140px; }
 button { font: inherit; cursor: pointer; border-radius: 6px; padding: 8px 14px; border: 1px solid var(--axis); background: var(--surface); color: var(--ink); }
-button.primary { background: var(--keel); border-color: var(--keel); color: #fff; font-weight: 600; }
+button.primary { background: var(--keel); border-color: var(--keel); color: var(--on-keel); font-weight: 600; }
 button.link { border: 0; background: none; padding: 0; color: var(--keel); text-decoration: underline; text-underline-offset: 2px; }
 button.danger { color: var(--crit); border-color: var(--crit); }
 button:disabled { opacity: .55; cursor: not-allowed; }
@@ -57,7 +40,7 @@ button:focus-visible, select:focus-visible, input:focus-visible { outline: 2px s
 .seg { display: inline-flex; border: 1px solid var(--axis); border-radius: 6px; overflow: hidden; }
 .seg button { border: 0; border-radius: 0; font-size: 13px; color: var(--ink2); background: transparent; padding: 6px 12px; }
 .seg button + button { border-left: 1px solid var(--axis); }
-.seg button[aria-pressed="true"] { background: var(--keel); color: #fff; }
+.seg button[aria-pressed="true"] { background: var(--keel); color: var(--on-keel); }
 .msg { font-size: 13px; min-height: 1.5em; }
 .msg.err { color: var(--crit); }
 .msg.ok { color: var(--good-text); }
@@ -69,7 +52,7 @@ button:focus-visible, select:focus-visible, input:focus-visible { outline: 2px s
 .bar .acts { display: flex; gap: 8px; flex-wrap: wrap; }
 .tiles { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
 .tile .label { font-size: 13px; color: var(--ink2); }
-.tile .value { font-size: 28px; font-weight: 600; line-height: 1.2; margin: 4px 0; }
+.tile .value { font-size: 28px; font-weight: 650; line-height: 1.2; margin: 4px 0; }
 .tile .cmp { font-size: 13px; color: var(--ink2); }
 .payday { display: grid; grid-template-columns: minmax(0, 360px) minmax(0, 1fr); gap: 16px; align-items: center; }
 .phone { background: var(--surface); border: 1px solid var(--border); border-radius: 18px; padding: 14px 16px; box-shadow: 0 6px 20px rgba(0,0,0,.10); display: flex; flex-direction: column; gap: 6px; }
@@ -105,6 +88,38 @@ footer { font-size: 13px; color: var(--muted); }
   #e-table .note-cell, #e-table th.notecol { display: none; }
   th, td { padding: 8px 6px; }
 }
+
+/* ---- Cinematic continuity with the homepage and the simulation ---- */
+:root { --ease: cubic-bezier(.2, .7, .3, 1); --ease-out: cubic-bezier(.16, 1, .3, 1); --atmos: .1; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --atmos: .38; } }
+:root[data-theme="dark"] { --atmos: .38; }
+body { position: relative; isolation: isolate; -webkit-font-smoothing: antialiased; }
+body::before { content: ""; position: absolute; inset: 0 0 auto; height: 520px; z-index: -1; pointer-events: none;
+  background: radial-gradient(60% 80% at 80% 0%, color-mix(in srgb, var(--keel) 16%, transparent), transparent 70%);
+  opacity: var(--atmos); -webkit-mask-image: linear-gradient(180deg, #000, rgba(0, 0, 0, .5) 45%, transparent); mask-image: linear-gradient(180deg, #000, rgba(0, 0, 0, .5) 45%, transparent); }
+h1 { font-size: clamp(32px, 4.4vw, 44px); letter-spacing: -.04em; }
+.badge::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--keel); flex: none; }
+.card, .tile { border-radius: 12px; box-shadow: var(--shadow); transition: border-color .25s var(--ease); }
+.card:hover { border-color: color-mix(in srgb, var(--keel) 28%, var(--border)); }
+button { min-height: 40px; transition: border-color .15s var(--ease), background .15s var(--ease), box-shadow .2s var(--ease), transform .12s var(--ease); }
+button:not(:disabled):not(.link):hover { border-color: var(--ink2); }
+button.primary:not(:disabled):hover { border-color: var(--keel); background: color-mix(in srgb, var(--keel) 88%, var(--ink)); box-shadow: 0 10px 28px -12px color-mix(in srgb, var(--keel) 70%, transparent); }
+button:not(:disabled):active { transform: translateY(1px); }
+input, select { min-height: 40px; transition: border-color .15s var(--ease), box-shadow .15s var(--ease); }
+input:hover, select:hover { border-color: var(--ink2); }
+input:focus-visible, select:focus-visible { box-shadow: 0 0 0 4px color-mix(in srgb, var(--keel) 18%, transparent); }
+.phone { border-radius: 22px; box-shadow: var(--shadow), 0 30px 70px -30px color-mix(in srgb, var(--keel) 45%, transparent); }
+.tile .value { letter-spacing: -.03em; font-variant-numeric: tabular-nums; }
+@media (prefers-reduced-motion: no-preference) {
+  .top, .wrap > .note { animation: mpRise .8s var(--ease-out) both; }
+  .wrap > .note { animation-delay: 80ms; }
+  /* Views fade up each time they are shown (display:none → block restarts the animation). */
+  .card:not([hidden]), .tiles:not([hidden]) { animation: mpRise .7s var(--ease-out) both; }
+  .stack > :nth-child(2) { animation-delay: 70ms; } .stack > :nth-child(3) { animation-delay: 140ms; } .stack > :nth-child(4) { animation-delay: 210ms; }
+  .phone { animation: mpPhone .9s var(--ease-out) .1s both; }
+}
+@keyframes mpRise { from { opacity: 0; transform: translateY(14px); } }
+@keyframes mpPhone { from { opacity: 0; transform: translateY(18px) scale(.97); } }
 </style>
 </head>
 <body>

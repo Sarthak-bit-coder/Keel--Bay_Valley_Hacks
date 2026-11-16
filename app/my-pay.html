@@ -2,6 +2,8 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdn.jsdelivr.net https://accounts.google.com/gsi/client; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://accounts.google.com/gsi/style; font-src https://fonts.gstatic.com; img-src 'self' data: https://*.googleusercontent.com; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://accounts.google.com/gsi/; frame-src https://accounts.google.com/gsi/; form-action 'self'; base-uri 'self'; object-src 'none'">
+<meta name="referrer" content="strict-origin-when-cross-origin">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Keel My Pay</title>
 <meta name="description" content="Log your weekly pay and see a steady weekly paycheck. Demo only: no real money moves, not financial or tax advice.">
@@ -65,10 +67,11 @@
         <button class="btn primary block" type="submit" id="a-submit">Log in</button>
         <p class="msg" id="a-msg" role="status"></p>
       </form>
-      <p class="inset" id="a-off" hidden><span class="ms">info</span>Accounts aren't turned on for this copy of Keel yet. You can still try it without an account below.</p>
+      <p class="inset" id="a-off" hidden><span class="ms">info</span>Accounts aren't turned on for this copy of Keel yet. You can still use "Continue as guest" below.</p>
 
-      <button type="button" class="linkbtn guestlink" id="b-guest">Just looking? Try it without an account →</button>
-      <p class="fine center">Without an account, your info stays only in this browser.</p>
+      <div class="or"><span>or</span></div>
+      <button type="button" class="btn quiet block" id="b-guest"><span class="ms">person</span>Continue as guest</button>
+      <p class="fine center">No sign-up needed. As a guest, your info stays only in this browser.</p>
     </section>
     <p class="sandbox"><span class="ms">lock</span> We never ask for bank logins. No real money moves.</p>
   </main>
@@ -194,6 +197,7 @@
       <nav class="tabs" aria-label="My pay sections">
         <a href="#home" data-sec="home"><span class="ms">home</span>Home</a>
         <a href="#weeks" data-sec="weeks"><span class="ms">calendar_month</span>My weeks</a>
+        <a href="#example" data-sec="example"><span class="ms">help</span>Example</a>
         <a href="#settings" data-sec="settings"><span class="ms">settings</span>Settings</a>
       </nav>
     </div>
@@ -214,15 +218,11 @@
       <div id="d-results" class="stack" hidden>
         <div id="d-warn"></div>
         <section class="card pad cushion" data-fx>
-          <h2>Your savings cushion, explained</h2>
-          <p>Your <b>cushion</b> is money Keel keeps aside for you, like a small savings account. It's what lets your paycheck stay the same every week.</p>
-          <div class="cflow">
-            <div class="up"><span class="ms">trending_up</span><b>Good week</b><span>You earn more than your paycheck. The extra goes <b>into</b> the cushion.</span></div>
-            <div class="down"><span class="ms">trending_down</span><b>Slow week</b><span>You earn less than your paycheck. The cushion <b>fills the gap</b>, so you still get paid the same.</span></div>
-          </div>
+          <div class="row between"><h2>Your savings cushion</h2><a class="linkbtn" href="#example">Confused? See an example →</a></div>
+          <p class="hint">Extra money from good weeks goes in. Slow weeks take money out. That's how your paycheck stays the same.</p>
           <div class="cbar"><div class="cbarfill" id="cbar"></div></div>
           <p class="cnow" id="cnow"></p>
-          <div class="lastweek" id="lastweek"></div>
+          <p class="lastweek" id="lastweek"></p>
         </section>
         <section class="card pad" data-fx>
           <h2>Why this amount?</h2>
@@ -266,9 +266,28 @@
         </form>
       </section>
 
+      <section class="card pad" data-fx id="w-compare" hidden>
+        <h2>Did Keel help? Your weeks with and without it</h2>
+        <p class="hint">"Without Keel" means spending whatever you earned that week (after taxes). "With Keel" means getting your steady paycheck. Your bills are <b id="w-billsline"></b>.</p>
+        <div class="vs">
+          <div class="without"><span class="caps">Without Keel</span><b id="w-short0"></b><span id="w-short0s"></span></div>
+          <div class="with"><span class="caps">With Keel</span><b id="w-short1"></b><span id="w-short1s"></span></div>
+        </div>
+        <div class="legend">
+          <span><i class="swatch" style="background:var(--ink2);opacity:.35"></i>What you earned (after taxes)</span>
+          <span><i class="swatch" style="background:var(--crit);opacity:.6"></i>Weeks below your bills</span>
+          <span><i class="key" style="border-color:var(--keel);border-top-width:3px"></i>Your Keel paycheck</span>
+          <span><i class="key" style="border-color:var(--avg4);border-top-style:dashed"></i>Your weekly bills</span>
+        </div>
+        <div class="plot" id="c-weeks"></div>
+        <h3 class="sub3">Your cushion over time</h3>
+        <p class="hint">Good weeks fill it up. Slow weeks use it. This is what keeps your paycheck steady.</p>
+        <div class="plot" id="c-cushion"></div>
+      </section>
+
       <section class="card" data-fx>
         <div class="cardtop pad">
-          <div><h2>Your weeks</h2><p class="hint">Newest first. Your paycheck shows from your 5th week.</p></div>
+          <div><h2>Week by week</h2><p class="hint">What you earned, what went into or out of your cushion, and what Keel paid you. Your paycheck starts from your 5th week.</p></div>
           <div class="row">
             <button type="button" class="btn quiet" data-export="csv"><span class="ms">download</span>Download</button>
             <button type="button" class="btn quiet" id="d-example2">Use practice weeks</button>
@@ -276,6 +295,29 @@
         </div>
         <div class="scroll"><table id="e-table"></table></div>
         <div class="pager"><span id="e-foot"></span><span class="btns"><button type="button" class="btn quiet" id="e-prev">Newer</button><span id="e-page"></span><button type="button" class="btn quiet" id="e-next">Older</button></span></div>
+      </section>
+    </section>
+
+    <!-- Example with real New York data -->
+    <section class="sec" data-sec="example" aria-label="Example" hidden>
+      <section class="card pad" data-fx>
+        <span class="caps">Example</span>
+        <h2>Meet a weekend ride-share driver in New York</h2>
+        <p>This driver is made up, but their pay is real: every hour they drive, they earn what real New York ride-share drivers earned in that same hour in 2025. They only drive on weekends, so their pay jumps around a lot. Two of these weeks had big snowstorms.</p>
+        <div class="vs ex3">
+          <div class="without"><span class="caps">Their pay each week</span><b id="ex-swing0"></b><span>difference between their best and worst week</span></div>
+          <div class="with"><span class="caps">Their Keel paycheck</span><b id="ex-swing1"></b><span>difference between their biggest and smallest paycheck</span></div>
+          <div class="with"><span class="caps">Weeks they ran out of money</span><b id="ex-od"></b><span id="ex-ods"></span></div>
+        </div>
+        <div class="legend">
+          <span><i class="swatch" style="background:var(--ink2);opacity:.35"></i>What they earned (after taxes)</span>
+          <span><i class="key" style="border-color:var(--keel);border-top-width:3px"></i>Their Keel paycheck</span>
+        </div>
+        <div class="plot" id="c-ex"></div>
+        <p class="lastweek" id="ex-snow"></p>
+        <h3 class="sub3">Their cushion</h3>
+        <div class="plot" id="c-excush"></div>
+        <p class="hint">From our test: Keel replayed 11 real weeks it had never seen before. <a href="./">See the full research</a> if you're curious.</p>
       </section>
     </section>
 
@@ -319,7 +361,8 @@
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
 <script src="config.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js" integrity="sha384-GFr3yTh5lJznCbZfpTtXnwboFsxqtTQoeTZCRHhE0579KrRmlCzen5AA8ohaB5ug" crossorigin="anonymous"></script>
+<script src="data.js"></script>
 <script src="engine.js"></script>
 <script src="jobs.js"></script>
 <script src="store.js"></script>

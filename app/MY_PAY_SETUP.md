@@ -14,7 +14,31 @@
    window.KEEL_SUPABASE = { url: "https://xxxx.supabase.co", anonKey: "eyJ..." };
    ```
    The anon key is meant to be public. Never put the `service_role` key in the page.
-5. Serve the repo root (`python -m http.server 8000`) and open `http://localhost:8000/app/my-pay.html`, or deploy as before.
+5. **(Optional) Google sign-in**, see the next section.
+6. Serve the repo root (`python -m http.server 8000`) and open `http://localhost:8000/app/my-pay.html`, or deploy as before.
+
+## Turn on "Log in with Google"
+
+1. In [Google Cloud Console](https://console.cloud.google.com/) create a project, then **APIs & Services → OAuth consent screen** (External, app name "Keel").
+2. **Credentials → Create credentials → OAuth client ID → Web application.** Under *Authorized redirect URIs* add `https://<your-project>.supabase.co/auth/v1/callback` (Supabase shows this exact URL on its Google provider page).
+3. Copy the **Client ID** and **Client secret** into Supabase: **Authentication → Sign In / Providers → Google**, turn it on, save.
+4. Supabase **Authentication → URL Configuration**: set *Site URL* to where the app lives (for example the GitHub Pages URL) and add `…/app/my-pay.html` to *Redirect URLs*. Add `http://localhost:8000/app/my-pay.html` too for local testing.
+
+The "Log in with Google" button then works with no code change. Until then, pressing it says Google sign-in isn't turned on.
+
+## Security features
+
+- Passwords are handled by Supabase Auth (stored hashed, never seen by this page). New passwords need 8+ characters with a letter and a number, typed twice.
+- Google sign-in uses the PKCE flow.
+- Row level security (`app/supabase_schema.sql`) means each person can only read or change their own profile and weeks, even with the public anon key.
+- After 5 wrong passwords in a row, the page waits 30 seconds before trying again (Supabase also rate-limits on the server).
+- Accounts are logged out after 30 minutes with no activity.
+- Password reset by email ("Forgot it?").
+- The schema limits sizes and ranges of every saved value.
+
+## Sign-up questions
+
+After creating an account (or choosing "try it without an account"), people answer 3 short steps: name and kind of work; usual weekly pay, current savings and monthly bills (rent, utilities, food, travel, loans, other); and tax set-aside and how careful the paycheck should be. Savings become the starting cushion. Bills are compared with the weekly paycheck on the Home tab. If you already ran the schema before, run `app/supabase_schema.sql` again: it adds the `weekly_pay`, `savings` and `expenses` columns.
 
 ## What is real and what is not
 

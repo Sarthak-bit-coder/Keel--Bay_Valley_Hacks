@@ -3,124 +3,157 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Keel: your work changes, your payday shouldn't (simulation)</title>
+<title>Keel Paycheck Planner</title>
 <meta name="description" content="Keel turns uneven gig earnings into a steadier simulated weekly paycheck. Simulated drivers on real NYC ride-hail data. No real money, not financial or tax advice.">
 <!-- Serve or deploy the repo root: this page and app/ both read outputs/results.json. -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400..700&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400..700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=block" rel="stylesheet">
 <link rel="stylesheet" href="app/tokens.css">
 <link rel="stylesheet" href="app/home.css">
-<link rel="preload" as="image" href="app/media/photo-drive.webp">
 </head>
 <body>
 <a class="skip" href="#main">Skip to content</a>
 <div class="progress" aria-hidden="true"></div>
+<p class="strip">Financial planning &amp; simulation demo. No real money moves. Not financial or tax advice.</p>
 
-<div class="opening">
-  <header class="top">
-    <a class="brand" href="./" aria-label="Keel home">
-      <svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true"><path d="M2 6h16M10 6v6M4 12c1.5 3 4 4 6 4s4.5-1 6-4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
-      Keel
-    </a>
+<header class="top">
+  <div class="topin">
+    <a class="brand" href="./" aria-label="Keel home"><span class="logo"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M2 6h16M10 6v6M4 12c1.5 3 4 4 6 4s4.5-1 6-4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></span>Keel</a>
     <nav class="links" aria-label="Main">
       <a href="#how">How it works</a>
-      <a href="#storm">Stress test</a>
-      <a href="#honest">Where it loses</a>
-      <a href="app/my-pay.html">Sign in</a>
+            <a href="#storm">Bad weeks</a>
+            <a href="app/">See the research</a>
+      <a href="app/my-pay.html">Log in</a>
     </nav>
-    <a class="btn small" href="app/">Open the simulation</a>
-  </header>
+    <a class="btn small" href="app/my-pay.html#signup">Sign up</a>
+    <a class="iconlink" href="app/my-pay.html#settings" aria-label="Your account"><span class="ms">person</span></a>
+  </div>
+</header>
 
-  <main id="main">
-    <section class="hero" aria-labelledby="hero-h">
-      <p class="kicker"><span id="datalabel">Simulation</span></p>
-      <h1 id="hero-h" class="kinetic"><span class="sr-only">Your work changes. Your payday shouldn’t.</span><span class="dim" aria-hidden="true"><span class="w" style="--d:0">Your</span> <span class="w" style="--d:1">work</span> <span class="w" style="--d:2">changes.</span></span> <span aria-hidden="true"><span class="w" style="--d:4">Your</span> <span class="w" style="--d:5">payday</span> <span class="w" style="--d:6">shouldn’t.</span></span></h1>
-      <p class="lede">Keel holds your gig payouts in a buffer, forecasts the week ahead, and pays you the steadiest paycheck it can without running the buffer dry.</p>
-      <div class="cta">
-        <a class="btn" href="app/">Open the simulation</a>
-        <a class="btn ghost" href="app/my-pay.html">Try it with your own pay</a>
-      </div>
-      <div class="film" aria-hidden="true">
-        <img src="app/media/photo-drive.webp" width="1344" height="752" alt="" fetchpriority="high" decoding="async">
+<main id="main">
+  <section class="hero" data-currents="dark" data-keel="0.93" aria-labelledby="hero-h">
+    <div class="heroin">
+      <div class="herotext">
+        <p class="kicker"><span class="dot"></span><span id="datalabel">Financial planning demo · no real money moves</span></p>
+        <h1 id="hero-h" class="kinetic"><span class="sr-only">Your work changes. Your payday shouldn’t.</span><span aria-hidden="true"><span class="w" style="--d:0">Your</span> <span class="w" style="--d:1">work</span> <span class="w" style="--d:2">changes.</span></span> <span aria-hidden="true"><span class="w" style="--d:4">Your</span> <span class="w" style="--d:5">payday</span> <span class="w" style="--d:6">shouldn’t.</span></span></h1>
+        <p class="lede">Gig and freelance pay goes up and down. Keel turns it into one steady paycheck every week, with money set aside for taxes and slow weeks.</p>
+        <div class="cta">
+          <a class="btn" href="app/my-pay.html">Plan my paycheck<span class="ms">arrow_forward</span></a>
+          <a class="btn ghost" href="app/">See how it works</a>
+        </div>
+        <ul class="trust">
+          <li><span class="ms">verified_user</span>Free, sign in with Google or email</li>
+          <li><span class="ms">lock</span>No bank logins needed</li>
+        </ul>
       </div>
 
       <figure class="stage" id="stage">
-        <div class="chart">
-          <div class="heroswitch" id="heroswitch" hidden></div>
-          <div class="legend">
-            <span><i class="key earn"></i>What the driver earned, after tax</span>
-            <span><i class="key keel"></i>Keel paycheck</span>
-          </div>
-          <ol class="beats" id="beats" aria-hidden="true">
-            <li>Earnings swing</li>
-            <li>The buffer absorbs the bad weeks</li>
-            <li>One steady paycheck</li>
-          </ol>
-          <div class="plot" id="heroplot"><p class="wait" id="herowait">Loading the simulation…</p></div>
-          <div class="capline">
-            <figcaption id="herocap"></figcaption>
-            <button type="button" class="replay" id="replay" hidden>Replay</button>
-          </div>
+        <div class="stagehead">
+          <div><span class="caps">Example driver</span><b>Uneven pay in, steady paycheck out</b></div>
+          <span class="simchip">Simulation</span>
+        </div>
+        <div class="heroswitch" id="heroswitch" hidden></div>
+        <div class="legend">
+          <span><i class="key earn"></i>Earned, after tax</span>
+          <span><i class="key keel"></i>Keel paycheck</span>
+        </div>
+        <ol class="beats" id="beats" aria-hidden="true">
+          <li>Earnings swing</li>
+          <li>The buffer absorbs the bad weeks</li>
+          <li>One steady paycheck</li>
+        </ol>
+        <div class="plot" id="heroplot"><p class="wait" id="herowait">Loading the simulation…</p></div>
+        <div class="capline">
+          <figcaption id="herocap"></figcaption>
+          <button type="button" class="replay" id="replay" hidden><span class="ms">replay</span>Replay</button>
         </div>
         <div class="cards">
           <div class="paycard" id="paycard" hidden></div>
           <div class="bufcard" id="bufcard" hidden></div>
         </div>
       </figure>
-    </section>
-  </main>
-</div>
-
-<div class="day" data-needs-data hidden>
-  <section class="wrap proof" data-reveal aria-labelledby="proof-h">
-    <h2 id="proof-h">Same earnings. A calmer paycheck.</h2>
-    <p class="sub" id="proofsub"></p>
-    <div class="figures" id="figures"></div>
+    </div>
   </section>
 
   <section class="wrap how" data-reveal id="how" aria-labelledby="how-h">
-    <h2 id="how-h">Four steps, every week</h2>
-    <ol class="steps">
-      <li><b>Hold</b><span>Gig payouts land in a buffer, not straight in checking. A share is set aside for tax.</span></li>
-      <li><b>Forecast</b><span>A model predicts a low, middle and high case for next week’s take-home pay.</span></li>
-      <li><b>Calibrate</b><span>The low case is adjusted until it is right about as often as it claims.</span></li>
-      <li><b>Pay</b><span>Keel pays the highest paycheck that keeps the chance of an empty buffer under your limit.</span></li>
+    <div class="sechead">
+      <div><p class="eyebrow">How it works</p><h2 id="how-h">Three simple steps.</h2></div>
+    </div>
+    <ol class="steps three">
+      <li><span class="ico ms">edit_note</span><span class="caps">Step 1</span><b>Tell us your pay</b><span>Add what you earn each week. Rough numbers are fine.</span></li>
+      <li><span class="ico ms">savings</span><span class="caps">Step 2</span><b>We build a cushion</b><span>Good weeks go into a savings cushion. Some is set aside for taxes.</span></li>
+      <li><span class="ico ms">payments</span><span class="caps">Step 3</span><b>You get paid the same</b><span>Every week you get one steady paycheck. Slow weeks come out of the cushion.</span></li>
     </ol>
   </section>
 
-  <div class="photoband" aria-hidden="true"><img src="app/media/photo-storm.webp" alt="" loading="lazy" width="1344" height="576"></div>
-  <section class="wrap storm" data-reveal id="storm" aria-labelledby="storm-h">
-    <div class="stormtext">
-      <p class="eyebrow">Stress test</p>
-      <h2 id="storm-h">The week the snow came</h2>
-      <p id="stormcopy"></p>
-      <p class="fine" id="stormfine"></p>
-      <a class="textlink" href="app/#plan">Run the stress test yourself</a>
-    </div>
-    <div class="flow" id="stormflow"></div>
-  </section>
-</div>
+  <div data-needs-data hidden>
+    <section class="wrap proof" data-reveal aria-labelledby="proof-h">
+      <div class="sechead">
+        <div><p class="eyebrow">The results</p><h2 id="proof-h">Same pay. A calmer paycheck.</h2></div>
+        <span class="simchip light"><span class="dot"></span>Example driver, tested on real data</span>
+      </div>
+      <p class="sub" id="proofsub"></p>
+      <div class="figures" id="figures"></div>
+    </section>
 
-<div class="night close" data-needs-data hidden>
-  <section class="wrap honest" data-reveal id="honest" aria-labelledby="honest-h">
-    <p class="eyebrow">Evidence</p>
-    <h2 id="honest-h">We publish where Keel loses.</h2>
-    <p class="lede" id="honestcopy"></p>
-    <div class="cta">
-      <a class="btn" href="app/#evidence">See the evidence</a>
-      <a class="btn ghost" href="app/">Open the simulation</a>
+    <section class="wrap storm" data-reveal id="storm" aria-labelledby="storm-h">
+      <div class="stormtext">
+        <p class="eyebrow">A bad week</p>
+        <h2 id="storm-h">The week the snow came</h2>
+        <p id="stormcopy"></p>
+        <p class="fine" id="stormfine"></p>
+        <a class="textlink" href="app/#plan">Try it yourself</a>
+      </div>
+      <div class="flow" id="stormflow"></div>
+    </section>
+  </div>
+
+  <section class="night" data-currents="dark" data-keel="0.94" aria-labelledby="data-h">
+    <div class="wrap nightin">
+      <div>
+        <p class="eyebrow">Real data</p>
+        <h2 id="data-h">Tested on a year of real New York ride-share trips.</h2>
+        <p class="lede">Our example drivers earn what real NYC drivers earned each hour, with real weather and holidays. The drivers themselves are made up.</p>
+        
+      </div>
+      <div class="ngrid">
+        <div class="ncard"><b><span class="ms">tune</span>Honest guesses</b><span>Keel guesses a low, middle and high week ahead, and checks that its low guess is right as often as it says.</span></div>
+        <div class="ncard"><b><span class="ms">function</span>A simple rule</b><span>Your paycheck is the most Keel can pay while keeping your savings cushion safe. No hidden tricks.</span></div>
+        <div class="ncard wide" id="honest" data-needs-data hidden><b><span class="ms">gavel</span>Where Keel falls short</b><span id="honestcopy"></span></div>
+        <div class="ncard wide warnc"><b><span class="ms">info</span>Good to know</b><span><strong>This is a demo. No real money moves. Not financial or tax advice.</strong> Ask a tax pro about your real taxes.</span></div>
+        <div class="nlinks"><a href="app/#evidence"><span class="ms">open_in_new</span>See the proof</a><a href="https://www.nyc.gov/site/tlc/about/tlc-trip-record-data.page" rel="noopener"><span class="ms">dataset</span>NYC TLC trip records</a></div>
+      </div>
     </div>
   </section>
-</div>
+
+  <section class="wrap closer" aria-labelledby="close-h">
+    <div class="ctaband" data-currents="light" data-keel="0.9">
+      <p class="eyebrow">Takes a minute</p>
+      <h2 id="close-h">Get your steady paycheck.</h2>
+      <p class="sub">Sign up, tell us about your pay and bills, and see your weekly paycheck right away.</p>
+      <div class="cta center">
+        <a class="btn dark" href="app/my-pay.html#signup">Sign up free<span class="ms">arrow_forward</span></a>
+        <a class="btn outline" href="app/my-pay.html">Log in</a>
+      </div>
+      <p class="caps">Free · Google or email sign-in · No bank logins</p>
+    </div>
+  </section>
+</main>
 
 <footer class="foot">
-  <p>Built for Bay Valley Hacks 2026. Simulation only: drivers are simulated on real NYC ride-hail data and no real money moves. Keel does not promise income. Not financial or tax advice. Photos are AI-generated illustrations, not real drivers.</p>
+  <div class="footin">
+    <a class="brand" href="./"><span class="logo"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M2 6h16M10 6v6M4 12c1.5 3 4 4 6 4s4.5-1 6-4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></span>Keel</a>
+    <p>Built for Bay Valley Hacks 2026. Simulation only: drivers are simulated on real NYC ride-hail data and no real money moves. Keel does not promise income. Not financial or tax advice.</p>
+    <nav aria-label="Footer"><a href="#how">Methodology</a><a href="app/#evidence">Evidence</a><a href="app/my-pay.html">My pay</a></nav>
+  </div>
 </footer>
 
 <script src="app/data.js"></script>
 <script src="app/paycheck.js"></script>
 <script src="app/home.js"></script>
 <script src="app/motion.js"></script>
+<script src="app/bg.js"></script>
 </body>
 </html>

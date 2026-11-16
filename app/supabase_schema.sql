@@ -31,3 +31,8 @@ create policy "own profile" on public.profiles
 drop policy if exists "own pay" on public.pay_entries;
 create policy "own pay" on public.pay_entries
   for all to authenticated using (auth.uid() = user_id) with check (auth.uid() = user_id);
+
+-- Sign-up money details (added for the simpler sign-up). Safe to run on an existing database.
+alter table public.profiles add column if not exists weekly_pay numeric check (weekly_pay is null or (weekly_pay >= 0 and weekly_pay < 100000));
+alter table public.profiles add column if not exists savings    numeric check (savings is null or (savings >= 0 and savings < 10000000));
+alter table public.profiles add column if not exists expenses   jsonb not null default '{}'::jsonb check (jsonb_typeof(expenses) = 'object' and pg_column_size(expenses) < 2000);

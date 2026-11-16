@@ -132,7 +132,8 @@
       }
     }
 
-    var b0 = START_BUFFER_WEEKS * mean(net.slice(0, MIN_WEEKS));
+    // opts.startBuffer: savings the person already has (from sign-up). Default: half a week of take-home pay.
+    var b0 = opts.startBuffer != null && isFinite(opts.startBuffer) && opts.startBuffer >= 0 ? Number(opts.startBuffer) : START_BUFFER_WEEKS * mean(net.slice(0, MIN_WEEKS));
     var cur = { keel: b0, avg4: b0, last: b0 };
     var weeks = [];
     function decide(i, buffer) {

@@ -36,3 +36,9 @@ create policy "own pay" on public.pay_entries
 alter table public.profiles add column if not exists weekly_pay numeric check (weekly_pay is null or (weekly_pay >= 0 and weekly_pay < 100000));
 alter table public.profiles add column if not exists savings    numeric check (savings is null or (savings >= 0 and savings < 10000000));
 alter table public.profiles add column if not exists expenses   jsonb not null default '{}'::jsonb check (jsonb_typeof(expenses) = 'object' and pg_column_size(expenses) < 2000);
+
+-- Least privilege (security review): the public "anon" role gets no table access at all, and signed-in users
+-- get only the four operations the app uses. RLS policies above still limit them to their own rows.
+revoke all on public.profiles, public.pay_entries from anon;
+revoke all on public.profiles, public.pay_entries from authenticated;
+grant select, insert, update, delete on public.profiles, public.pay_entries to authenticated;

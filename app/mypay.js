@@ -327,13 +327,15 @@
   });
 
   // ---- Dashboard --------------------------------------------------------------------------------
-  var SECS = ["home", "weeks", "settings"];
+  var SECS = ["home", "weeks", "example", "settings"];
   function section() { var h = location.hash.slice(1); return SECS.indexOf(h) >= 0 ? h : "home"; }
   function showSection() {
     var s = section();
     $$(".sec").forEach(function (el) { el.hidden = el.getAttribute("data-sec") !== s; });
     $$("a[data-sec]").forEach(function (a) { if (a.getAttribute("data-sec") === s) a.setAttribute("aria-current", "page"); else a.removeAttribute("aria-current"); });
     if (st.plan && s === "home") drawChart();
+    if (st.plan && s === "weeks") renderCompare(weekly(monthlyBills(st.profile)));
+    if (s === "example") renderExample();
   }
   window.addEventListener("hashchange", function () { if (!$("v-dash").hidden) showSection(); });
 
@@ -414,13 +416,12 @@
     var cover = nx.pay > 0 ? nx.buffer_before / nx.pay : 0;
     $("cbar").style.width = Math.max(2, Math.min(100, cover / 4 * 100)) + "%";
     $("cbar").className = "cbarfill" + (cover < 1 ? " low" : "");
-    $("cnow").innerHTML = "Right now your cushion has <b>" + money(nx.buffer_before) + "</b>" +
-      (nx.pay > 0 ? ", enough to pay you for about <b>" + cover.toFixed(1) + " weeks</b> even if you earned nothing." + (cover < 1 ? " That's low, so Keel is being careful." : cover >= 4 ? " That's a healthy cushion." : "") : ". Keel is rebuilding it before paying you again.");
+    $("cnow").innerHTML = "<b>" + money(nx.buffer_before) + "</b> now" + (nx.pay > 0 ? " · covers about <b>" + cover.toFixed(1) + " weeks</b> of paychecks" + (cover < 1 ? " (low, so Keel is careful)" : "") : " · rebuilding");
     var lw = pl.weeks[pl.weeks.length - 1];
     if (lw) {
       var t = lw.gross - lw.net, d = lw.net - lw.pay_keel;
-      $("lastweek").innerHTML = "<b>Last week (" + fmtWeek(lw.week_start, true) + "):</b> you earned " + money(lw.gross) + ". We set aside " + money(t) + " for taxes, so " + money(lw.net) + " went into your cushion. Keel paid you " + money(lw.pay_keel) + ", so your cushion " +
-        (Math.round(d) > 0 ? "<span class=\"good\">grew by " + money(d) + "</span>." : Math.round(d) < 0 ? "<span class=\"bad\">went down by " + money(-d) + "</span>." : "stayed the same.");
+      $("lastweek").innerHTML = "<b>Last week:</b> earned " + money(lw.gross) + " − " + money(t) + " taxes = " + money(lw.net) + " in. Paid you " + money(lw.pay_keel) + ". Cushion " +
+        (Math.round(d) > 0 ? "<span class=\"good\">+" + money(d) + "</span>" : Math.round(d) < 0 ? "<span class=\"bad\">−" + money(-d) + "</span>" : "unchanged");
     }
 
     $("d-warn").innerHTML = pl.warnings.length ? '<p class="warn"><span class="ms">info</span>Some weeks are missing. Add them (even as $0) for a better paycheck.</p>' : "";
@@ -477,20 +478,110 @@
     svg.addEventListener("pointerleave", function () { tip.hidden = true; hv.setAttribute("opacity", "0"); });
   }
 
+  // ---- My weeks: with vs without Keel ----
+  // Without Keel = spend what you took home that week. With Keel = the steady paycheck. Same weeks, same bills.
+  function renderCompare(wb) {
+    var pl = st.plan;
+    $("w-compare").hidden = !pl || pl.weeks.length < 2;
+    if ($("w-compare").hidden) return;
+    var W = pl.weeks, n = W.length;
+    var nets = W.map(function (w) { return w.net; }), pays = W.map(function (w) { return w.pay_keel; });
+    var swing0 = Math.max.apply(null, nets) - Math.min.apply(null, nets), swing1 = Math.max.apply(null, pays) - Math.min.apply(null, pays);
+    if (wb > 0) {
+      var s0 = nets.filter(function (v) { return v < wb; }).length, s1 = pays.filter(function (v) { return v < wb; }).length;
+      $("w-billsline").textContent = "about " + money(wb) + " a week";
+      $("w-short0").textContent = s0 + " of " + n + " weeks short";
+      $("w-short1").textContent = s1 + " of " + n + " weeks short";
+      $("w-short0s").textContent = "on bills. Your weekly money swung by " + money(swing0) + ".";
+      $("w-short1s").textContent = "on bills. Your paycheck swung by only " + money(swing1) + ".";
+    } else {
+      $("w-billsline").textContent = "not added yet (add them in Settings to compare)";
+      $("w-short0").textContent = money(swing0) + " swing";
+      $("w-short1").textContent = money(swing1) + " swing";
+      $("w-short0s").textContent = "between your best and worst week.";
+      $("w-short1s").textContent = "between your biggest and smallest paycheck.";
+    }
+    if (section() !== "weeks") return;
+    weeksChart($("c-weeks"), W, wb);
+    cushionChart($("c-cushion"), W);
+  }
+  function frame(minV, maxV, n, H) {
+    var ticks = niceTicks(minV, maxV), y0 = ticks[0], y1 = ticks[ticks.length - 1];
+    var Wd = 760, m = { l: 60, r: 14, t: 12, b: 30 };
+    return { W: Wd, H: H, m: m, ticks: ticks,
+      X: function (i) { return m.l + (i + 0.5) * (Wd - m.l - m.r) / n; },
+      bw: (Wd - m.l - m.r) / n,
+      Y: function (v) { return m.t + (1 - (v - y0) / (y1 - y0 || 1)) * (H - m.t - m.b); } };
+  }
+  function axes(f, weeks) {
+    var g = [];
+    f.ticks.forEach(function (v) {
+      g.push('<line x1="' + f.m.l + '" x2="' + (f.W - f.m.r) + '" y1="' + f.Y(v) + '" y2="' + f.Y(v) + '" stroke="' + css(v === 0 ? "--axis" : "--grid") + '"' + (v === 0 ? "" : ' stroke-dasharray="3 4"') + "/>");
+      g.push('<text x="' + (f.m.l - 10) + '" y="' + (f.Y(v) + 4) + '" text-anchor="end" font-size="12" fill="' + css("--muted") + '">' + money(v) + "</text>");
+    });
+    var n = weeks.length, nt = Math.min(n, 5);
+    for (var t = 0; t < nt; t++) { var i = Math.round(t * (n - 1) / Math.max(1, nt - 1)); g.push('<text x="' + f.X(i) + '" y="' + (f.H - 8) + '" text-anchor="middle" font-size="12" fill="' + css("--muted") + '">' + fmtWeek(weeks[i].week_start, true) + "</text>"); }
+    return g;
+  }
+  function weeksChart(el, W, wb) {
+    var all = W.map(function (w) { return w.net; }).concat(W.map(function (w) { return w.pay_keel; }), [0, wb || 0]);
+    var f = frame(Math.min.apply(null, all), Math.max.apply(null, all), W.length, 280), g = axes(f, W);
+    W.forEach(function (w, i) {
+      var low = wb > 0 && w.net < wb;
+      g.push('<rect x="' + (f.X(i) - f.bw * 0.35) + '" y="' + f.Y(Math.max(0, w.net)) + '" width="' + f.bw * 0.7 + '" height="' + Math.max(1, f.Y(0) - f.Y(Math.max(0, w.net))) + '" rx="2" fill="' + css(low ? "--crit" : "--ink2") + '" opacity="' + (low ? .55 : .3) + '"><title>' + fmtWeek(w.week_start) + ": earned " + money(w.net) + " after taxes</title></rect>");
+    });
+    if (wb > 0) g.push('<line x1="' + f.m.l + '" x2="' + (f.W - f.m.r) + '" y1="' + f.Y(wb) + '" y2="' + f.Y(wb) + '" stroke="' + css("--avg4") + '" stroke-width="2" stroke-dasharray="6 4"/>');
+    g.push('<polyline points="' + W.map(function (w, i) { return f.X(i) + "," + f.Y(w.pay_keel); }).join(" ") + '" fill="none" stroke="' + css("--keel") + '" stroke-width="3" stroke-linejoin="round"/>');
+    el.innerHTML = '<svg viewBox="0 0 ' + f.W + " " + f.H + '" role="img" aria-label="Weekly earnings as bars, the steady Keel paycheck as a line, and weekly bills as a dashed line">' + g.join("") + "</svg>";
+  }
+  function cushionChart(el, W, b0) {
+    var vals = W.map(function (w) { return w.buf_keel; });
+    var f = frame(Math.min.apply(null, vals.concat([0])), Math.max.apply(null, vals), W.length, 200), g = axes(f, W);
+    var pts = W.map(function (w, i) { return f.X(i) + "," + f.Y(w.buf_keel); });
+    g.push('<polygon points="' + f.X(0) + "," + f.Y(0) + " " + pts.join(" ") + " " + f.X(W.length - 1) + "," + f.Y(0) + '" fill="' + css("--keel") + '" opacity=".15"/>');
+    g.push('<polyline points="' + pts.join(" ") + '" fill="none" stroke="' + css("--keel") + '" stroke-width="2.5" stroke-linejoin="round"/>');
+    W.forEach(function (w, i) {
+      var prev = i ? W[i - 1].buf_keel : (b0 != null ? b0 : st.plan.b0), up = w.buf_keel >= prev;
+      g.push('<circle cx="' + f.X(i) + '" cy="' + f.Y(w.buf_keel) + '" r="3.5" fill="' + css(up ? "--keel" : "--crit") + '"><title>' + fmtWeek(w.week_start) + ": cushion " + money(w.buf_keel) + (up ? " (filled up)" : " (used)") + "</title></circle>");
+    });
+    el.innerHTML = '<svg viewBox="0 0 ' + f.W + " " + f.H + '" role="img" aria-label="Savings cushion balance each week">' + g.join("") + "</svg>";
+  }
+
+  // ---- Example tab: one real run from outputs/results.json (driver C, snowstorm weeks, 5% limit) ----
+  var EX = null;
+  function renderExample() {
+    if (!window.KeelData) return;
+    (EX ? Promise.resolve(EX) : window.KeelData.loadData(window.fetch.bind(window)).then(function (r) { EX = r.data; return EX; })).then(function (d) {
+      var run = window.KeelData.findRun(d, "C", "storm", 0.05) || d.runs[0], W = run.weeks, M = run.metrics;
+      $("ex-swing0").textContent = money(M.earnings_swing);
+      $("ex-swing1").textContent = money(M.pay_swing.keel);
+      $("ex-od").textContent = M.overdraft_weeks.keel + " of " + W.length + " with Keel";
+      $("ex-ods").textContent = "vs " + M.overdraft_weeks.last + " of " + W.length + " if they paid themselves last week's earnings";
+      var sw = window.KeelData.stormWeeks(run, d.meta) || [], cand = W.filter(function (w) { return sw.indexOf(w.week) >= 0; });
+      if (!cand.length) cand = W;
+      var worst = cand.reduce(function (a, w) { return (w.pay_keel - w.net) > (a.pay_keel - a.net) ? w : a; }, cand[0]);
+      $("ex-snow").innerHTML = "<b>Snow week (" + fmtWeek(worst.week_start, true) + "):</b> they only took home " + money(worst.net) + ". Keel still paid them " + money(worst.pay_keel) + ", and the cushion covered the other " + money(worst.pay_keel - worst.net) + ".";
+      weeksChart($("c-ex"), W, 0);
+      cushionChart($("c-excush"), W, W[0].buf_keel - (W[0].net - W[0].pay_keel));
+    }).catch(function () { $("ex-snow").textContent = "The example data couldn't load. Open the site from a web server (see README)."; });
+  }
+
   // ---- My weeks --------------------------------------------------------------------------------------
   function byWeekPlan() { var o = {}; (st.plan ? st.plan.weeks : []).forEach(function (w) { o[w.week_start] = w; }); return o; }
   function renderLog() {
-    var tax = st.profile.tax_rate, pw = byWeekPlan();
+    var tax = st.profile.tax_rate, pw = byWeekPlan(), wb = weekly(monthlyBills(st.profile));
     var list = st.entries.slice().reverse(), pages = Math.max(1, Math.ceil(list.length / PAGE));
     st.page = Math.min(st.page, pages - 1);
     var slice = list.slice(st.page * PAGE, st.page * PAGE + PAGE);
     if (!list.length) $("e-table").innerHTML = '<tbody><tr><td class="hint" style="padding:24px">No weeks yet. Add your first week above.</td></tr></tbody>';
-    else $("e-table").innerHTML = '<thead><tr><th>Week of</th><th class="num">You earned</th><th class="num">Taxes</th><th class="num">Your paycheck</th><th class="num">Cushion</th><th>Note</th><th class="num"><span class="sr-only">Edit or delete</span></th></tr></thead><tbody>' +
+    else $("e-table").innerHTML = '<thead><tr><th>Week of</th><th class="num">You earned</th><th class="num">Taxes</th><th class="num">Into / out of cushion</th><th class="num">Keel paid you</th><th class="num">Cushion after</th>' + (wb ? "<th>Bills covered?</th>" : "") + '<th>Note</th><th class="num"><span class="sr-only">Edit or delete</span></th></tr></thead><tbody>' +
       slice.map(function (e) {
-        var w = pw[e.week_start];
+        var w = pw[e.week_start], flow = w ? w.net - w.pay_keel : 0;
         return "<tr><td><b>" + fmtWeek(e.week_start) + '</b></td><td class="num">' + money(e.gross) + '</td><td class="num hint">' + money(e.gross * tax) +
+          '</td><td class="num">' + (w ? (Math.round(flow) === 0 ? '<span class="hint">no change</span>' : '<span class="' + (flow < 0 ? "neg" : "pos") + '">' + (flow < 0 ? "↓ " : "↑ ") + money(Math.abs(flow)) + "</span>") : '<span class="hint">—</span>') +
           '</td><td class="num">' + (w ? "<b>" + money(w.pay_keel) + "</b>" : '<span class="hint">—</span>') +
           '</td><td class="num">' + (w ? '<span class="' + (w.buf_keel < 0 ? "neg" : "") + '">' + money(w.buf_keel) + "</span>" : '<span class="hint">—</span>') +
+          (wb ? "</td><td>" + (w ? (w.pay_keel >= wb ? '<span class="status">Yes</span>' : '<span class="status bad">Short ' + money(wb - w.pay_keel) + "</span>") : '<span class="hint">—</span>') : "") +
           '</td><td class="notecell">' + esc(e.note) + '</td><td class="num"><span class="acts"><button type="button" class="iconbtn sm" data-edit="' + e.week_start + '" aria-label="Edit week of ' + fmtWeek(e.week_start) + '"><span class="ms">edit</span></button><button type="button" class="iconbtn sm del" data-del="' + e.week_start + '" aria-label="Delete week of ' + fmtWeek(e.week_start) + '"><span class="ms">delete</span></button></span></td></tr>';
       }).join("") + "</tbody>";
     $("e-foot").textContent = list.length + " week" + (list.length === 1 ? "" : "s") + " saved";
@@ -499,6 +590,7 @@
     $("e-prev").disabled = st.page === 0;
     $("e-next").disabled = st.page >= pages - 1;
     resetClear();
+    renderCompare(wb);
   }
   $("e-prev").addEventListener("click", function () { st.page--; renderLog(); });
   $("e-next").addEventListener("click", function () { st.page++; renderLog(); });
@@ -630,7 +722,7 @@
       }
     });
   }
-  var redraw = function () { if (st.plan && !$("v-dash").hidden) drawChart(); };
+  var redraw = function () { if (st.plan && !$("v-dash").hidden) { drawChart(); renderCompare(weekly(monthlyBills(st.profile))); } };
   if (window.matchMedia) window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", redraw);
   new MutationObserver(redraw).observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
   var rt = null;

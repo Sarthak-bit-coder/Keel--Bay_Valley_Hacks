@@ -47,3 +47,18 @@
   --shadow: 0 1px 2px rgba(0, 0, 0, .3), 0 8px 24px -12px rgba(0, 0, 0, .6);
 }
 :root { --display: "Instrument Serif", Georgia, "Times New Roman", serif; }
+
+/* Fintech pass: navy on white, Figtree for text and figures, League Spartan for display. The teal stays the
+   Keel brand colour and always means "the Keel paycheck". Dark-mode blocks above still win (higher specificity). */
+:root {
+  --bg: #ffffff; --surface: #ffffff; --surface-2: #f3f4f6; --ink: #1f2b4d; --ink2: #3b4767; --muted: #5b6480;
+  --grid: #e7e8ec; --axis: #8a91a6; --border: #e1e3e8; --keel-soft: #e2f4ee;
+  --navy: #0b1533; --navy-2: #111d42; --navy-3: #1b2a57; --navy-line: rgba(220, 228, 255, .14);
+  --on-navy: #ffffff; --on-navy-2: #c8d0e6; --on-navy-3: #a4aecb;
+  --field-dark: #05070a; --field-warm: #e3e1dc;
+  --font: "Figtree", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --display: "League Spartan", "Figtree", system-ui, sans-serif;
+  --radius: 4px;
+  --ease-out: cubic-bezier(.16, 1, .3, 1);
+}
+body { font-variant-numeric: tabular-nums; }

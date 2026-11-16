@@ -8,11 +8,13 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <!-- Falls back to the system font if offline. -->
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400..700&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=League+Spartan:wght@600;700&family=Figtree:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="tokens.css">
 <link rel="stylesheet" href="keel.css">
+<link rel="stylesheet" href="fx.css">
 </head>
 <body>
+<div class="fx-progress" aria-hidden="true"></div>
 <a class="skip" href="#main">Skip to content</a>
 
 <header class="masthead">
@@ -57,7 +59,7 @@
       <section class="card headsup" id="headsup" aria-labelledby="hu-h" aria-live="polite"></section>
       <section class="tiles" id="tiles" aria-label="How steady the paycheck was"></section>
 
-      <section class="card" aria-labelledby="c1-h">
+      <section class="card" data-fx aria-labelledby="c1-h">
         <div class="cardtop">
           <header>
             <h2 id="c1-h">Earnings swing. The paycheck holds steady.</h2>
@@ -70,7 +72,7 @@
         <div class="scroll hidden" id="c1table"></div>
       </section>
 
-      <section class="card" aria-labelledby="c2-h">
+      <section class="card" data-fx aria-labelledby="c2-h">
         <header>
           <h2 id="c2-h">The buffer absorbs the bad weeks</h2>
           <p>Same earnings and same starting buffer under three ways of paying yourself. Below zero means an overdraft.</p>
@@ -80,7 +82,7 @@
         <div class="scroll hidden" id="c2table"></div>
       </section>
 
-      <section class="card" aria-labelledby="wk-h">
+      <section class="card" data-fx aria-labelledby="wk-h">
         <header><h2 id="wk-h">Week by week</h2><p id="wksub"></p></header>
         <div class="scroll"><table id="weektable"></table></div>
       </section>
@@ -102,7 +104,7 @@
           <button type="button" data-jump="whatif-h">Compare all settings</button>
         </nav>
         <div class="stack">
-          <section class="card" aria-labelledby="opt-h">
+          <section class="card" data-fx aria-labelledby="opt-h">
             <header>
               <h2 id="opt-h">Choose a paycheck</h2>
               <p id="optsub"></p>
@@ -113,7 +115,7 @@
             <p class="note" id="optnote"></p>
           </section>
 
-          <section class="card" aria-labelledby="st-h">
+          <section class="card" data-fx aria-labelledby="st-h">
             <header>
               <h2 id="st-h">Stress test</h2>
               <p id="stsub"></p>
@@ -131,7 +133,7 @@
             <p class="note" id="stnote"></p>
           </section>
 
-          <section class="card" aria-labelledby="rec-h">
+          <section class="card" data-fx aria-labelledby="rec-h">
             <header>
               <h2 id="rec-h">Buffer recovery</h2>
               <p id="recsub"></p>
@@ -144,7 +146,7 @@
             <p class="note" id="recnote"></p>
           </section>
 
-          <section class="card" aria-labelledby="bd-h">
+          <section class="card" data-fx aria-labelledby="bd-h">
             <header>
               <h2 id="bd-h">Where the money went</h2>
               <p id="bdsub"></p>
@@ -154,7 +156,7 @@
             <p class="note" id="bdnote"></p>
           </section>
 
-          <section class="card" aria-labelledby="why-h" id="whycard">
+          <section class="card" data-fx aria-labelledby="why-h" id="whycard">
             <header>
               <h2 id="why-h">Why this paycheck?</h2>
               <p id="whysub"></p>
@@ -176,7 +178,7 @@
             <p class="note" id="whynote"></p>
           </section>
 
-          <section class="card" aria-labelledby="whatif-h">
+          <section class="card" data-fx aria-labelledby="whatif-h">
             <header>
               <h2 id="whatif-h">Compare all settings</h2>
               <p id="whatifsub"></p>
@@ -204,7 +206,7 @@
           <button type="button" data-jump="checks-h">Safety checks</button>
         </nav>
         <div class="stack">
-          <section class="card" aria-labelledby="how-h">
+          <section class="card" data-fx aria-labelledby="how-h">
             <header><h2 id="how-h">How it works</h2><p>Four steps run every week for each simulated driver.</p></header>
             <ol class="steps">
               <li><b>Hold</b><span>Gig payouts land in a buffer, not straight in checking. A share is set aside for tax.</span></li>
@@ -214,7 +216,7 @@
             </ol>
           </section>
 
-          <section class="card" aria-labelledby="score-h">
+          <section class="card" data-fx aria-labelledby="score-h">
             <header>
               <h2 id="score-h">Scorecard</h2>
               <p>The three questions we wrote down before the real run, answered from the results file for the driver and settings selected above.</p>
@@ -223,7 +225,7 @@
             <p class="note" id="loses"></p>
           </section>
 
-          <section class="card" aria-labelledby="rel-h">
+          <section class="card" data-fx aria-labelledby="rel-h">
             <header>
               <h2 id="rel-h">Forecast reliability</h2>
               <p id="relsub"></p>
@@ -239,7 +241,7 @@
             <p class="note" id="relnote"></p>
           </section>
 
-          <section class="card" aria-labelledby="bm-h">
+          <section class="card" data-fx aria-labelledby="bm-h">
             <header>
               <h2 id="bm-h">Benchmark: Keel against simple pay rules</h2>
               <p id="bmsub"></p>
@@ -254,12 +256,12 @@
             <p class="note" id="bmnote"></p>
           </section>
 
-          <section class="card" aria-labelledby="lose-h">
+          <section class="card" data-fx aria-labelledby="lose-h">
             <header><h2 id="lose-h">Where Keel loses</h2><p>Across every driver, scenario and limit in the results file, not only the one selected above.</p></header>
             <ul class="plain" id="losslist"></ul>
           </section>
 
-          <section class="card" aria-labelledby="checks-h">
+          <section class="card" data-fx aria-labelledby="checks-h">
             <header><h2 id="checks-h">Safety checks</h2><p>Plain arithmetic that must hold every week, whatever the model says.</p></header>
             <div class="scroll"><table id="checks"></table></div>
           </section>
@@ -278,5 +280,6 @@
 <script src="charts.js"></script>
 <script src="ui.js"></script>
 <script src="motion.js"></script>
+<script src="fx.js"></script>
 </body>
 </html>

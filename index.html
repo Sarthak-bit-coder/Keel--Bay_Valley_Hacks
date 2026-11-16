@@ -3,57 +3,57 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Keel: your work changes, your payday shouldn't (simulation)</title>
+<title>Keel: a steady paycheck from gig pay (simulation)</title>
 <meta name="description" content="Keel turns uneven gig earnings into a steadier simulated weekly paycheck. Simulated drivers on real NYC ride-hail data. No real money, not financial or tax advice.">
 <!-- Serve or deploy the repo root: this page and app/ both read outputs/results.json. -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400..700&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=League+Spartan:wght@600;700&family=Figtree:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="app/tokens.css">
 <link rel="stylesheet" href="app/home.css">
-<link rel="preload" as="image" href="app/media/photo-drive.webp">
+<link rel="stylesheet" href="app/fx.css">
 </head>
 <body>
 <a class="skip" href="#main">Skip to content</a>
-<div class="progress" aria-hidden="true"></div>
+<div class="fx-progress" aria-hidden="true"></div>
 
-<div class="opening">
-  <header class="top">
-    <a class="brand" href="./" aria-label="Keel home">
-      <svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true"><path d="M2 6h16M10 6v6M4 12c1.5 3 4 4 6 4s4.5-1 6-4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
-      Keel
-    </a>
-    <nav class="links" aria-label="Main">
-      <a href="#how">How it works</a>
-      <a href="#storm">Stress test</a>
-      <a href="#honest">Where it loses</a>
-    </nav>
-    <a class="btn small" href="app/">Open the simulation</a>
-  </header>
+<header class="top wrap">
+  <a class="brand" href="./" aria-label="Keel home">
+    <svg width="22" height="22" viewBox="0 0 20 20" aria-hidden="true"><path d="M2 6h16M10 6v6M4 12c1.5 3 4 4 6 4s4.5-1 6-4" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>
+    Keel
+  </a>
+  <nav class="links" aria-label="Main">
+    <a href="#compare">Compare</a>
+    <a href="#how">How it works</a>
+    <a href="#lab">Stress lab</a>
+    <a href="app/#evidence">Evidence</a>
+  </nav>
+  <a class="btn small" href="app/">Open the app</a>
+</header>
 
-  <main id="main">
-    <section class="hero" aria-labelledby="hero-h">
-      <p class="kicker"><span id="datalabel">Simulation</span></p>
-      <h1 id="hero-h" class="kinetic"><span class="sr-only">Your work changes. Your payday shouldn’t.</span><span class="dim" aria-hidden="true"><span class="w" style="--d:0">Your</span> <span class="w" style="--d:1">work</span> <span class="w" style="--d:2">changes.</span></span> <span aria-hidden="true"><span class="w" style="--d:4">Your</span> <span class="w" style="--d:5">payday</span> <span class="w" style="--d:6">shouldn’t.</span></span></h1>
-      <p class="lede">Keel holds your gig payouts in a buffer, forecasts the week ahead, and pays you the steadiest paycheck it can without running the buffer dry.</p>
+<main id="main">
+  <section class="hero wrap" aria-labelledby="hero-h">
+    <h1 id="hero-h" class="hero-h">Your work changes.<br>Your payday shouldn’t.</h1>
+    <div class="hero-copy" data-fx>
+      <p class="lede">Keel holds your payouts in a buffer, forecasts next week, and pays you the steadiest weekly paycheck it can without running dry.</p>
       <div class="cta">
         <a class="btn" href="app/">Open the simulation</a>
-        <a class="btn ghost" href="app/my-pay.html">Try it with your own pay</a>
+        <a class="btn ghost" href="app/my-pay.html">Try your own pay</a>
       </div>
-      <div class="film" aria-hidden="true">
-        <img src="app/media/photo-drive.webp" width="1344" height="752" alt="" fetchpriority="high" decoding="async">
-      </div>
+      <p class="datalabel" id="datalabel">Simulation</p>
+    </div>
 
+    <div class="stagefield" data-shutter>
       <figure class="stage" id="stage">
-        <div class="chart">
+        <div class="chart" data-ui>
           <div class="heroswitch" id="heroswitch" hidden></div>
           <div class="legend">
-            <span><i class="key earn"></i>What the driver earned, after tax</span>
+            <span><i class="key earn"></i>Earned, after tax</span>
             <span><i class="key keel"></i>Keel paycheck</span>
           </div>
           <ol class="beats" id="beats" aria-hidden="true">
             <li>Earnings swing</li>
-            <li>The buffer absorbs the bad weeks</li>
+            <li>The buffer absorbs it</li>
             <li>One steady paycheck</li>
           </ol>
           <div class="plot" id="heroplot"><p class="wait" id="herowait">Loading the simulation…</p></div>
@@ -62,64 +62,112 @@
             <button type="button" class="replay" id="replay" hidden>Replay</button>
           </div>
         </div>
-        <div class="cards">
-          <div class="paycard" id="paycard" hidden></div>
-          <div class="bufcard" id="bufcard" hidden></div>
+        <div class="cards" data-ui>
+          <div class="paycard" id="paycard" hidden data-tilt></div>
+          <div class="bufcard" id="bufcard" hidden data-tilt></div>
         </div>
       </figure>
+    </div>
+  </section>
+
+  <section class="tape" aria-label="Weekly ledger for the simulated driver" data-needs-data hidden>
+    <div class="ticker" tabindex="0" aria-label="Weekly ledger, scrolls sideways; hover or focus to pause">
+      <ul class="ticker-track" id="ticker"></ul>
+    </div>
+  </section>
+
+  <div data-needs-data hidden>
+    <section class="wrap proof" data-fx aria-labelledby="proof-h">
+      <h2 id="proof-h">Same earnings. A calmer paycheck.</h2>
+      <p class="sub" id="proofsub"></p>
+      <div class="figures" id="figures"></div>
     </section>
-  </main>
-</div>
 
-<div class="day" data-needs-data hidden>
-  <section class="wrap proof" data-reveal aria-labelledby="proof-h">
-    <h2 id="proof-h">Same earnings. A calmer paycheck.</h2>
-    <p class="sub" id="proofsub"></p>
-    <div class="figures" id="figures"></div>
-  </section>
+    <section class="wrap compare" id="compare" data-fx aria-labelledby="compare-h">
+      <h2 id="compare-h">Three ways to pay yourself</h2>
+      <p class="sub" id="comparesub"></p>
+      <div class="ctable" id="ctable" role="table" aria-labelledby="compare-h"></div>
+    </section>
 
-  <section class="wrap how" data-reveal id="how" aria-labelledby="how-h">
-    <h2 id="how-h">Four steps, every week</h2>
-    <ol class="steps">
-      <li><b>Hold</b><span>Gig payouts land in a buffer, not straight in checking. A share is set aside for tax.</span></li>
-      <li><b>Forecast</b><span>A model predicts a low, middle and high case for next week’s take-home pay.</span></li>
-      <li><b>Calibrate</b><span>The low case is adjusted until it is right about as often as it claims.</span></li>
-      <li><b>Pay</b><span>Keel pays the highest paycheck that keeps the chance of an empty buffer under your limit.</span></li>
-    </ol>
-  </section>
+    <section class="filmband" aria-label="Keel in motion">
+      <video id="herovideo" muted loop playsinline preload="none" poster="app/media/hero-wave.webp" data-src-webm="app/media/hero-wave.webm" data-src-mp4="app/media/hero-wave.mp4" aria-hidden="true"></video>
+      <img class="fx-drift" src="app/media/hero-wave.webp" alt="" width="1344" height="752" loading="lazy">
+      <p class="filmline wrap">A jagged week goes in. A level paycheck comes out.</p>
+    </section>
 
-  <div class="photoband" aria-hidden="true"><img src="app/media/photo-storm.webp" alt="" loading="lazy" width="1344" height="576"></div>
-  <section class="wrap storm" data-reveal id="storm" aria-labelledby="storm-h">
-    <div class="stormtext">
-      <p class="eyebrow">Stress test</p>
-      <h2 id="storm-h">The week the snow came</h2>
-      <p id="stormcopy"></p>
-      <p class="fine" id="stormfine"></p>
-      <a class="textlink" href="app/#plan">Run the stress test yourself</a>
-    </div>
-    <div class="flow" id="stormflow"></div>
-  </section>
-</div>
+    <section class="wrap how" id="how" aria-labelledby="how-h">
+      <h2 id="how-h">One week, four moves</h2>
+      <div class="calls" id="calls"></div>
+    </section>
 
-<div class="night close" data-needs-data hidden>
-  <section class="wrap honest" data-reveal id="honest" aria-labelledby="honest-h">
-    <p class="eyebrow">Evidence</p>
-    <h2 id="honest-h">We publish where Keel loses.</h2>
-    <p class="lede" id="honestcopy"></p>
-    <div class="cta">
-      <a class="btn" href="app/#evidence">See the evidence</a>
-      <a class="btn ghost" href="app/">Open the simulation</a>
-    </div>
-  </section>
-</div>
+    <section class="labsec" id="lab" aria-labelledby="lab-h">
+      <div class="wrap labhead" data-fx>
+        <h2 id="lab-h">Stress lab</h2>
+        <p class="sub">Pick a driver, a kind of week and how much risk you accept. Every figure is a run that was already evaluated.</p>
+      </div>
+      <div class="wrap labgrid">
+        <div class="labctl" data-ui>
+          <div class="ctl" role="group" aria-label="Simulated driver" id="labdriver"></div>
+          <div class="ctl" role="group" aria-label="Weeks" id="labscen"></div>
+          <label class="slider" for="labrisk"><span>Risk limit <b id="labriskv">5%</b></span>
+            <input type="range" id="labrisk" min="0" max="3" step="1" value="1" aria-describedby="labriskhint">
+          </label>
+          <p class="hint" id="labriskhint">The chance of the buffer running dry you are willing to accept.</p>
+        </div>
+        <div class="labout" data-ui aria-live="polite">
+          <div class="lfig"><span>Average paycheck</span><b id="lab-pay"></b></div>
+          <div class="lfig"><span>Paycheck swing</span><b id="lab-swing"></b></div>
+          <div class="lfig"><span>Weeks the buffer ran out</span><b id="lab-od"></b></div>
+          <div class="lspark" id="lab-spark"></div>
+        </div>
+      </div>
+      <div class="wrap stormrow" id="storm">
+        <figure class="photo" data-shutter><img src="app/media/photo-storm.webp" alt="A city street in heavy snow at night" width="1344" height="576" loading="lazy"></figure>
+        <div class="stormtext" data-fx>
+          <h3>The week the snow came</h3>
+          <p id="stormcopy"></p>
+          <div class="flow" id="stormflow" data-ui></div>
+          <p class="fine" id="stormfine"></p>
+        </div>
+      </div>
+    </section>
+
+    <section class="wrap stack-names" aria-label="What Keel is built on">
+      <p>Built on</p>
+      <ul><li>NYC TLC trip records</li><li>LightGBM</li><li>Conformal prediction</li><li>Monte Carlo</li></ul>
+    </section>
+
+    <section class="wrap photos" aria-label="The people Keel is for">
+      <figure class="p-tall"><img src="app/media/photo-worker.webp" alt="A delivery driver at the wheel at sunset, an insulated food bag on the seat" width="896" height="1120" loading="lazy"><figcaption>Built for pay that arrives unevenly.</figcaption></figure>
+      <figure class="p-wide"><img src="app/media/photo-drive.webp" alt="A city street at night through a car windshield" width="1344" height="752" loading="lazy"><figcaption>Some weeks are busy. Some are not.</figcaption></figure>
+      <figure class="p-wide"><img src="app/media/photo-plan.webp" alt="Keys, a phone and an envelope of bills on a kitchen table at night" width="1344" height="576" loading="lazy"><figcaption>Rent arrives on schedule either way.</figcaption></figure>
+    </section>
+
+    <section class="wrap honest" id="honest" data-fx aria-labelledby="honest-h">
+      <h2 id="honest-h">We publish where Keel loses.</h2>
+      <p class="lede" id="honestcopy"></p>
+      <div class="cta">
+        <a class="btn" href="app/#evidence">See the evidence</a>
+        <a class="btn ghost" href="app/my-pay.html">Try your own pay</a>
+      </div>
+    </section>
+  </div>
+</main>
 
 <footer class="foot">
-  <p>Built for Bay Valley Hacks 2026. Simulation only: drivers are simulated on real NYC ride-hail data and no real money moves. Keel does not promise income. Not financial or tax advice. Photos are AI-generated illustrations, not real drivers.</p>
+  <div class="tiles">
+    <div class="tile t-state"><p>A steady weekly paycheck from uneven gig pay.</p><small>Built for Bay Valley Hacks 2026. Simulation only: drivers are simulated on real NYC ride-hail data and no real money moves. Not financial or tax advice. Photos are AI-generated illustrations, not real drivers.</small></div>
+    <nav class="tile t-nav" aria-label="Footer"><a href="app/">Paycheck</a><a href="app/#plan">Plan</a><a href="app/#evidence">Evidence</a><a href="app/my-pay.html">My pay</a></nav>
+    <div class="tile t-time"><p>Payday</p><b id="payclock">Friday</b></div>
+    <div class="tile t-mark" aria-hidden="true"><svg viewBox="0 0 300 100" width="100%" height="100%"><text x="150" y="80" text-anchor="middle" font-family="League Spartan, Figtree, sans-serif" font-weight="700" font-size="104" letter-spacing="-6" fill="currentColor">Keel</text></svg></div>
+    <a class="tile t-go" href="app/my-pay.html"><span>Try your own pay</span><svg width="44" height="44" viewBox="0 0 44 44" aria-hidden="true"><path d="M8 36L36 8M14 8h22v22" fill="none" stroke="currentColor" stroke-width="4"/></svg></a>
+  </div>
 </footer>
 
 <script src="app/data.js"></script>
 <script src="app/paycheck.js"></script>
 <script src="app/home.js"></script>
 <script src="app/motion.js"></script>
+<script src="app/fx.js"></script>
 </body>
 </html>

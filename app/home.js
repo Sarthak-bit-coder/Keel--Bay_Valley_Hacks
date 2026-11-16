@@ -191,7 +191,7 @@
     if (cal && typeof cal.calibrated_hit_rate === "number") figs.push([pct(cal.calibrated_hit_rate), "of weeks came in at or above the forecast low",
       (typeof cal.target_low_case === "number" ? "Target " + pct(cal.target_low_case) + ". " : "") + (cal.n_test_weeks ? cal.n_test_weeks + " held-out weeks, all drivers. " : "") + (typeof cal.uncalibrated_hit_rate === "number" ? pct(cal.uncalibrated_hit_rate) + " before calibration." : "")]);
     else figs.push([money(M.avg_pay.keel) + "<small>a week</small>", "Average Keel paycheck", money(M.avg_pay.avg4) + " when paying the 4-week average."]);
-    $("figures").innerHTML = figs.map(function (f) { return '<div class="fig"><div class="n">' + f[0] + '</div><p class="what">' + esc(f[1]) + '</p><p class="vs">' + esc(f[2]) + "</p></div>"; }).join("");
+    $("figures").innerHTML = figs.map(function (f) { return '<div class="fig"><div class="n" data-count>' + f[0] + '</div><p class="what">' + esc(f[1]) + '</p><p class="vs">' + esc(f[2]) + "</p></div>"; }).join("");
   }
 
   function fillStorm(data) {
@@ -218,6 +218,98 @@
       "That is the price of a buffer that ran out in " + M.overdraft_weeks.keel + " of " + n + " weeks instead of " + M.overdraft_weeks.avg4 + ". Every case where Keel did worse than a simple rule is listed in the app.";
   }
 
+
+  // ---- Fintech pass: ledger tape, comparison table, one week in four moves, stress lab, payday clock ----
+  var RISKS = [0.01, 0.05, 0.1, 0.2];
+  var weekLabel = function (w, i) { return fmtDate(w.week_start) || "Week " + (i + 1); };
+
+  function fillTicker(run) {
+    $("ticker").innerHTML = run.weeks.map(function (w, i) {
+      var prev = i ? run.weeks[i - 1].net : w.net, dir = w.net >= prev ? "up" : "down";
+      return "<li><b>" + esc(weekLabel(w, i)) + '</b><span>Earned <b class="' + dir + '">' + (dir === "up" ? "▲ " : "▼ ") + money(w.net) + "</b></span>" +
+        '<span>Keel paid <b class="up">' + money(w.pay_keel) + "</b></span><span>Buffer <b>" + money(w.buf_keel) + "</b></span></li>";
+    }).join("");
+  }
+
+  function fillCompare(run) {
+    var M = run.metrics, n = run.weeks.length;
+    $("comparesub").textContent = "The same simulated driver and " + n + " weeks, paid three ways. Read straight from the results file, including where a simple rule does better.";
+    var rows = [
+      ["Paycheck swing, best to worst week", money(M.pay_swing.keel), money(M.pay_swing.avg4), money(M.pay_swing.last)],
+      ["Weeks the buffer ran out", M.overdraft_weeks.keel + " of " + n, M.overdraft_weeks.avg4 + " of " + n, M.overdraft_weeks.last + " of " + n],
+      ["Average weekly paycheck", money(M.avg_pay.keel), money(M.avg_pay.avg4), money(M.avg_pay.last)],
+      ["Looks ahead", "Yes, a forecast range for next week", "No, the last four weeks", "No, only last week"],
+      ["You choose the risk", "Yes, from 1% to 20%", "No", "No"],
+      ["Explains each paycheck", "Yes, a reason every week", "No", "No"]
+    ];
+    var head = ['<div class="ch corner" role="columnheader"><span class="sr-only">Measure</span></div>', '<div class="ch k" role="columnheader">Keel</div>', '<div class="ch" role="columnheader">4-week average</div>', '<div class="ch" role="columnheader">Last week’s pay</div>'];
+    $("ctable").innerHTML = '<div role="row" style="display:contents">' + head.join("") + "</div>" + rows.map(function (r, i) {
+      var alt = i % 2 ? "" : " alt";
+      return '<div role="row" style="display:contents"><div class="cn' + alt + '" role="rowheader" data-row="' + i + '">' + esc(r[0]) + "</div>" +
+        '<div class="k" role="cell" data-row="' + i + '"><b>' + esc(r[1]) + "</b></div>" +
+        '<div class="' + alt.trim() + '" role="cell" data-row="' + i + '">' + esc(r[2]) + '</div><div class="' + alt.trim() + '" role="cell" data-row="' + i + '">' + esc(r[3]) + "</div></div>";
+    }).join("");
+  }
+
+  function fillCalls(run) {
+    var ws = run.weeks, best = 1;
+    ws.forEach(function (w, i) { if (i && w.net > 0 && w.pay_keel - w.net > ws[best].pay_keel - ws[best].net) best = i; });
+    var w = ws[best], before = ws[best - 1].buf_keel, gap = w.pay_keel - w.net;
+    var lo = Math.min(w.lo, w.net) * .9, hi = Math.max(w.hi, w.net) * 1.05, at = function (v) { return (100 * (v - lo) / (hi - lo)).toFixed(1) + "%"; };
+    var call = function (say, inn, out) { return '<div class="call" data-fx><p data-fx-item>' + say + '</p><div class="in" data-fx-item>' + inn + '</div><div class="out" data-ui data-fx-item>' + out + "</div></div>"; };
+    var row = function (k, v, cls) { return '<div class="row' + (cls ? " " + cls : "") + '"><span>' + k + "</span><b>" + v + "</b></div>"; };
+    $("calls").innerHTML =
+      call("First, the week’s payouts land in the buffer.", "<span>Week of " + esc(weekLabel(w, best)) + "</span><span>Earned after tax <b>" + money(w.net) + "</b></span>",
+        row("Buffer before payday", money(before))) +
+      call("Then Keel forecasts the week.", "<span>Low, middle and high case</span><span>Calibrated to hold about 90% of the time</span>",
+        row("Forecast range", money(w.lo) + " to " + money(w.hi)) + '<div class="range" aria-hidden="true"><i style="left:' + at(w.lo) + ";right:calc(100% - " + at(w.hi) + ')"></i><u style="left:' + at(w.net) + '"></u></div>' + row("Actually earned", money(w.net))) +
+      call("Then it checks the risk.", "<span>Your risk limit</span><span><b>" + pct(run.risk_limit) + "</b></span>",
+        row("Chance the buffer runs dry in 4 weeks", w.risk == null ? "Not recorded" : "About " + pct(w.risk))) +
+      call("Then it pays you.", "<span>Payday</span><span><b>Friday</b></span>",
+        row("Keel paycheck", money(w.pay_keel), "k") + row(gap > 0 ? "From the buffer" : "Into the buffer", money(Math.abs(gap))) + row("Buffer after payday", money(w.buf_keel)) + (w.reason ? "<span>" + esc(w.reason) + "</span>" : ""));
+  }
+
+  function spark(run) {
+    var ws = run.weeks, n = ws.length, W = 640, H = 150, top = Math.max.apply(null, ws.map(function (w) { return Math.max(w.net, w.pay_keel); })) * 1.08;
+    var X = function (i) { return 8 + i * (W - 16) / (n - 1); }, Y = function (v) { return 8 + (1 - Math.max(0, v) / top) * (H - 16); };
+    var path = function (k, smooth) { return smoothPath(ws.map(function (w, i) { return [X(i), Y(w[k])]; }), smooth); };
+    return '<svg viewBox="0 0 ' + W + " " + H + '" role="img" aria-label="Earnings and Keel paycheck for each of ' + n + ' weeks"><path d="' + path("net", 0) + '" fill="none" stroke="' + css("--on-navy-3") + '" stroke-width="1.5"/><path d="' + path("pay_keel", 1) + '" fill="none" stroke="' + css("--teal") + '" stroke-width="3" stroke-linecap="round"/></svg>';
+  }
+
+  function buildLab(data) {
+    var drivers = [], seen = {}, pick = { driver: HERO.driver, scenario: "storm", risk: 1 };
+    data.runs.forEach(function (r) { if (!seen[r.driver]) { seen[r.driver] = 1; drivers.push(r.driver); } });
+    var btns = function (key, items) { return items.map(function (it) { return '<button type="button" data-k="' + key + '" data-v="' + esc(it[0]) + '" aria-pressed="' + (pick[key] === it[0]) + '">' + esc(it[1]) + "</button>"; }).join(""); };
+    $("labdriver").innerHTML = btns("driver", drivers.map(function (d) { return [d, "Driver " + d]; }));
+    $("labscen").innerHTML = btns("scenario", [["normal", "Normal weeks"], ["storm", "Snowstorm"]]);
+    function set(id, text) { var el = $(id); if (el.textContent === text) return; el.textContent = text; el.classList.remove("flash"); void el.offsetWidth; el.classList.add("flash"); setTimeout(function () { el.classList.remove("flash"); }, 500); }
+    function render() {
+      var run = K.findRun(data, pick.driver, pick.scenario, RISKS[pick.risk]);
+      $("labriskv").textContent = pct(RISKS[pick.risk]);
+      $("labrisk").setAttribute("aria-valuetext", pct(RISKS[pick.risk]));
+      if (!run) return;
+      var M = run.metrics;
+      set("lab-pay", money(M.avg_pay.keel)); set("lab-swing", money(M.pay_swing.keel)); set("lab-od", M.overdraft_weeks.keel + " of " + run.weeks.length);
+      $("lab-spark").innerHTML = spark(run);
+    }
+    [$("labdriver"), $("labscen")].forEach(function (box) {
+      box.addEventListener("click", function (e) {
+        var b = e.target.closest("button");
+        if (!b) return;
+        pick[b.dataset.k] = b.dataset.v;
+        [].forEach.call(box.querySelectorAll("button"), function (x) { x.setAttribute("aria-pressed", String(x === b)); });
+        render();
+      });
+    });
+    $("labrisk").addEventListener("input", function (e) { pick.risk = Number(e.target.value); render(); });
+    render();
+  }
+
+  function payClock() {
+    var d = new Date().getDay(), left = (5 - d + 7) % 7;
+    $("payclock").textContent = left === 0 ? "Today" : "Friday, in " + left + (left === 1 ? " day" : " days");
+  }
+
   var resizeTimer = null, lastWidth = root.innerWidth;
   K.loadData(root.fetch.bind(root), SOURCES).then(function (res) {
     var data = res.data, toy = data.meta.model === "toy";
@@ -231,7 +323,7 @@
     $("proofsub").textContent = "The same simulated driver and weeks as the chart above, read from the results file.";
     fillCards(run);
     buildSwitch(data, Object.assign({}, HERO), function (next) {
-      run = next; caption(run); fillCards(run); drawHero(run, true); fillHonest(data, run); fillProof(run, cal);
+      run = next; caption(run); fillCards(run); fillTicker(run); fillCompare(run); fillCalls(run); drawHero(run, true); fillHonest(data, run); fillProof(run, cal);
     });
     // Tell the story once the headline has landed; reduced motion draws the settled chart at once.
     if (reduced()) drawHero(run, false); else setTimeout(function () { drawHero(run, true); }, INTRO_MS);
@@ -243,6 +335,7 @@
     });
     fillStorm(data);
     fillHonest(data, run);
+    fillTicker(run); fillCompare(run); fillCalls(run); buildLab(data); payClock();
     fillProof(run, null);
     document.querySelectorAll("[data-needs-data]").forEach(function (el) { el.hidden = false; });
     return root.fetch(CALIBRATION, { cache: "no-store" }).then(function (r) { return r.ok ? r.json() : null; }).catch(function () { return null; }).then(function (c) { cal = c; fillProof(run, cal); });

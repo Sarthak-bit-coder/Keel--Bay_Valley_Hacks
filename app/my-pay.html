@@ -6,8 +6,9 @@
 <title>Keel · My pay</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400..700&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=League+Spartan:wght@600;700&family=Figtree:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="tokens.css">
+<link rel="stylesheet" href="fx.css">
 <style>
 * { box-sizing: border-box; }
 html, body { margin: 0; }
@@ -130,8 +131,28 @@ input:focus-visible, select:focus-visible { box-shadow: 0 0 0 4px color-mix(in s
 .top.banner .badge { position: absolute; top: 20px; right: 20px; background: rgba(12, 28, 45, .7); color: var(--on-navy); border-color: transparent; backdrop-filter: blur(6px); }
 @media (max-width: 640px) { .top.banner::before { inset: 0; opacity: .35; -webkit-mask-image: none; mask-image: none; } .top.banner .badge { position: static; } }
 </style>
+<style>
+/* Fintech pass: League Spartan headings, one 4px corner, no resting shadows, glows or blur. */
+body::before { content: none; }
+h1, h2, .top.banner h1 { font-family: var(--display); font-weight: 700; letter-spacing: -.035em; line-height: .95; }
+.top.banner h1 { font-size: clamp(40px, 4.6vw, 60px); }
+h2 { font-size: clamp(24px, 2.2vw, 32px); }
+.card, .tile, .top.banner, .phone, button, input, select, .seg, .badge { border-radius: var(--radius); }
+.card, .tile, .phone { box-shadow: none; }
+.top.banner .badge { backdrop-filter: none; background: var(--navy-2); }
+.phone { background: var(--navy); color: var(--on-navy); border-color: var(--navy); }
+.phone .app, .phone dl, .phone p { color: var(--on-navy-2); }
+.phone dd { color: var(--on-navy); }
+.phone .big { font-family: var(--display); color: var(--teal); font-size: 56px; letter-spacing: -.04em; }
+.tile .value { font-family: var(--display); font-weight: 700; font-size: clamp(32px, 3vw, 44px); letter-spacing: -.04em; }
+.tile:hover { background: var(--surface-2); }
+.card:hover { border-color: color-mix(in srgb, var(--keel) 45%, var(--border)); }
+button.primary:not(:disabled):hover { box-shadow: none; }
+input:focus-visible, select:focus-visible { box-shadow: 0 0 0 3px color-mix(in srgb, var(--keel) 25%, transparent); }
+</style>
 </head>
 <body>
+<div class="fx-progress" aria-hidden="true"></div>
 <div class="wrap">
   <div class="top banner">
     <div>
@@ -233,7 +254,7 @@ input:focus-visible, select:focus-visible { box-shadow: 0 0 0 4px color-mix(in s
           <div class="seg" role="group" aria-label="Allowed chance the buffer runs out" id="d-risk"></div>
         </div>
         <div class="payday">
-          <div class="phone">
+          <div class="phone" data-tilt>
             <div class="app"><span id="ph-who">Keel</span><span id="ph-week"></span></div>
             <p>Your paycheck next week</p>
             <p class="big" id="ph-pay"></p>
@@ -320,6 +341,7 @@ input:focus-visible, select:focus-visible { box-shadow: 0 0 0 4px color-mix(in s
   <footer>Draft for Bay Valley Hacks. Demo only: no real money moves and nothing here is financial or tax advice. Please do not enter real financial information.</footer>
 </div>
 
+<script src="fx.js"></script>
 <script src="config.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
 <script src="engine.js"></script>

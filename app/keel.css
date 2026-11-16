@@ -409,3 +409,35 @@ select { border-color: var(--border); border-radius: 9px; box-shadow: 0 1px 2px 
 .viewhead::after { background: linear-gradient(90deg, var(--navy) 22%, color-mix(in srgb, var(--navy) 40%, transparent) 60%, transparent); }
 .viewhead { min-height: 300px; align-content: end; }
 @media (max-width: 640px) { .viewhead::before { inset: 0; opacity: .5; } .viewhead::after { background: linear-gradient(180deg, color-mix(in srgb, var(--navy) 50%, transparent), var(--navy) 85%); } }
+
+/* ---- Fintech pass ----
+   White ground and navy ink (dark mode keeps its own tokens), League Spartan headings, Figtree text with tabular
+   figures, one 4px corner everywhere, no resting shadows or glows. The masthead takes the page tokens so it is
+   readable in both themes. */
+:root:not([data-theme="dark"]) body { background: var(--bg); }
+.masthead { background: var(--bg); backdrop-filter: none; border-bottom: 1px solid var(--border); }
+.brand { font-family: var(--display); font-weight: 700; letter-spacing: -.04em; font-size: 24px; }
+h1, h2, .viewhead h1, .card > header h2 { font-family: var(--display); font-weight: 700; letter-spacing: -.035em; line-height: .95; }
+.viewhead h1 { font-size: clamp(44px, 6vw, 80px); }
+.card > header h2 { font-size: clamp(26px, 2.4vw, 34px); }
+.hero, .viewhead, .card, .receipt, .tile, .tile + .tile, select, .seg, .seg button, .btn, button, input { border-radius: var(--radius); }
+.hero, .viewhead, .card, .receipt, .seg button[aria-pressed="true"], select { box-shadow: none; }
+.hero::before { content: none; }
+.card { transition: border-color .25s var(--ease), transform .5s var(--ease-out); }
+.card:hover { border-color: color-mix(in srgb, var(--keel) 45%, var(--border)); box-shadow: none; }
+.tile:hover { box-shadow: none; background: var(--surface-2); }
+.pay .figure, .tile .value { font-family: var(--display); font-weight: 700; letter-spacing: -.045em; }
+.pay .figure { font-size: clamp(64px, 10vw, 112px); }
+.tile .value { font-size: clamp(32px, 3vw, 44px); }
+.seg button[aria-pressed="true"] { background: var(--keel); color: var(--on-keel); }
+.btn.primary:hover { box-shadow: none; }
+.nav a[aria-current="page"]::after, .nav a:not([aria-current="page"])::after { border-radius: 0; height: 3px; background: var(--keel); }
+.paid .pay .figure { color: var(--teal); }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .masthead { background: var(--bg); } }
+/* Chevron as a mask, so it follows the text colour in both themes. */
+select { background-image: none; }
+.field:has(select) { position: relative; }
+.field:has(select)::after { content: ""; position: absolute; right: 14px; bottom: 17px; width: 10px; height: 6px; background: var(--muted); pointer-events: none;
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 6'%3E%3Cpath d='M0 0l5 6 5-6z'/%3E%3C/svg%3E") no-repeat center / contain;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 6'%3E%3Cpath d='M0 0l5 6 5-6z'/%3E%3C/svg%3E") no-repeat center / contain; }
+.pay .figure { font-size: clamp(56px, 8vw, 88px); }

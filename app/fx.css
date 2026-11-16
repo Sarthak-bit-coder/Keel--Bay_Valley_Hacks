@@ -1,0 +1,38 @@
+/* Keel interaction layer (pairs with fx.js). Transform and opacity only. html.fx is set only when script runs and
+   reduced motion is off, so without it everything is visible and still. */
+:root { --fx-ease: cubic-bezier(.16, 1, .3, 1); }
+
+.fx-progress { position: fixed; inset: 0 0 auto; height: 3px; z-index: 50; background: var(--keel); transform: scaleX(0); transform-origin: left; pointer-events: none; }
+
+/* Staggered entrances */
+.fx [data-fx] .fx-item { opacity: 0; transform: translateY(24px); transition: opacity .8s var(--fx-ease), transform .8s var(--fx-ease); transition-delay: var(--fx-d, 0ms); }
+.fx [data-fx].fx-in .fx-item { opacity: 1; transform: none; }
+
+/* Shutter: the picture opens from its left edge while the image inside settles from 1.12 to rest. */
+.fx [data-shutter] { clip-path: inset(0 100% 0 0); transition: clip-path 1.1s var(--fx-ease); }
+.fx [data-shutter] > :is(img, video) { transform: scale(1.12); transition: transform 1.6s var(--fx-ease); }
+.fx [data-shutter].shut-open { clip-path: inset(0 0 0 0); }
+.fx [data-shutter].shut-open > :is(img, video) { transform: none; }
+
+/* Panels lean toward the pointer */
+[data-tilt] { transform: perspective(1200px) rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg)); transition: transform .5s var(--fx-ease); transform-style: preserve-3d; }
+
+/* Controls: follow the pointer a little, press down on click */
+.fx :is([data-magnet], .btn, button.primary) { translate: var(--mx, 0px) var(--my, 0px); transition-property: translate, transform, background-color, color, border-color; transition-duration: .35s; transition-timing-function: var(--fx-ease); }
+:is(button, .btn, a.btn):active { transform: scale(.97); }
+
+/* Ticker strip */
+.ticker { display: flex; overflow: hidden; }
+.ticker-track { display: flex; flex: none; gap: 48px; padding-right: 48px; margin: 0; list-style: none; }
+.fx .ticker.looping > .ticker-track { animation: fxTicker 48s linear infinite; }
+.ticker:hover > .ticker-track, .ticker:focus-within > .ticker-track { animation-play-state: paused; }
+@keyframes fxTicker { to { transform: translateX(-100%); } }
+
+/* A slow drift on one photograph per page */
+.fx .fx-drift { animation: fxDrift 24s ease-in-out infinite alternate; }
+@keyframes fxDrift { from { transform: scale(1.04) translate(0, 0); } to { transform: scale(1.1) translate(-1.5%, -1%); } }
+
+@media (prefers-reduced-motion: reduce) {
+  [data-tilt], .fx-drift { transform: none !important; animation: none !important; }
+  .ticker { overflow-x: auto; }
+}

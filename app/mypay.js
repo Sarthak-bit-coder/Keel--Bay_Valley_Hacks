@@ -36,180 +36,19 @@
   function weekly(monthly) { return monthly * 12 / 52; }
 
   function show(view) {
-    ["v-signin", "v-profile", "v-dash"].forEach(function (v) { $(v).hidden = v !== view; });
+    ["v-profile", "v-dash"].forEach(function (v) { $(v).hidden = v !== view; });
     $("tb-avatar").hidden = view !== "v-dash" && view !== "v-profile";
-    document.documentElement.classList.toggle("signed-in", view !== "v-signin");
     msg("g-msg", "");
     window.scrollTo(0, 0);
     if (window.KeelCurrents) window.KeelCurrents.init();
   }
 
-  // ---- Accounts ---------------------------------------------------------------------------------
-  // Supabase handles passwords (stored hashed on their side), Google sign-in and sessions. Row level security
-  // in app/supabase_schema.sql means each person can only ever read or change their own rows.
-  var accountsOn = !!(cfg.url && cfg.anonKey && window.supabase && window.supabase.createClient);
-  if (accountsOn) {
-    try { client = window.supabase.createClient(cfg.url, cfg.anonKey, { auth: { flowType: "pkce", persistSession: true, detectSessionInUrl: true } }); } catch (e) { accountsOn = false; }
-  }
-
-  // No cloud project: accounts live on this device (app/localauth.js). Google sign-in uses the public client ID.
-  var LA = window.KeelLocalAuth, localOn = !accountsOn && !!(LA && LA.available);
-  var GID = window.KEEL_GOOGLE_CLIENT_ID || "";
-
-  function setAuthTab(t) {
-    st.authTab = t;
-    var up = t === "up";
-    $("tab-in").setAttribute("aria-pressed", String(!up));
-    $("tab-up").setAttribute("aria-pressed", String(up));
-    $("auth-h").textContent = up ? "Create your account" : "Welcome back";
-    $("auth-sub").textContent = up ? "It takes about a minute. Then we'll ask 3 quick questions." : "Turn uneven pay into one steady weekly paycheck.";
-    $("g-label").textContent = up ? "Sign up with Google" : "Log in with Google";
-    $("a-submit").textContent = up ? "Create account" : "Log in";
-    $("a-pass").setAttribute("autocomplete", up ? "new-password" : "current-password");
-    $("a-rules").hidden = !up;
-    $("a-pass2-wrap").hidden = !up;
-    $("a-forgot").hidden = up;
-    msg("a-msg", "");
-    checkRules();
-    if (!$("g-gis").hidden) setupGoogle();
-  }
-  $("tab-in").addEventListener("click", function () { setAuthTab("in"); });
-  window.addEventListener("hashchange", function () { if (!$("v-signin").hidden) setAuthTab(/signup/.test(location.hash) ? "up" : "in"); });
-  $("tab-up").addEventListener("click", function () { setAuthTab("up"); });
-  $("a-eye").addEventListener("click", function () {
-    var on = $("a-pass").type === "password";
-    $("a-pass").type = on ? "text" : "password";
-    $("a-pass2").type = $("a-pass").type;
-    this.setAttribute("aria-pressed", String(on));
-    this.setAttribute("aria-label", on ? "Hide password" : "Show password");
-    this.querySelector(".ms").textContent = on ? "visibility_off" : "visibility";
-  });
-
-  // Password rules for new accounts: 8+ characters with a letter and a number.
-  function rules(p) { return { len: p.length >= 8, mix: /[A-Za-z]/.test(p) && /\d/.test(p) }; }
-  function checkRules() {
-    var r = rules($("a-pass").value);
-    $$("#a-rules li").forEach(function (li) { li.classList.toggle("ok", !!r[li.getAttribute("data-rule")]); });
-  }
-  $("a-pass").addEventListener("input", function () { checkRules(); this.removeAttribute("aria-invalid"); });
-  $("a-email").addEventListener("input", function () { this.removeAttribute("aria-invalid"); });
-
-  function friendlyAuthError(m) {
-    m = String(m || "");
-    if (/invalid login credentials/i.test(m)) return "That email and password don't match. Try again, or sign up.";
-    if (/already registered|already exists/i.test(m)) return "That email already has an account. Please log in.";
-    if (/email not confirmed/i.test(m)) return "Please confirm your email first. Check your inbox for our link.";
-    if (/rate limit|too many/i.test(m)) return "Too many tries. Please wait a minute and try again.";
-    if (/provider is not enabled|unsupported provider/i.test(m)) return "Google sign-in isn't turned on for this copy of Keel yet. Use email instead.";
-    if (/fetch|network/i.test(m)) return "Can't connect right now. Check your internet, or continue as guest.";
-    return m;
-  }
-
-  // Google without a cloud project: Google Identity Services draws its own button and hands back a signed token.
-  function setupGoogle() {
-    if (accountsOn || !GID) return;
-    var tries = 0;
-    (function wait() {
-      var g = window.google && window.google.accounts && window.google.accounts.id;
-      if (!g) { if (++tries < 50) setTimeout(wait, 200); return; }
-      g.initialize({ client_id: GID, callback: function (resp) {
-        msg("a-msg", "Signing you in with Google…");
-        LA.google(resp.credential).then(function (store) { setMode("local"); begin(store, store.email); })
-          .catch(function (e) { msg("a-msg", "Google sign-in didn't work: " + e.message, "err"); });
-      } });
-      var box = $("g-gis");
-      box.innerHTML = "";
-      g.renderButton(box, { theme: "outline", size: "large", width: Math.min(370, box.clientWidth || 370), text: st.authTab === "up" ? "signup_with" : "signin_with", shape: "rectangular" });
-      box.hidden = false;
-      $("b-google").hidden = true;
-    })();
-  }
-
-  $("b-google").addEventListener("click", function () {
-    if (!accountsOn) return msg("a-msg", GID ? "Google sign-in is still loading. Try again in a moment." : "Google sign-in isn't set up yet. Use your email instead.", "err");
-    msg("a-msg", "Opening Google…");
-    client.auth.signInWithOAuth({ provider: "google", options: { redirectTo: location.origin + location.pathname } })
-      .then(function (res) { if (res.error) msg("a-msg", friendlyAuthError(res.error.message), "err"); })
-      .catch(function (e) { msg("a-msg", friendlyAuthError(e.message), "err"); });
-  });
-
-  $("a-forgot").addEventListener("click", function () {
-    var email = $("a-email").value.trim();
-    if (!accountsOn) return msg("a-msg", "Accounts on this device can't be reset by email, because your password locks your data. Use Google, or sign up again with another email.", "err");
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { $("a-email").focus(); return msg("a-msg", "Type your email above, then press \"Forgot it?\" again.", "err"); }
-    client.auth.resetPasswordForEmail(email, { redirectTo: location.origin + location.pathname }).then(function (res) {
-      if (res.error) return msg("a-msg", friendlyAuthError(res.error.message), "err");
-      msg("a-msg", "If that email has an account, we've sent a reset link.", "ok");
-    }).catch(function (e) { msg("a-msg", friendlyAuthError(e.message), "err"); });
-  });
-
-  $("f-auth").addEventListener("submit", function (ev) {
-    ev.preventDefault();
-    if (!accountsOn && !localOn) return msg("a-msg", "This browser can't create accounts. Use 'Continue as guest' below.", "err");
-    if (Date.now() < st.lockUntil) return msg("a-msg", "Too many tries. Please wait " + Math.ceil((st.lockUntil - Date.now()) / 1000) + " seconds.", "err");
-    var up = st.authTab === "up";
-    var email = $("a-email").value.trim(), pass = $("a-pass").value, r = rules(pass);
-    var okEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-    $("a-email").setAttribute("aria-invalid", String(!okEmail));
-    if (!okEmail) return msg("a-msg", "Please enter an email like name@example.com.", "err");
-    if (up && !(r.len && r.mix)) { $("a-pass").setAttribute("aria-invalid", "true"); return msg("a-msg", "Your password needs 8+ characters with a letter and a number.", "err"); }
-    if (!up && !pass) { $("a-pass").setAttribute("aria-invalid", "true"); return msg("a-msg", "Please enter your password.", "err"); }
-    if (up && pass !== $("a-pass2").value) return msg("a-msg", "The two passwords don't match.", "err");
-    $("a-submit").disabled = true;
-    msg("a-msg", up ? "Creating your account…" : "Logging in…");
-    if (!accountsOn) {
-      (up ? LA.signUp(email, pass) : LA.logIn(email, pass)).then(function (store) {
-        $("a-submit").disabled = false; st.fails = 0;
-        $("a-pass").value = ""; $("a-pass2").value = "";
-        setMode("local"); begin(store, store.email);
-      }).catch(function (e) {
-        $("a-submit").disabled = false;
-        if (!up && ++st.fails >= 5) { st.lockUntil = Date.now() + 30000; st.fails = 0; }
-        msg("a-msg", friendlyAuthError(e.message), "err");
-      });
-      return;
-    }
-    var call = up
-      ? client.auth.signUp({ email: email, password: pass, options: { emailRedirectTo: location.origin + location.pathname } })
-      : client.auth.signInWithPassword({ email: email, password: pass });
-    call.then(function (res) {
-      $("a-submit").disabled = false;
-      if (res.error) {
-        // Slow down guessing: after 5 wrong tries, wait 30 seconds.
-        if (!up && ++st.fails >= 5) { st.lockUntil = Date.now() + 30000; st.fails = 0; }
-        return msg("a-msg", friendlyAuthError(res.error.message), "err");
-      }
-      st.fails = 0;
-      $("a-pass").value = ""; $("a-pass2").value = "";
-      if (!res.data.session) return msg("a-msg", "Almost done! Check your email and click the link to confirm, then log in.", "ok");
-      startAccount(res.data.session.user);
-    }).catch(function (e) { $("a-submit").disabled = false; msg("a-msg", friendlyAuthError(e.message), "err"); });
-  });
-
-  $("b-guest").addEventListener("click", function () {
-    setMode("guest");
-    begin(new S.GuestStore());
-  });
-
-  function startAccount(user) {
-    setMode("account");
-    begin(new S.AccountStore(client, user), user.email);
-  }
-
-  // Log accounts out after 30 minutes with no clicks or typing.
-  var idleTimer = null;
-  function bumpIdle() {
-    clearTimeout(idleTimer);
-    if (!st.store || st.store.kind === "guest") return;
-    idleTimer = setTimeout(function () { signOut(); setTimeout(function () { msg("a-msg", "You were logged out after 30 minutes of no activity, to keep your info safe.", "ok"); }, 50); }, IDLE_MS);
-  }
-  ["click", "keydown", "pointermove", "scroll"].forEach(function (t) { document.addEventListener(t, bumpIdle, { passive: true }); });
+  // Everyone uses My pay as a guest: no sign-up, nothing leaves this browser (app/store.js GuestStore).
 
   // ---- Load a person ----------------------------------------------------------------------------
   function begin(store, email) {
     st.store = store;
     st.email = email || null;
-    bumpIdle();
     Promise.all([store.getProfile(), store.listEntries()]).then(function (r) {
       st.profile = r[0];
       st.entries = r[1];
@@ -342,29 +181,21 @@
   function greeting() { var h = new Date().getHours(); return h < 12 ? "Good morning" : h < 18 ? "Good afternoon" : "Good evening"; }
 
   function openDash() {
-    var p = st.profile, guest = st.store.kind === "guest";
-    var name = p.display_name || (st.email ? st.email.split("@")[0] : "");
+    var p = st.profile, name = p.display_name || "";
     $("d-hello").textContent = greeting() + (name ? ", " + name : "");
-    $("d-out-t").textContent = guest ? "Leave" : "Log out";
-    $("s-out-label").textContent = guest ? "Stop using this browser" : "Log out";
-    $("s-out-hint").textContent = guest ? "Your info stays saved in this browser until you delete it." : "For your safety, Keel logs you out after 30 minutes of no activity.";
-    var local = st.store.kind === "local";
-    $("set-session").textContent = guest ? "You're trying Keel without an account. Your info is saved only in this browser."
-      : local ? "Logged in as " + (st.email || "your Google account") + ". Your account is saved on this device" + (st.store.key ? " and locked with your password." : ".")
-      : "Logged in as " + st.email + ". Only you can see your info.";
-    $("s-where").textContent = guest ? "Saved in this browser." : local ? "Saved on this device." : "Saved to your account.";
     fillSettings();
     show("v-dash");
     showSection();
     render();
   }
   $("d-edit").addEventListener("click", function () { openProfile(true, 2); });
+  // "Start over": erase this browser's Keel data and begin the setup again.
   function signOut() {
-    setMode(null);
-    clearTimeout(idleTimer);
-    var done = function () { st.store = null; show("v-signin"); };
-    if (st.store && st.store.kind === "account") client.auth.signOut().then(done, done);
-    else { if (LA) LA.signOut(); if (window.google && google.accounts && google.accounts.id) google.accounts.id.disableAutoSelect(); done(); }
+    if (!window.confirm("Start over? This deletes your answers and weeks from this browser.")) return;
+    try { localStorage.removeItem(S.GUEST_KEY); } catch (e) { /* ignore */ }
+    setMode("guest");
+    location.hash = "";
+    location.reload();
   }
   $("d-out").addEventListener("click", signOut);
   document.addEventListener("click", function (ev) {
@@ -698,30 +529,8 @@
       .catch(function (e) { $("s-save").disabled = false; fail(e); });
   });
 
-  // ---- Start -------------------------------------------------------------------------------------
-  setAuthTab(/signup/.test(location.hash) ? "up" : "in");
-  if (!accountsOn && !localOn) $("a-off").hidden = false;
-  setupGoogle();
-  function start() {
-    if (getMode() === "guest") return begin(new S.GuestStore());
-    if (getMode() === "local" && localOn) return LA.resume().then(function (s) { if (s) begin(s, s.email); else show("v-signin"); });
-    if (!accountsOn) return show("v-signin");
-    client.auth.getSession().then(function (res) {
-      var s = res.data && res.data.session;
-      if (s) startAccount(s.user); else show("v-signin");
-    }).catch(function () { show("v-signin"); });
-  }
-  if (accountsOn) {
-    client.auth.onAuthStateChange(function (event, session) {
-      if (event === "SIGNED_OUT" && st.store && st.store.kind === "account") { st.store = null; show("v-signin"); }
-      if (event === "SIGNED_IN" && session && !st.store) startAccount(session.user);  // back from Google
-      if (event === "PASSWORD_RECOVERY") {
-        var np = window.prompt("Choose a new password (8+ characters, with a letter and a number):");
-        if (np && rules(np).len && rules(np).mix) client.auth.updateUser({ password: np }).then(function (r) { toast(r.error ? friendlyAuthError(r.error.message) : "Password changed."); });
-        else if (np) toast("That password is too weak. Please try the reset link again.");
-      }
-    });
-  }
+  // ---- Start: straight into guest mode ------------------------------------------------------------
+  function start() { setMode("guest"); begin(new S.GuestStore()); }
   var redraw = function () { if (st.plan && !$("v-dash").hidden) { drawChart(); renderCompare(weekly(monthlyBills(st.profile))); } };
   if (window.matchMedia) window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", redraw);
   new MutationObserver(redraw).observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });

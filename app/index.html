@@ -14,23 +14,22 @@
 <link rel="stylesheet" href="ds.css">
 <link rel="stylesheet" href="site.css">
 <script src="theme.js"></script>
-<script src="signedin.js"></script>
 </head>
 <body>
 <a class="skip" href="#main">Skip to content</a>
 <p class="strip">Practice demo. No real money moves. Not financial or tax advice.</p>
 <header class="top"><div class="topin">
   <a class="brand" href="../" aria-label="Keel home"><span class="logo"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M2 6h16M10 6v6M4 12c1.5 3 4 4 6 4s4.5-1 6-4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></span>Keel</a>
-  <nav class="links" aria-label="Main"><a href="../">Home</a><a href="my-pay.html">My pay</a></nav>
-  <div class="acts2"><a class="btn quiet small2 auth-out" href="my-pay.html">Log in</a><a class="btn primary small2 auth-out" href="my-pay.html#signup">Sign up</a><a class="btn quiet small2 auth-in" href="my-pay.html#settings"><span class="ms">person</span>My account</a></div>
+  <nav class="links" aria-label="Main"><a href="../">Home</a><a href="my-pay.html">My pay</a><a href="./" aria-current="page">Research</a></nav>
+  <div class="acts2"><a class="btn primary small2" href="my-pay.html">Get my paycheck</a></div>
 </div></header>
 <section class="phero" data-currents="dark" data-keel="0.93">
   <div class="pheroin">
     <span class="kicker"><span class="badge" id="badge"><span id="badgetext">Loading…</span></span></span>
     <div class="pagehead">
       <div class="t">
-        <h1>How we tested Keel</h1>
-        <p class="lede">This page is optional. It shows how Keel did for three example drivers whose pay comes from a year of real New York ride-share trips.</p>
+        <h1>Our research</h1>
+        <p class="lede">How we built and tested Keel: three example drivers whose pay comes from a year of real New York ride-share trips, our forecasting model, and every result, including where Keel falls short.</p>
         <div class="meta"><span><span class="ms">block</span>No real money moves</span><span><span class="ms">insights</span>Not financial or tax advice</span></div>
       </div>
       <div class="acts">
@@ -70,8 +69,29 @@
         <li><b>We paid them with Keel</b> and with two simple ways people often pay themselves: "last week's pay" and "the average of the last 4 weeks".</li>
         <li><b>We compared.</b> Keel's paycheck swings much less, and the savings cushion runs out less often. Keel sometimes pays a little less on average. That's the cost of the cushion.</li>
       </ol>
-      <p class="hint">Below: pick a driver and press <b>Play payday</b> to see one week at a time.</p>
-      <button type="button" class="linkbtn" id="expert-toggle" aria-expanded="false" style="justify-self:start">Show all the detailed numbers (for experts) ↓</button>
+      <p class="hint">Below: pick a driver and press <b>Play payday</b> to see one week at a time. Tabs 2 and 3 have every detailed result.</p>
+      <button type="button" class="linkbtn" id="expert-toggle" aria-expanded="false" style="justify-self:start">Hide the detailed numbers ↑</button>
+    </section>
+    <section class="card pad links-card" id="sources" aria-labelledby="src-h">
+      <h2 id="src-h">Our data, code and write-ups</h2>
+      <div class="linkgrid">
+        <div><span class="caps">Real data we used</span>
+          <a href="https://www.nyc.gov/site/tlc/about/tlc-trip-record-data.page" rel="noopener">NYC TLC trip records (Uber/Lyft, 2025)</a>
+          <a href="https://open-meteo.com/en/docs/historical-weather-api" rel="noopener">Open-Meteo historical weather (NYC)</a>
+          <a href="https://github.com/Sarthak-bit-coder/Keel--Bay_Valley_Hacks/blob/main/data/README.md" rel="noopener">How we built the example drivers</a></div>
+        <div><span class="caps">Results (open files)</span>
+          <a href="../outputs/results.json" download="keel-results.json">All 24 test runs (results.json)</a>
+          <a href="../outputs/calibration.json" download="keel-calibration.json">Forecast calibration (calibration.json)</a>
+          <a href="https://github.com/Sarthak-bit-coder/Keel--Bay_Valley_Hacks/blob/main/outputs/failures.md" rel="noopener">Where Keel fails (failures.md)</a></div>
+        <div><span class="caps">Method and write-ups</span>
+          <a href="https://github.com/Sarthak-bit-coder/Keel--Bay_Valley_Hacks/blob/main/docs/preregistration.md" rel="noopener">Rules we wrote before testing (pre-registration)</a>
+          <a href="https://github.com/Sarthak-bit-coder/Keel--Bay_Valley_Hacks/blob/main/docs/app_summary.md" rel="noopener">Full project summary</a>
+          <a href="https://github.com/Sarthak-bit-coder/Keel--Bay_Valley_Hacks/blob/main/README.md" rel="noopener">README: run it yourself (python run_all.py)</a></div>
+        <div><span class="caps">Code</span>
+          <a href="https://github.com/Sarthak-bit-coder/Keel--Bay_Valley_Hacks" rel="noopener">GitHub repository</a>
+          <a href="https://github.com/Sarthak-bit-coder/Keel--Bay_Valley_Hacks/blob/main/src/model/train.py" rel="noopener">Forecast model (LightGBM + calibration)</a>
+          <a href="https://github.com/Sarthak-bit-coder/Keel--Bay_Valley_Hacks/blob/main/src/policy/salary.py" rel="noopener">Paycheck rule (Monte Carlo)</a></div>
+      </div>
     </section>
     <p class="note loaderr hidden" id="loaderr" role="alert"></p>
 
@@ -319,7 +339,7 @@
     if (!on && location.hash && location.hash !== "#paycheck") showView("paycheck");
   }
   b.addEventListener("click", function () { set(!document.documentElement.classList.contains("expert-on")); });
-  if (/#(plan|evidence)/.test(location.hash)) set(true);
+  set(true);  // the Research tab shows everything by default; the button can hide the details
 })();
 // "Run simulated payday" in the control bar: opens the Paycheck view and presses the same button as the hero card.
 document.getElementById("runreplay").addEventListener("click", function () {

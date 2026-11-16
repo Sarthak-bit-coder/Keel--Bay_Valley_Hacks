@@ -20,43 +20,43 @@
 <p class="strip">Financial planning &amp; simulation demo. No real money moves. Not financial or tax advice.</p>
 <header class="top"><div class="topin">
   <a class="brand" href="../" aria-label="Keel home"><span class="logo"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M2 6h16M10 6v6M4 12c1.5 3 4 4 6 4s4.5-1 6-4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></span>Keel</a>
-  <nav class="links" aria-label="Main"><a href="../">Home</a><a href="../#how">How it works</a><a href="./" aria-current="page">Research demo</a><a href="my-pay.html#overview">My pay</a></nav>
-  <div class="acts2"><button type="button" class="iconbtn" data-theme-toggle><span class="ms"></span></button><a class="btn primary" href="my-pay.html">Plan my paycheck</a></div>
+  <nav class="links" aria-label="Main"><a href="../">Home</a><a href="../#how">How it works</a><a href="./" aria-current="page">See the research</a><a href="my-pay.html#home">My pay</a></nav>
+  <div class="acts2"><button type="button" class="iconbtn" data-theme-toggle><span class="ms"></span></button><a class="btn primary" href="my-pay.html#signup">Sign up</a></div>
 </div></header>
 <section class="phero" data-currents="dark" data-keel="0.93">
   <div class="pheroin">
     <span class="kicker"><span class="badge" id="badge"><span id="badgetext">Loading…</span></span></span>
     <div class="pagehead">
       <div class="t">
-        <h1>Keel research &amp; evaluation demo</h1>
-        <p class="lede">Does paycheck smoothing actually beat simple pay rules? A replay of held-out weeks, Monte Carlo buffer rules, and an honest look at where Keel loses.</p>
-        <div class="meta"><span><span class="ms">verified_user</span>Simulation sandbox only</span><span><span class="ms">block</span>No real money held or moved</span><span><span class="ms">insights</span>Not financial or tax advice</span><span><span class="ms">dataset</span>LightGBM + conformal calibration · outputs/results.json</span></div>
+        <h1>Does Keel really work?</h1>
+        <p class="lede">We tested Keel on made-up drivers who earn what real New York ride-share drivers earned. Pick a driver and watch their pay week by week.</p>
+        <div class="meta"><span><span class="ms">block</span>No real money moves</span><span><span class="ms">insights</span>Not financial or tax advice</span></div>
       </div>
       <div class="acts">
-        <a class="btn quiet" href="../outputs/results.json" download="keel-results.json"><span class="ms">download</span>Export results</a>
+        <a class="btn quiet" href="../outputs/results.json" download="keel-results.json"><span class="ms">download</span>Download the data</a>
       </div>
     </div>
 
     <section class="risecard controls" aria-label="Simulation settings">
-      <label class="field" for="driver"><span class="caps">Simulated driver</span>
+      <label class="field" for="driver"><span class="caps">Pick a driver</span>
         <select id="driver"></select>
       </label>
-      <div class="field wide" role="group" aria-label="Weeks to replay"><span class="caps">Scenario</span>
+      <div class="field wide" role="group" aria-label="Weeks to replay"><span class="caps">Which weeks?</span>
         <div class="seg">
           <button type="button" id="sc-normal" aria-pressed="false">Normal weeks</button>
           <button type="button" id="sc-storm" aria-pressed="true"><span class="ms" style="font-size:16px;vertical-align:-3px">ac_unit</span>Snowstorm stress test</button>
         </div>
       </div>
-      <label class="field" for="risk" title="The chance of the buffer running out that you are willing to accept. Keel pays the most it can within it."><span class="caps">Buffer risk limit</span>
+      <label class="field" for="risk" title="The chance of the buffer running out that you are willing to accept. Keel pays the most it can within it."><span class="caps">How careful?</span>
         <select id="risk"></select>
       </label>
-      <button type="button" class="btn primary" id="runreplay" style="margin-left:auto;align-self:end"><span class="ms">autorenew</span>Run simulated payday</button>
+      <button type="button" class="btn primary" id="runreplay" style="margin-left:auto;align-self:end"><span class="ms">play_arrow</span>Play payday</button>
     </section>
 
     <nav class="tabs" aria-label="Research views">
-      <a href="#paycheck" data-view="paycheck"><span class="ms">show_chart</span>1. Paycheck &amp; replay</a>
-      <a href="#plan" data-view="plan"><span class="ms">compare_arrows</span>2. Policy &amp; plan comparison</a>
-      <a href="#evidence" data-view="evidence"><span class="ms">gavel</span>3. Honest evidence &amp; where Keel loses <span class="tag">Crucial test</span></a>
+      <a href="#paycheck" data-view="paycheck"><span class="ms">show_chart</span>1. Paycheck</a>
+      <a href="#plan" data-view="plan"><span class="ms">compare_arrows</span>2. Compare</a>
+      <a href="#evidence" data-view="evidence"><span class="ms">gavel</span>3. Proof &amp; weak spots</a>
     </nav>
   </div>
 </section>
@@ -285,10 +285,9 @@
       </main>
 
     <section class="ctaband" data-currents="light" data-keel="0.9">
-      <p class="eyebrow2">Your turn</p>
-      <h2>Try the same rule on your own weekly pay.</h2>
-      <p>Log real or made-up weeks and see the steady paycheck Keel would pay you, with a built-in safety buffer.</p>
-      <div class="row"><a class="btn primary" href="my-pay.html">Plan my paycheck<span class="ms">arrow_forward</span></a><a class="btn quiet" href="../">Back to homepage</a></div>
+      <h2>Try it with your own pay.</h2>
+      <p>Sign up and see your own steady weekly paycheck.</p>
+      <div class="row"><a class="btn primary" href="my-pay.html#signup">Sign up free<span class="ms">arrow_forward</span></a><a class="btn quiet" href="../">Back to homepage</a></div>
     </section>
 </div>
 <footer class="foot"><div class="footin"><a class="brand" href="../"><span class="logo"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M2 6h16M10 6v6M4 12c1.5 3 4 4 6 4s4.5-1 6-4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></span>Keel</a><p>Built for Bay Valley Hacks 2026. Simulation only: drivers are simulated on real NYC ride-hail data and no real money moves. Keel does not promise income. Not financial or tax advice.</p><nav aria-label="Footer"><a href="../#how">Methodology</a><a href="index.html#evidence">Evidence</a><a href="my-pay.html">My pay</a></nav></div></footer>

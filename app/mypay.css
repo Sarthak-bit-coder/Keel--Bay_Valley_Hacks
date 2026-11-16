@@ -186,3 +186,42 @@ footer.meta { border-top: 1px solid var(--border); padding-top: 16px; }
 .inset .ms { vertical-align: -4px; margin-right: 6px; }
 .inwrap.left > input:not([type=checkbox]) { padding-left: 38px; padding-right: 12px; }
 .inwrap > input:not([type=checkbox]) { padding-right: 40px; }
+
+/* ---------- Simple version ---------- */
+.lab { font-size: 14px; font-weight: 600; color: var(--ink); }
+.center { text-align: center; justify-content: center; }
+.seg.wide2 { display: grid; grid-template-columns: 1fr 1fr; width: 100%; }
+.seg.wide2 button { min-height: 38px; font-size: 14px; font-weight: 600; }
+.btn.google { gap: 10px; font-weight: 600; }
+.pwrules { list-style: none; margin: 4px 0 0; padding: 0; display: flex; flex-wrap: wrap; gap: 4px 16px; font-size: 13px; color: var(--muted); }
+.pwrules li::before { content: "○ "; }
+.pwrules li.ok { color: var(--good-text); }
+.pwrules li.ok::before { content: "✓ "; }
+.guestlink { justify-self: center; font-size: 14px; }
+.authcard .fine { margin-top: -8px; }
+.two { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+.bills { border: 1px solid var(--border); border-radius: var(--r-card); padding: 14px 16px 16px; margin: 0; display: grid; gap: 12px; }
+.bills legend { padding: 0 6px; }
+.billgrid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.billgrid label { display: grid; gap: 4px; font-size: 13px; color: var(--ink2); }
+.total { font-size: 15px; color: var(--ink2); padding-top: 10px; border-top: 1px solid var(--border); }
+.total b { color: var(--ink); }
+.taxseg button { min-width: 64px; min-height: 36px; font-size: 14px; }
+.risktiles button b { font-size: 15px; }
+.risktiles small { font-size: 12px; }
+.wizfoot { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; }
+.wizard { max-width: 860px; }
+#f-profile h2 { font-size: 22px; }
+.dashhead { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 16px; }
+.dashhead .lede { margin-top: 8px; }
+.herocards { display: grid; grid-template-columns: 1.3fr 1fr 1fr 1fr; gap: 14px; }
+.herocards .kpi .caps { display: flex; align-items: center; gap: 6px; }
+.herocards .kpi .caps .ms { font-size: 16px; }
+.kpi.big .v { font-size: clamp(40px, 5vw, 56px); }
+.kpi .good { color: var(--good-text); font-weight: 600; }
+.kpi .bad { color: var(--crit); font-weight: 600; }
+.simple3 { margin: 0; padding-left: 20px; display: grid; gap: 8px; color: var(--ink2); }
+.simple3 b { color: var(--ink); }
+.setrow b { font-size: 15px; }
+@media (max-width: 1000px) { .herocards { grid-template-columns: repeat(2, minmax(0, 1fr)); } .herocards .big { grid-column: 1 / -1; } }
+@media (max-width: 640px) { .two, .billgrid { grid-template-columns: minmax(0, 1fr); } .herocards { grid-template-columns: minmax(0, 1fr); } .billgrid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }

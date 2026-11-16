@@ -2,7 +2,7 @@
 // AccountStore: Supabase (signed-in accounts, rows protected by row level security).
 // GuestStore: this browser only (localStorage), nothing leaves the device.
 // Both return Promises with the same shapes:
-//   profile: {display_name, job, tax_rate, risk_limit} or null
+//   profile: {display_name, job, tax_rate, risk_limit, weekly_pay?, savings?, expenses?} or null
 //   entries: [{week_start: "YYYY-MM-DD", gross: number, note: string}] sorted by week
 "use strict";
 (function (root) {
@@ -62,12 +62,19 @@
     return res.data;
   }
   AccountStore.prototype.getProfile = function () {
-    return this.client.from("profiles").select("display_name, job, tax_rate, risk_limit")
+    return this.client.from("profiles").select("display_name, job, tax_rate, risk_limit, weekly_pay, savings, expenses")
       .eq("id", this.user.id).maybeSingle().then(check)
-      .then(function (p) { return p ? { display_name: p.display_name, job: p.job, tax_rate: Number(p.tax_rate), risk_limit: Number(p.risk_limit) } : null; });
+      .then(function (p) {
+        return p ? { display_name: p.display_name, job: p.job, tax_rate: Number(p.tax_rate), risk_limit: Number(p.risk_limit),
+          weekly_pay: p.weekly_pay == null ? null : Number(p.weekly_pay), savings: p.savings == null ? null : Number(p.savings), expenses: p.expenses || {} } : null;
+      });
   };
   AccountStore.prototype.saveProfile = function (p) {
     var row = { id: this.user.id, display_name: p.display_name, job: p.job, tax_rate: p.tax_rate, risk_limit: p.risk_limit, updated_at: new Date().toISOString() };
+    // Money details from sign-up (optional). Only sent when present, so older profiles keep working.
+    if (p.weekly_pay != null) row.weekly_pay = p.weekly_pay;
+    if (p.savings != null) row.savings = p.savings;
+    if (p.expenses) row.expenses = p.expenses;
     return this.client.from("profiles").upsert(row).then(check).then(function () { return p; });
   };
   AccountStore.prototype.listEntries = function () {

@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Keel My Pay</title>
-<meta name="description" content="Log your weekly pay and see the steady paycheck Keel would pay you. Demo only: no real money moves, not financial or tax advice.">
+<meta name="description" content="Log your weekly pay and see a steady weekly paycheck. Demo only: no real money moves, not financial or tax advice.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400..700&display=swap" rel="stylesheet">
@@ -17,469 +17,292 @@
 </head>
 <body>
 <a class="skip" href="#main">Skip to content</a>
-
-<!-- ================= Sign in / create account ================= -->
-<div class="auth" id="v-signin" hidden>
-  <p class="strip">Financial planning &amp; simulation demo. No real money moves. Not financial or tax advice.</p>
+<p class="strip">Practice demo. No real money moves. Not financial or tax advice.</p>
 <header class="top"><div class="topin">
   <a class="brand" href="../" aria-label="Keel home"><span class="logo"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M2 6h16M10 6v6M4 12c1.5 3 4 4 6 4s4.5-1 6-4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></span>Keel</a>
-  <nav class="links" aria-label="Main"><a href="../">Home</a><a href="../#how">How it works</a><a href="./">Research demo</a><a href="my-pay.html#overview" aria-current="page">My pay</a></nav>
-  <div class="acts2"><button type="button" class="iconbtn" data-theme-toggle><span class="ms"></span></button><a class="btn quiet" href="./">Explore demo</a></div>
+  <nav class="links" aria-label="Main"><a href="../">Home</a><a href="../#how">How it works</a><a href="./">See the research</a><a href="my-pay.html" aria-current="page">My pay</a></nav>
+  <div class="acts2"><button type="button" class="iconbtn" data-theme-toggle><span class="ms"></span></button><a class="avatar" href="#settings" id="tb-avatar" aria-label="Settings" hidden>K</a></div>
 </div></header>
 
+<!-- ================= Log in / Sign up ================= -->
+<div id="v-signin" hidden>
   <main class="authmain" data-currents="dark" data-keel="0.9">
     <section class="authcard" aria-labelledby="auth-h">
       <span class="anchor"><span class="ms">anchor</span></span>
-      <h1 id="auth-h">Welcome back to Keel</h1>
-      <p class="sub" id="auth-sub">Plan a steadier weekly paycheck from uneven earnings.</p>
+      <h1 id="auth-h">Welcome to Keel</h1>
+      <p class="sub" id="auth-sub">Turn uneven pay into one steady weekly paycheck.</p>
+
+      <div class="seg wide2" role="group" aria-label="Log in or sign up">
+        <button type="button" id="tab-in" aria-pressed="true">Log in</button>
+        <button type="button" id="tab-up" aria-pressed="false">Sign up</button>
+      </div>
+
+      <button type="button" class="btn quiet block google" id="b-google">
+        <svg width="18" height="18" viewBox="0 0 48 48" aria-hidden="true"><path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.7 29.2 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.4-.4-3.5z"/><path fill="#FF3D00" d="m6.3 14.7 6.6 4.8C14.7 15.1 19 12 24 12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"/><path fill="#4CAF50" d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2C29.2 35.1 26.7 36 24 36c-5.2 0-9.6-3.3-11.3-8l-6.5 5C9.5 39.6 16.2 44 24 44z"/><path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.2-2.2 4.2-4.1 5.6l6.2 5.2C37 39.2 44 34 44 24c0-1.3-.1-2.4-.4-3.5z"/></svg>
+        <span id="g-label">Log in with Google</span>
+      </button>
+      <div class="or"><span>or use your email</span></div>
+
       <form id="f-auth" novalidate>
-        <label class="lf" for="a-email"><span class="caps">Email address</span>
-          <span class="inwrap"><input id="a-email" type="email" autocomplete="email" required placeholder="name@example.com"><span class="ms">mail</span></span>
+        <label class="lf" for="a-email"><span class="lab">Email</span>
+          <input id="a-email" type="email" autocomplete="email" required placeholder="you@example.com">
         </label>
         <div class="lf">
-          <span class="lrow"><label class="caps" for="a-pass">Password <span id="a-pass-hint" class="hint">(at least 6 characters)</span></label><button type="button" class="linkbtn" id="a-forgot">Forgot password?</button></span>
-          <span class="inwrap"><input id="a-pass" type="password" autocomplete="current-password" minlength="6" required><button type="button" class="eye" id="a-eye" aria-label="Show password" aria-pressed="false"><span class="ms">visibility</span></button></span>
+          <span class="lrow"><label class="lab" for="a-pass">Password</label><button type="button" class="linkbtn" id="a-forgot">Forgot it?</button></span>
+          <span class="inwrap"><input id="a-pass" type="password" autocomplete="current-password" required><button type="button" class="eye" id="a-eye" aria-label="Show password" aria-pressed="false"><span class="ms">visibility</span></button></span>
+          <ul class="pwrules" id="a-rules" hidden>
+            <li data-rule="len">At least 8 characters</li>
+            <li data-rule="mix">A letter and a number</li>
+          </ul>
         </div>
+        <label class="lf" for="a-pass2" id="a-pass2-wrap" hidden><span class="lab">Type the password again</span>
+          <input id="a-pass2" type="password" autocomplete="new-password">
+        </label>
         <button class="btn primary block" type="submit" id="a-submit">Log in</button>
         <p class="msg" id="a-msg" role="status"></p>
       </form>
-      <p class="inset" id="a-off" hidden><span class="ms">info</span> Accounts are not switched on for this copy of the app yet (see <code>app/MY_PAY_SETUP.md</code>). You can still try everything as a guest.</p>
-      <div class="or"><span>or continue with</span></div>
-      <button type="button" class="btn quiet block" id="b-guest"><span class="ms">badge</span>Continue as guest</button>
-      <p class="inset"><span class="ms">info</span> Guest session: saved in this browser only. No password or personal information needed.</p>
-      <p class="switch" id="auth-switch"><span id="sw-q">Don't have an account?</span> <button type="button" class="linkbtn" id="tab-toggle">Create an account →</button></p>
-      <!-- Kept for the tests and keyboard users: the same two modes as buttons. -->
-      <div class="seg sr-only" role="group" aria-label="Sign in or create an account">
-        <button type="button" id="tab-in" aria-pressed="true">Sign in</button>
-        <button type="button" id="tab-up" aria-pressed="false">Create account</button>
-      </div>
+      <p class="inset" id="a-off" hidden><span class="ms">info</span>Accounts aren't turned on for this copy of Keel yet. You can still try it without an account below.</p>
+
+      <button type="button" class="linkbtn guestlink" id="b-guest">Just looking? Try it without an account →</button>
+      <p class="fine center">Without an account, your info stays only in this browser.</p>
     </section>
-    <p class="sandbox"><span class="caps"><span class="ms">verified_user</span> Simulation sandbox mode</span><br>Financial planning &amp; simulation demo. No real money moves. Not financial advice.</p>
+    <p class="sandbox"><span class="ms">lock</span> We never ask for bank logins. No real money moves.</p>
   </main>
 </div>
 
-<!-- ================= Setup wizard (profile) ================= -->
-<div class="auth" id="v-profile" hidden>
-  <p class="strip">Financial planning &amp; simulation demo. No real money moves. Not financial or tax advice.</p>
-<header class="top"><div class="topin">
-  <a class="brand" href="../" aria-label="Keel home"><span class="logo"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M2 6h16M10 6v6M4 12c1.5 3 4 4 6 4s4.5-1 6-4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></span>Keel</a>
-  <nav class="links" aria-label="Main"><a href="../">Home</a><a href="../#how">How it works</a><a href="./">Research demo</a><a href="my-pay.html#overview" aria-current="page">My pay</a></nav>
-  <div class="acts2"><button type="button" class="iconbtn" data-theme-toggle><span class="ms"></span></button><a class="btn quiet" href="./">Explore demo</a></div>
-</div></header>
-
-  <section class="phero" data-currents="dark" data-keel="0.93"><div class="pheroin wizhero">
-    <div class="pagehead">
-      <div class="t"><span class="caps">Paycheck setup</span><h1 id="p-title">Set up your runway</h1></div>
-      <span class="chip"><span class="dot" style="color:var(--keel)"></span><span id="p-stage">Step 1 of 3: Profile &amp; trade</span></span>
+<!-- ================= Sign-up questions ================= -->
+<div id="v-profile" hidden>
+  <section class="phero" data-currents="dark" data-keel="0.93">
+    <div class="pheroin wizhero">
+      <span class="kicker"><span class="dot"></span><span id="p-stage">Step 1 of 3</span></span>
+      <h1 id="p-title">Let's set up your paycheck</h1>
+      <p class="lede">Three quick questions. Guesses are fine, and you can change them later.</p>
+      <ol class="stepper3" id="p-steps">
+        <li data-step="1"><button type="button"><span class="caps">Step 1</span><b>About you</b><i></i></button></li>
+        <li data-step="2"><button type="button"><span class="caps">Step 2</span><b>Your money</b><i></i></button></li>
+        <li data-step="3"><button type="button"><span class="caps">Step 3</span><b>Your choices</b><i></i></button></li>
+      </ol>
     </div>
-    <ol class="stepper3" id="p-steps">
-      <li data-step="1"><button type="button"><span class="caps">01 / Setup</span><b>Profile &amp; trade</b><i></i></button></li>
-      <li data-step="2"><button type="button"><span class="caps">02 / Calibration</span><b>Paycheck &amp; tax</b><i></i></button></li>
-      <li data-step="3"><button type="button"><span class="caps">03 / Starter weeks</span><b>Starter weeks</b><i></i></button></li>
-    </ol>
-    </div></section>
+  </section>
   <main class="wizard">
     <form id="f-profile" novalidate>
-      <div class="grid2">
-        <section class="card pad" data-pane="1">
-          <div class="cardhead"><span class="caps">Your profile</span><span class="caps ok">Saved when you finish</span></div>
-          <label class="lf" for="p-name"><b>First name or nickname (optional)</b><span class="hint">Shown on your dashboard. Please don't use real financial details anywhere here.</span>
-            <span class="inwrap left"><span class="ms">badge</span><input id="p-name" maxlength="60" autocomplete="given-name" placeholder="e.g. Sam"></span>
-          </label>
-          <div class="lf">
-            <span class="lrow"><b>Main kind of work</b><span class="chip soft">Shapes the example weeks</span></span>
-            <span class="hint">Keel uses this for example weeks and to describe how uneven your pay is.</span>
-            <div class="jobtiles" id="p-jobtiles" role="radiogroup" aria-label="Main kind of work"></div>
-            <select id="p-job" class="sr-only" tabindex="-1" aria-hidden="true"></select>
-          </div>
-          <p class="inset"><span class="ms">shield</span> Every job uses the same rule: Keel keeps a buffer to cover the slow weeks.</p>
-        </section>
-
-        <section class="card pad" data-pane="2" hidden>
-          <div class="cardhead"><span class="caps">Paycheck rules</span><span class="caps ok">Change any time in Settings</span></div>
-          <div class="lf">
-            <span class="lrow"><b>Set aside for tax</b><span class="chip soft" id="p-taxlabel">15%</span></span>
-            <input type="range" id="p-taxrange" min="0.10" max="0.25" step="0.05" value="0.15" aria-label="Tax set-aside">
-            <span class="ticks"><span>10%</span><span>15%</span><span>20%</span><span>25%</span></span>
-            <select id="p-tax" class="sr-only" tabindex="-1" aria-hidden="true">
-              <option value="0.10">10%</option><option value="0.15" selected>15%</option><option value="0.20">20%</option><option value="0.25">25%</option>
-            </select>
-            <span class="hint">Illustrative only. Ask a tax professional what you actually owe.</span>
-          </div>
-          <div class="lf">
-            <b>Allowed chance of running out</b>
-            <span class="hint">The chance your buffer runs out in the next 4 weeks that you accept. Lower means a thicker cushion and a smaller paycheck.</span>
-            <div class="risktiles" id="p-risktiles"></div>
-            <select id="p-risk" class="sr-only" tabindex="-1" aria-hidden="true">
-              <option value="0.01">1%</option><option value="0.05" selected>5%</option><option value="0.1">10%</option><option value="0.2">20%</option>
-            </select>
-          </div>
-        </section>
-
-        <section class="card pad" data-pane="3" hidden>
-          <div class="cardhead"><span class="caps">Starter weeks</span></div>
-          <p>Keel needs at least 4 weeks of pay to work out a first paycheck. You can start with example weeks and delete them later, or log your own.</p>
-          <label class="checkrow" id="p-example-wrap" for="p-example">
-            <input id="p-example" type="checkbox" checked>
-            <span><b>Start with 26 example weeks for this job</b><span class="hint">Simulated from our own assumptions, not real workers. You can delete them any time.</span></span>
-          </label>
-          <dl class="summary" id="p-summary"></dl>
-        </section>
-
-        <aside class="card pad side-profile" aria-label="How uneven this job's pay is">
-          <div class="cardhead"><span class="caps">How uneven the pay is</span><span class="chip" id="p-jobchip">Driver</span></div>
-          <div class="spark">
-            <div class="lrow"><span class="hint">Example weekly pay (simulated)</span><b id="p-cv"></b></div>
-            <div id="p-spark"></div>
-          </div>
-          <p class="jobshape" id="p-jobshape"></p>
-          <ul class="ticklist">
-            <li><span class="ms">check_circle</span>Keel holds part of good weeks in a buffer.</li>
-            <li><span class="ms">check_circle</span>The buffer tops up slow weeks so the paycheck stays level.</li>
-          </ul>
-          <blockquote class="philo"><b>Keel philosophy</b>“We never assume next week matches this week. Peace of mind begins with expecting both the calm and the storm.”</blockquote>
-        </aside>
-      </div>
-
-      <div class="card pad wizfoot">
-        <div class="row">
-          <button type="button" class="btn ghost" id="p-back"><span class="ms">arrow_back</span>Back</button>
-          <button type="button" class="linkbtn" id="p-cancel" hidden>Cancel and return to dashboard</button>
-          <span class="grow"></span>
-          <button class="btn primary" type="submit" id="p-save">Continue to paycheck rules<span class="ms">arrow_forward</span></button>
+      <section class="card pad" data-pane="1">
+        <h2>About you</h2>
+        <label class="lf" for="p-name"><span class="lab">Your first name</span>
+          <input id="p-name" maxlength="60" autocomplete="given-name" placeholder="e.g. Sam">
+        </label>
+        <div class="lf">
+          <span class="lab">What kind of work do you do?</span>
+          <div class="jobtiles" id="p-jobtiles" role="radiogroup" aria-label="Kind of work"></div>
+          <span class="hint" id="p-jobshape"></span>
         </div>
-        <p class="msg" id="p-msg" role="status"></p>
-        <div class="row fine"><span><span class="ms">info</span> <b>Demo only.</b> No real money moves. Not financial or tax advice.</span><span class="caps">Keel · Bay Valley Hacks 2026</span></div>
+      </section>
+
+      <section class="card pad" data-pane="2" hidden>
+        <h2>Your money</h2>
+        <p class="hint">Rough numbers are fine. Please don't enter real account numbers.</p>
+        <div class="two">
+          <label class="lf" for="p-pay"><span class="lab">How much do you usually earn in a week?</span>
+            <span class="inwrap left"><span class="cur">$</span><input id="p-pay" type="number" inputmode="decimal" min="0" max="99999" step="1" placeholder="800"></span>
+            <span class="hint">Before taxes. An average week is fine.</span>
+          </label>
+          <label class="lf" for="p-savings"><span class="lab">How much savings do you have now?</span>
+            <span class="inwrap left"><span class="cur">$</span><input id="p-savings" type="number" inputmode="decimal" min="0" max="9999999" step="1" placeholder="500"></span>
+            <span class="hint">This becomes your starting cushion.</span>
+          </label>
+        </div>
+        <fieldset class="bills">
+          <legend class="lab">Your bills each month</legend>
+          <div class="billgrid">
+            <label for="x-housing"><span>Rent or home</span><span class="inwrap left"><span class="cur">$</span><input id="x-housing" data-bill="housing" type="number" min="0" step="1" placeholder="0"></span></label>
+            <label for="x-utilities"><span>Utilities &amp; phone</span><span class="inwrap left"><span class="cur">$</span><input id="x-utilities" data-bill="utilities" type="number" min="0" step="1" placeholder="0"></span></label>
+            <label for="x-food"><span>Food</span><span class="inwrap left"><span class="cur">$</span><input id="x-food" data-bill="food" type="number" min="0" step="1" placeholder="0"></span></label>
+            <label for="x-transport"><span>Car &amp; travel</span><span class="inwrap left"><span class="cur">$</span><input id="x-transport" data-bill="transport" type="number" min="0" step="1" placeholder="0"></span></label>
+            <label for="x-debt"><span>Loans &amp; cards</span><span class="inwrap left"><span class="cur">$</span><input id="x-debt" data-bill="debt" type="number" min="0" step="1" placeholder="0"></span></label>
+            <label for="x-other"><span>Everything else</span><span class="inwrap left"><span class="cur">$</span><input id="x-other" data-bill="other" type="number" min="0" step="1" placeholder="0"></span></label>
+          </div>
+          <p class="total" id="p-billtotal">Total: $0 a month</p>
+        </fieldset>
+      </section>
+
+      <section class="card pad" data-pane="3" hidden>
+        <h2>Your choices</h2>
+        <div class="lf">
+          <span class="lab">How much should we set aside for taxes?</span>
+          <div class="seg taxseg" id="p-taxseg" role="group" aria-label="Tax set-aside"></div>
+          <span class="hint">We put this much of each week's pay aside so tax time isn't a surprise. 15% is a common starting point. Ask a tax pro for your real number.</span>
+        </div>
+        <div class="lf">
+          <span class="lab">How careful should your paycheck be?</span>
+          <div class="risktiles" id="p-risktiles"></div>
+          <span class="hint">Safer means a slightly smaller paycheck but a bigger savings cushion.</span>
+        </div>
+        <label class="checkrow" id="p-example-wrap" for="p-example">
+          <input id="p-example" type="checkbox" checked>
+          <span><b>Fill in 26 practice weeks for me</b><span class="hint">Made-up weeks based on your answers, so you can see how it works right away. Delete them any time.</span></span>
+        </label>
+      </section>
+
+      <div class="wizfoot">
+        <button type="button" class="btn quiet" id="p-back"><span class="ms">arrow_back</span>Back</button>
+        <button type="button" class="linkbtn" id="p-cancel" hidden>Cancel</button>
+        <span class="grow"></span>
+        <button class="btn primary" type="submit" id="p-save">Next<span class="ms">arrow_forward</span></button>
       </div>
+      <p class="msg" id="p-msg" role="status"></p>
     </form>
   </main>
-<footer class="foot"><div class="footin"><a class="brand" href="../"><span class="logo"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M2 6h16M10 6v6M4 12c1.5 3 4 4 6 4s4.5-1 6-4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></span>Keel</a><p>Demo for Bay Valley Hacks 2026. No real money moves and nothing here is financial or tax advice. Please do not enter real financial information.</p><nav aria-label="Footer"><a href="../#how">Methodology</a><a href="./#evidence">Evidence</a><a href="./">Research demo</a></nav></div></footer>
 </div>
 
 <!-- ================= Dashboard ================= -->
-<div class="shell" id="v-dash" hidden>
-  <aside class="side" id="side" aria-label="Keel navigation">
-    <a class="brand" href="../" aria-label="Keel home"><span class="logo"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M2 6h16M10 6v6M4 12c1.5 3 4 4 6 4s4.5-1 6-4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></span>Keel</a>
-    <div class="session"><b id="s-kind">Guest session</b><span id="s-sub">Saved in this browser only</span><button type="button" id="s-upgrade">Create account →</button></div>
-    <nav class="sidenav" aria-label="Sections">
-      <a href="#overview" data-sec="overview"><span class="ms">grid_view</span>Overview</a>
-      <a href="#log" data-sec="log"><span class="ms">receipt_long</span>Earnings log</a>
-      <a href="#plan" data-sec="plan"><span class="ms">tune</span>Planning</a>
-      <a href="#settings" data-sec="settings"><span class="ms">settings</span>Profile &amp; settings</a>
-    </nav>
-    <nav class="sidenav foot" aria-label="More">
-      <a href="./"><span class="ms">science</span>Explore research demo</a>
-      <a href="../"><span class="ms">home</span>Homepage</a>
-      <button type="button" class="out" id="d-out"><span class="ms">logout</span><span id="d-out-t">Sign out</span></button>
-    </nav>
-  </aside>
+<div id="v-dash" hidden>
+  <section class="phero" data-currents="dark" data-keel="0.93">
+    <div class="pheroin">
+      <div class="dashhead">
+        <div>
+          <h1 id="d-hello">Hi</h1>
+          <p class="lede" id="d-who"></p>
+        </div>
+        <a class="btn primary" href="#weeks" data-add><span class="ms">add</span>Add this week's pay</a>
+      </div>
+      <div id="hero-cards" class="herocards" hidden>
+        <div class="kpi accent big">
+          <span class="caps">Your paycheck next week</span>
+          <div class="v" id="ph-pay"></div>
+          <span class="s" id="ph-when"></span>
+        </div>
+        <div class="kpi">
+          <span class="caps"><span class="ms">receipt_long</span> Your bills</span>
+          <div class="v" id="k-bills"></div>
+          <span class="s" id="k-billsub"></span>
+        </div>
+        <div class="kpi">
+          <span class="caps"><span class="ms">savings</span> Savings cushion</span>
+          <div class="v" id="k-buf"></div>
+          <span class="s" id="k-bufsub"></span>
+        </div>
+        <div class="kpi">
+          <span class="caps"><span class="ms">account_balance</span> Set aside for taxes</span>
+          <div class="v" id="k-tax"></div>
+          <span class="s" id="k-taxsub"></span>
+        </div>
+      </div>
+      <nav class="tabs" aria-label="My pay sections">
+        <a href="#home" data-sec="home"><span class="ms">home</span>Home</a>
+        <a href="#weeks" data-sec="weeks"><span class="ms">calendar_month</span>My weeks</a>
+        <a href="#settings" data-sec="settings"><span class="ms">settings</span>Settings</a>
+      </nav>
+    </div>
+  </section>
 
-  <div class="main">
-<p class="strip">Financial planning &amp; simulation demo. No real money moves. Not financial or tax advice.</p>
-<header class="top"><div class="topin">
-  <a class="brand" href="../" aria-label="Keel home"><span class="logo"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M2 6h16M10 6v6M4 12c1.5 3 4 4 6 4s4.5-1 6-4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></span>Keel</a>
-  <nav class="links" aria-label="Main"><a href="../">Home</a><a href="../#how">How it works</a><a href="./">Research demo</a><a href="my-pay.html#overview" aria-current="page">My pay</a></nav>
-  <div class="acts2"><button type="button" class="iconbtn" data-theme-toggle><span class="ms"></span></button><a class="avatar" href="#settings" aria-label="Profile and settings" id="tb-avatar2">K</a></div>
-</div></header>
-    <section class="phero" data-currents="dark" data-keel="0.93">
-      <div class="pheroin">
-        <div id="hero-slot" class="stack"></div>
-        <nav class="tabs" aria-label="My pay sections">
-          <a href="#overview" data-sec="overview"><span class="ms">grid_view</span>Overview</a>
-          <a href="#log" data-sec="log"><span class="ms">receipt_long</span>Earnings log</a>
-          <a href="#plan" data-sec="plan"><span class="ms">tune</span>Planning</a>
-          <a href="#settings" data-sec="settings"><span class="ms">settings</span>Profile &amp; settings</a>
-        </nav>
+  <main class="content" id="main">
+    <p class="msg err" id="g-msg" role="alert"></p>
+
+    <!-- Home -->
+    <section class="sec" data-sec="home" aria-label="Home">
+      <section class="card pad empty-card" id="d-empty" hidden>
+        <span class="ms big">hourglass_top</span>
+        <h2>Add 4 weeks of pay to see your paycheck</h2>
+        <p class="hint">Keel needs a few weeks to see how your pay goes up and down.</p>
+        <div class="row center"><a class="btn primary" href="#weeks">Add my weeks</a><button type="button" class="btn quiet" id="d-example1">Use practice weeks</button></div>
+      </section>
+
+      <div id="d-results" class="stack" hidden>
+        <div id="d-warn"></div>
+        <section class="card pad">
+          <h2>Why this amount?</h2>
+          <p class="quote" id="ph-reason"></p>
+          <p class="hint" id="ph-basis"></p>
+        </section>
+        <section class="card pad">
+          <div class="cardtop"><div><h2>Your pay vs. your paycheck</h2><p class="hint">Your pay jumps around. Your Keel paycheck stays steady.</p></div></div>
+          <div class="legend">
+            <span><i class="key" style="border-color:var(--ink2);border-top-style:dashed"></i>What you earned (after taxes)</span>
+            <span><i class="key" style="border-color:var(--keel);border-top-width:3px"></i>Your Keel paycheck</span>
+          </div>
+          <div class="plot" id="c-pay"></div>
+        </section>
+        <section class="card pad">
+          <h2>How it works</h2>
+          <ol class="simple3">
+            <li><b>You earn.</b> Your pay goes into your savings cushion first.</li>
+            <li><b>We set aside taxes.</b> <span id="how-tax">15%</span> of each week's pay is put aside.</li>
+            <li><b>You get paid the same.</b> Good weeks fill the cushion. Slow weeks use it.</li>
+          </ol>
+        </section>
       </div>
     </section>
-    <header class="topbar">
-      <button type="button" class="iconbtn menu-btn" data-menu aria-label="Open navigation" aria-expanded="false" aria-controls="side"><span class="ms">menu</span></button>
-      <span class="caps">Volatility cushion engine</span>
-      <div class="right">
-        <span class="chip hide-sm" id="tb-buffer"><span class="ms" style="font-size:16px">savings</span><span></span></span>
-        <button type="button" class="iconbtn" data-theme-toggle><span class="ms"></span></button>
-        <a class="avatar" href="#settings" id="tb-avatar" aria-label="Profile and settings">K</a>
-      </div>
-    </header>
-    <div class="telemetry" data-currents="dark">
-      <div class="in" id="telemetry">
-        <span><span class="ms" style="font-size:16px">waves</span>Live engine</span>
-        <span>Monte Carlo: <b>simulated 4-week paths</b></span>
-        <span>Risk limit: <b id="tm-risk">5%</b></span>
-        <span>Weeks logged: <b id="tm-weeks">0</b></span>
-      </div>
-    </div>
 
-    <main class="content" id="main">
-      <p class="msg err" id="g-msg" role="alert"></p>
-
-      <!-- ===== Overview ===== -->
-      <section class="sec" data-sec="overview" aria-labelledby="ov-h">
-        <div class="pagehead">
-          <div class="t">
-            <div class="meta"><span class="caps">Freelancer smoothing console</span><span class="chip" id="d-jobchip"></span></div>
-            <span class="chip soft" id="d-guestchip" style="justify-self:start"><span class="dot"></span>Guest account: saved in this browser only · <button type="button" class="linkbtn" data-upgrade>Create account</button></span>
-            <h1 id="ov-h"><span id="d-hello">Hello</span></h1>
-            <p id="d-who"></p>
+    <!-- My weeks -->
+    <section class="sec" data-sec="weeks" aria-label="My weeks" hidden>
+      <section class="card pad">
+        <h2>Add a week</h2>
+        <form id="f-entry" novalidate>
+          <div class="entry">
+            <label class="lf" for="e-week"><span class="lab">Which week?</span><input id="e-week" type="date" required></label>
+            <label class="lf" for="e-gross"><span class="lab">How much did you earn?</span><span class="inwrap left"><span class="cur">$</span><input id="e-gross" type="number" inputmode="decimal" min="0" max="99999" step="0.01" required placeholder="0"></span></label>
+            <label class="lf" for="e-note"><span class="lab">Note (optional)</span><input id="e-note" maxlength="80" placeholder="e.g. snow week"></label>
+            <button class="btn primary" type="submit" id="e-add"><span class="ms">add</span>Save week</button>
           </div>
-          <div class="acts">
-            <button type="button" class="btn quiet" data-export="csv"><span class="ms">download</span>Export CSV</button>
-            <a class="btn primary" href="#log" data-add><span class="ms">add</span>Add earnings</a>
-          </div>
-        </div>
-
-        <section class="card pad empty-card" id="d-empty" hidden>
-          <span class="ms big">hourglass_top</span>
-          <h2>Add at least 4 weeks of pay to get your first paycheck</h2>
-          <p class="hint">Keel needs a few weeks to see how your pay moves. Log them in the earnings log, or add example weeks for your job.</p>
-          <div class="row"><button type="button" class="btn primary" id="d-example1"><span class="ms">auto_awesome</span>Add example weeks for my job</button><a class="btn quiet" href="#log">Open the earnings log</a></div>
-        </section>
-
-        <div id="d-results" class="stack" hidden>
-          <div class="kpis" id="kpis">
-            <div class="kpi accent">
-              <div class="top"><span><span class="caps">Recommended paycheck</span><br><span class="hint" id="k-week"></span></span><span class="ms">payments</span></div>
-              <div class="v" id="ph-pay"></div>
-              <div class="s" id="k-payrange"></div>
-            </div>
-            <div class="kpi">
-              <div class="top"><span><span class="caps">Buffer balance</span><br><span class="hint">Before next payday</span></span><span class="ms">account_balance_wallet</span></div>
-              <div class="v" id="ph-buf"></div>
-              <div class="s" id="k-bufsub"></div>
-            </div>
-            <div class="kpi">
-              <div class="top"><span><span class="caps">Tax set-aside</span><br><span class="hint" id="ph-tax"></span></span><span class="ms">shield</span></div>
-              <div class="v" id="k-tax"></div>
-              <div class="s" id="k-taxsub"></div>
-            </div>
-            <div class="kpi">
-              <div class="top"><span><span class="caps">Chance of running out</span><br><span class="hint">Next 4 weeks, simulated</span></span><span class="ms">speed</span></div>
-              <div class="v" id="k-risk"></div>
-              <div class="s" id="k-risksub"></div>
-            </div>
-          </div>
-
-          <div id="d-warn"></div>
-
-          <section class="card pad">
-            <div class="cardtop">
-              <div><h2>Earnings versus Keel paycheck</h2><p class="hint">Weekly take-home pay after the tax set-aside, next to what Keel would have paid you.</p></div>
-              <div class="seg" role="group" aria-label="Show as">
-                <button type="button" data-cview="chart" aria-pressed="true">Chart</button>
-                <button type="button" data-cview="table" aria-pressed="false">Show as table</button>
-              </div>
-            </div>
-            <div class="legend">
-              <span><i class="key" style="border-color:var(--ink2);border-top-style:dashed"></i>Take-home pay</span>
-              <span><i class="key" style="border-color:var(--keel);border-top-width:3px"></i>Keel paycheck</span>
-              <span><i class="swatch" style="background:color-mix(in srgb,var(--keel) 18%,transparent)"></i>Forecast range</span>
-            </div>
-            <div class="plot" id="c-pay"></div>
-            <div class="scroll" id="c-paytable" hidden></div>
-          </section>
-
-          <div class="grid2">
-            <section class="card pad">
-              <div class="cardhead"><span class="caps"><span class="ms">psychology</span> Plain-language reasoning</span></div>
-              <h2>Why <span id="why-amt"></span> was recommended</h2>
-              <p class="quote" id="ph-reason"></p>
-              <div class="three">
-                <div><span class="caps">Expected take-home</span><b id="ph-range"></b></div>
-                <div><span class="caps">Buffer now</span><b id="w-buf"></b></div>
-                <div><span class="caps">Paycheck</span><b id="w-pay"></b></div>
-              </div>
-              <p class="hint" id="ph-basis"></p>
-              <div class="row between"><span class="hint" id="w-next"></span><a class="linkbtn" href="#plan">Try other risk limits →</a></div>
-            </section>
-            <section class="card pad">
-              <div class="cardhead"><span class="caps"><span class="ms">stacked_line_chart</span> Next week</span><span class="chip soft">Your last 12 weeks</span></div>
-              <h2>Forecast range</h2>
-              <p class="hint">The 10%, 50% and 90% points of your recent take-home pay. A simple forecast, not calibrated.</p>
-              <div class="pbars" id="pbars"></div>
-            </section>
-          </div>
-
-          <section class="card">
-            <div class="cardtop pad">
-              <div class="row"><h2>Recent earnings ledger</h2><span class="chip soft" id="r-count"></span></div>
-              <div class="seg" role="group" aria-label="Filter weeks" id="r-filter">
-                <button type="button" data-f="all" aria-pressed="true">All</button>
-                <button type="button" data-f="draw" aria-pressed="false">Buffer used</button>
-                <button type="button" data-f="save" aria-pressed="false">Surplus added</button>
-              </div>
-            </div>
-            <div class="scroll"><table id="r-table"></table></div>
-            <div class="pager"><span id="r-foot"></span><a class="linkbtn" href="#log">Open the full earnings log →</a></div>
-          </section>
-        </div>
+          <p class="preview" id="e-preview"></p>
+          <p class="msg" id="e-msg" role="status"></p>
+        </form>
       </section>
 
-      <!-- ===== Earnings log ===== -->
-      <section class="sec" data-sec="log" aria-labelledby="log-h" hidden>
-        <div class="pagehead">
-          <div class="t">
-            <div class="meta"><span class="chip soft">Keel engine</span><span class="chip warn"><span class="dot"></span>Demo · no real money moves</span></div>
-            <h1 id="log-h">Earnings log</h1>
-            <p>Log what you were paid each week, before tax. Adding a week that is already there replaces it.</p>
-          </div>
-          <div class="acts">
-            <button type="button" class="btn quiet" id="d-example2"><span class="ms">auto_awesome</span>Load example weeks</button>
-            <span class="confirm" id="clear-wrap"><button type="button" class="btn danger" id="d-clear">Delete all weeks</button></span>
+      <section class="card">
+        <div class="cardtop pad">
+          <div><h2>Your weeks</h2><p class="hint">Newest first. Your paycheck shows from your 5th week.</p></div>
+          <div class="row">
+            <button type="button" class="btn quiet" data-export="csv"><span class="ms">download</span>Download</button>
+            <button type="button" class="btn quiet" id="d-example2">Use practice weeks</button>
           </div>
         </div>
+        <div class="scroll"><table id="e-table"></table></div>
+        <div class="pager"><span id="e-foot"></span><span class="btns"><button type="button" class="btn quiet" id="e-prev">Newer</button><span id="e-page"></span><button type="button" class="btn quiet" id="e-next">Older</button></span></div>
+      </section>
+    </section>
 
+    <!-- Settings -->
+    <section class="sec" data-sec="settings" aria-label="Settings" hidden>
+      <div class="grid2 even">
         <section class="card pad">
-          <div class="cardhead"><div><span class="caps">Fast entry</span><h2>Log a week of earnings</h2></div><span class="hint"><span class="ms" style="font-size:16px;vertical-align:-3px;color:var(--keel)">sell</span> Tax set-aside applied automatically</span></div>
-          <form id="f-entry" novalidate>
-            <div class="entry">
-              <label class="lf" for="e-week"><span class="caps">Any day in the week</span><input id="e-week" type="date" required></label>
-              <label class="lf" for="e-gross"><span class="caps">Paid that week ($)</span><span class="inwrap left"><span class="cur">$</span><input id="e-gross" type="number" inputmode="decimal" min="0" max="99999" step="0.01" required></span></label>
-              <label class="lf" for="e-note"><span class="caps">Note (optional)</span><input id="e-note" maxlength="80" placeholder="e.g. snow week"></label>
-              <button class="btn primary" type="submit" id="e-add"><span class="ms">add_circle</span>Add week to log</button>
-            </div>
-            <p class="preview" id="e-preview"></p>
-            <p class="msg" id="e-msg" role="status"></p>
-          </form>
+          <h2>About you</h2>
+          <label class="lf" for="s-name"><span class="lab">First name</span><input id="s-name" maxlength="60"></label>
+          <label class="lf" for="s-job"><span class="lab">Kind of work</span><select id="s-job"></select></label>
+          <label class="lf" for="s-pay"><span class="lab">Usual weekly pay</span><span class="inwrap left"><span class="cur">$</span><input id="s-pay" type="number" min="0" step="1"></span></label>
+          <label class="lf" for="s-savings"><span class="lab">Savings you started with</span><span class="inwrap left"><span class="cur">$</span><input id="s-savings" type="number" min="0" step="1"></span></label>
         </section>
-
-        <section class="card">
-          <div class="cardtop pad">
-            <div><h2>Earnings &amp; buffer ledger</h2><p class="hint">Every logged week, newest first. Keel's paycheck and buffer appear from your 5th week.</p></div>
-            <div class="row">
-              <button type="button" class="btn quiet" data-export="csv"><span class="ms">download</span>Export CSV</button>
-              <button type="button" class="btn quiet" data-export="json"><span class="ms">data_object</span>JSON</button>
-            </div>
-          </div>
-          <div class="scroll"><table id="e-table"></table></div>
-          <div class="pager"><span id="e-foot"></span><span class="btns"><button type="button" class="btn quiet" id="e-prev">Previous</button><span id="e-page"></span><button type="button" class="btn quiet" id="e-next">Next</button></span></div>
+        <section class="card pad">
+          <h2>Your choices</h2>
+          <div class="lf"><span class="lab">Set aside for taxes</span><div class="seg taxseg" id="s-taxseg" role="group" aria-label="Tax set-aside"></div></div>
+          <div class="lf"><span class="lab">How careful should your paycheck be?</span><div class="risktiles" id="s-risk"></div></div>
+          <div class="lf"><span class="lab">Monthly bills</span><span class="hint" id="s-bills"></span><button type="button" class="linkbtn" id="d-edit" style="justify-self:start">Change my bills →</button></div>
         </section>
+      </div>
+      <div class="savebar card pad">
+        <span class="hint" id="s-where">Saved in this browser.</span>
+        <span class="grow"></span>
+        <button type="button" class="btn quiet" id="s-discard">Undo changes</button>
+        <button type="button" class="btn primary" id="s-save"><span class="ms">check</span>Save</button>
+      </div>
+      <section class="card pad">
+        <h2>Account</h2>
+        <p class="hint" id="set-session"></p>
+        <div class="setrow"><div><b>Download my data</b><span class="hint">All your weeks as a spreadsheet file.</span></div><button type="button" class="btn quiet" data-export="csv"><span class="ms">download</span>Download</button></div>
+        <div class="setrow"><div><b>Delete all my weeks</b><span class="hint">This can't be undone.</span></div><span id="clear-wrap"><button type="button" class="btn danger" id="d-clear">Delete</button></span></div>
+        <div class="setrow"><div><b id="s-out-label">Log out</b><span class="hint" id="s-out-hint">For your safety, Keel logs you out after 30 minutes of no activity.</span></div><button type="button" class="btn danger" id="d-out"><span class="ms">logout</span><span id="d-out-t">Log out</span></button></div>
       </section>
+    </section>
 
-      <!-- ===== Planning ===== -->
-      <section class="sec" data-sec="plan" aria-labelledby="plan-h" hidden>
-        <div class="pagehead">
-          <div class="t">
-            <div class="meta"><span class="chip soft">Simulation engine</span></div>
-            <h1 id="plan-h">Planning</h1>
-            <p>Change your risk limit and tax set-aside and see the paycheck move. Keel replays your own weeks every time.</p>
-          </div>
-          <div class="acts"><a class="btn quiet" href="./#plan"><span class="ms">science</span>Compare on simulated drivers</a></div>
-        </div>
-        <div id="plan-empty" class="card pad" hidden><p>Add at least 4 weeks in the <a href="#log">earnings log</a> to plan a paycheck.</p></div>
-        <div id="plan-body" class="stack">
-          <div class="grid2 rev">
-            <section class="card pad">
-              <div class="cardhead"><div><span class="caps">Model settings</span><h2>Paycheck rules</h2></div><span class="ms" style="color:var(--muted)">tune</span></div>
-              <div class="lf">
-                <span class="lrow"><b>Tax set-aside</b><span class="chip soft" id="pl-taxlabel"></span></span>
-                <input type="range" id="pl-tax" min="0.10" max="0.25" step="0.05" aria-label="Tax set-aside">
-                <span class="ticks"><span>10%</span><span>15%</span><span>20%</span><span>25%</span></span>
-              </div>
-              <div class="lf">
-                <b>Allowed chance of running out</b>
-                <div class="risktiles" role="group" aria-label="Allowed chance the buffer runs out" id="d-risk"></div>
-              </div>
-              <p class="inset" id="pl-runway"></p>
-            </section>
-            <section class="card pad">
-              <div class="cardhead"><span class="caps"><span class="ms">smart_toy</span> Recommendation</span><span class="chip soft" id="pl-state"></span></div>
-              <div class="row between"><div><span class="hint">Safe paycheck next week</span><div class="bigpay" id="pl-pay"></div></div><div class="right-t"><span class="caps">4-week chance of running out</span><div id="pl-risk" class="riskline"></div></div></div>
-              <div class="equation">
-                <div><span class="caps">Typical take-home</span><b id="eq-mid"></b><span class="hint">50% point</span></div>
-                <div class="neg"><span class="caps">Tax set-aside</span><b id="eq-tax"></b><span class="hint">on a typical week</span></div>
-                <div class="hl"><span class="caps">Keel paycheck</span><b id="eq-pay"></b><span class="hint">steady draw</span></div>
-                <div><span class="caps">Buffer change</span><b id="eq-buf"></b><span class="hint">on a typical week</span></div>
-              </div>
-              <p class="hint" id="pl-reason"></p>
-            </section>
-          </div>
-
-          <div class="tiles3">
-            <div class="kpi"><span class="caps">How uneven your pay is</span><div class="v" id="t-shape"></div><div class="s" id="t-shape2"></div></div>
-            <div class="kpi"><span class="caps">Paycheck swing</span><div class="v" id="t-swing"></div><div class="s" id="t-swing2"></div></div>
-            <div class="kpi"><span class="caps">Weeks the buffer ran out</span><div class="v" id="t-od"></div><div class="s" id="t-od2"></div></div>
-          </div>
-
-          <section class="card pad">
-            <div class="cardtop"><div><h2>Buffer under three ways of paying</h2><p class="hint">Same pay, same starting buffer. Below zero means the buffer ran out.</p></div></div>
-            <div class="legend">
-              <span><i class="key" style="border-color:var(--keel);border-top-width:3px"></i>Keel</span>
-              <span><i class="key" style="border-color:var(--avg4);border-top-style:dotted"></i>4-week average</span>
-              <span><i class="key" style="border-color:var(--last);border-top-style:dashed"></i>Last week's pay</span>
-            </div>
-            <div class="plot" id="c-buf"></div>
-          </section>
-
-          <details class="card pad how">
-            <summary><b>How this page works</b></summary>
-            <p class="hint">Keel replays your own weeks: from week 5 on, it picks each paycheck with the same Monte Carlo rule as the main results (highest paycheck whose chance of an empty buffer in the next 4 weeks stays under your limit) and compares it with paying last week's pay or the 4-week average. The starting buffer is half a week of your average take-home pay.</p>
-            <p class="hint"><b>One difference:</b> the main results forecast with a LightGBM model and conformal calibration. Here the low, middle and high case are simply the 10%, 50% and 90% points of your last 12 weeks, so they are uncalibrated and less reliable, especially with few weeks. Example weeks are simulated from our own assumptions, not data about real workers.</p>
-          </details>
-        </div>
-      </section>
-
-      <!-- ===== Settings ===== -->
-      <section class="sec" data-sec="settings" aria-labelledby="set-h" hidden>
-        <div class="pagehead">
-          <div class="t"><span class="caps">Workspace profile</span><h1 id="set-h">Profile &amp; settings</h1><p>Your profile, paycheck rules and data. Changes apply as soon as you save.</p></div>
-          <span class="chip" id="set-sync"><span class="dot" style="color:var(--keel)"></span><span></span></span>
-        </div>
-        <div class="grid2 even">
-          <div class="stack">
-            <section class="card pad">
-              <div class="cardhead"><h2><span class="ms">badge</span> Your profile</h2><span class="chip soft" id="set-kind"></span></div>
-              <div class="who"><span class="avatar lg" id="set-avatar">K</span><div><b id="set-name"></b><span class="hint" id="set-email"></span></div></div>
-              <label class="lf" for="s-name"><span class="caps">Display name</span><span class="inwrap left"><span class="ms">person</span><input id="s-name" maxlength="60"></span></label>
-              <label class="lf" for="s-job"><span class="caps">Main kind of work</span><select id="s-job"></select></label>
-              <span class="hint" id="s-jobshape"></span>
-              <button type="button" class="linkbtn" id="d-edit">Re-run the setup steps →</button>
-            </section>
-            <section class="card pad">
-              <div class="cardhead"><h2><span class="ms">sync_lock</span> Data &amp; session</h2></div>
-              <p class="inset" id="set-store"></p>
-              <div class="setrow"><div><b>Export your log</b><span class="hint">Every week you logged, with the tax set-aside and Keel paycheck.</span></div><span class="row"><button type="button" class="btn quiet" data-export="csv"><span class="ms">download</span>CSV</button><button type="button" class="btn quiet" data-export="json">JSON</button></span></div>
-              <div class="setrow"><div><b class="neg">Delete all weeks</b><span class="hint">Removes every logged week. Your profile stays.</span></div><button type="button" class="btn danger" id="s-purge"><span class="ms">delete_sweep</span>Delete</button></div>
-            </section>
-          </div>
-          <div class="stack">
-            <section class="card pad">
-              <div class="cardhead"><h2><span class="ms">account_balance</span> Buffer &amp; tax rules</h2></div>
-              <div class="lf">
-                <span class="lrow"><span><span class="caps">Tax set-aside</span><br><span class="hint">Set aside from each week's pay before Keel works out the paycheck.</span></span><span class="chip soft" id="s-taxlabel"></span></span>
-                <input type="range" id="s-tax" min="0.10" max="0.25" step="0.05" aria-label="Tax set-aside">
-                <span class="ticks"><span>10%</span><span>15%</span><span>20%</span><span>25%</span></span>
-              </div>
-              <div class="lf">
-                <span class="lrow"><span class="caps">Risk limit</span><span class="hint" id="s-risklabel"></span></span>
-                <span class="hint">The estimated chance of your buffer running out in the next 4 weeks. A lower limit keeps a thicker cushion and may mean a smaller paycheck.</span>
-                <div class="risktiles" id="s-risk"></div>
-              </div>
-            </section>
-            <section class="card pad savebar">
-              <span class="ms">lock</span><span class="hint">Saved to <span id="s-where">this browser</span>. Nothing is shared.</span>
-              <span class="grow"></span>
-              <button type="button" class="btn quiet" id="s-discard">Discard changes</button>
-              <button type="button" class="btn primary" id="s-save"><span class="ms">check</span>Save changes</button>
-            </section>
-          </div>
-        </div>
-        <section class="card pad setrow">
-          <div><h2>Session</h2><span class="hint" id="set-session"></span></div>
-          <button type="button" class="btn danger" data-signout><span class="ms">logout</span><span id="s-out-t">Sign out</span></button>
-        </section>
-      </section>
-
-      <section class="ctaband" data-currents="light" data-keel="0.9">
-        <p class="eyebrow2">See the proof</p>
-        <h2>How does this rule hold up on real ride-hail weeks?</h2>
-        <p>The research demo replays simulated drivers built on real NYC trip data, and shows where Keel loses.</p>
-        <div class="row"><a class="btn primary" href="./">Explore the research demo<span class="ms">arrow_forward</span></a><a class="btn quiet" href="../">Back to homepage</a></div>
-      </section>
-    </main>
-<footer class="foot"><div class="footin"><a class="brand" href="../"><span class="logo"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M2 6h16M10 6v6M4 12c1.5 3 4 4 6 4s4.5-1 6-4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></span>Keel</a><p>Demo for Bay Valley Hacks 2026. No real money moves and nothing here is financial or tax advice. Please do not enter real financial information.</p><nav aria-label="Footer"><a href="../#how">Methodology</a><a href="./#evidence">Evidence</a><a href="./">Research demo</a></nav></div></footer>
-
-  </div>
+    <section class="ctaband" data-currents="light" data-keel="0.9">
+      <h2>Curious how well this works?</h2>
+      <p>See Keel tested on a year of real New York ride-share data, including where it falls short.</p>
+      <div class="row"><a class="btn primary" href="./">See the research<span class="ms">arrow_forward</span></a></div>
+    </section>
+  </main>
 </div>
+
+<footer class="foot"><div class="footin"><a class="brand" href="../"><span class="logo"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M2 6h16M10 6v6M4 12c1.5 3 4 4 6 4s4.5-1 6-4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></span>Keel</a><p>A Bay Valley Hacks 2026 demo. No real money moves. Not financial or tax advice. Please don't enter real account numbers.</p><nav aria-label="Footer"><a href="../#how">How it works</a><a href="./">Research</a></nav></div></footer>
 
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 

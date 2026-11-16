@@ -80,7 +80,7 @@ The page loads JSON, so serve it over HTTP rather than double-clicking the file:
 python -m http.server
 ```
 
-Then open http://localhost:8000/app/. The app loads `outputs/results.json`, or falls back to the toy sample if that file doesn't exist yet.
+Then open http://localhost:8000/ for the homepage, or http://localhost:8000/app/ for the app. The app loads `outputs/results.json`, or falls back to the toy sample if that file doesn't exist yet.
 
 ## How we keep it honest
 
@@ -144,7 +144,7 @@ python run_all.py          # data -> forecast -> policy -> evaluation -> outputs
 python3 -m http.server 8000   # from the repo root, then open http://localhost:8000/
 ```
 
-The app fetches `../outputs/results.json` (falling back to `outputs/sample/results.json`), so it must be served over HTTP from the **repo root**. Opening `app/index.html` as a file, or deploying only `app/`, cannot reach `outputs/`. To deploy, publish the whole repo root as a static site (GitHub Pages: Settings → Pages → branch `main`, folder `/`); the root `index.html` forwards to `app/`.
+The app fetches `../outputs/results.json` (falling back to `outputs/sample/results.json`), so it must be served over HTTP from the **repo root**. Opening `app/index.html` as a file, or deploying only `app/`, cannot reach `outputs/`. To deploy, publish the whole repo root as a static site (GitHub Pages: Settings → Pages → branch `main`, folder `/`); the root `index.html` is the homepage (`app/home.css`, `app/home.js`), which draws its hero from the same results file and links to the app at `app/`.
 
 App tests (Node 18+, no install): `node --test app/`
 

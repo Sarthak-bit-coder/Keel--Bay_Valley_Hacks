@@ -93,6 +93,10 @@ h2 { font-size: 17px; text-wrap: balance; }
 #rectable tr[aria-current="true"] td { background: color-mix(in srgb, var(--keel) 10%, transparent); }
 .recdl { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 8px 16px; margin: 0; }
 .recdl dt { font-size: 13px; color: var(--ink2); } .recdl dd { margin: 0; font-size: 18px; font-weight: 600; }
+.bmgrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px 20px; }
+.bmgrid h4 { margin: 0 0 4px; font-size: 13px; font-weight: 600; }
+.bmgrid .bars .row { grid-template-columns: 7.5em 1fr 4.5em; }
+#bmtable td.better { color: var(--good-text); } #bmtable td.worse { color: var(--crit); }
 .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 #optlist { border: 0; margin: 0; padding: 0; display: grid; gap: 8px; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); }
 #optlist label { display: flex; gap: 8px; align-items: flex-start; border: 1px solid var(--border); border-radius: 8px; padding: 10px; cursor: pointer; }
@@ -326,6 +330,21 @@ footer { color: var(--muted); font-size: 12px; }
     <p class="note" id="loses"></p>
   </section>
 
+  <section class="card" aria-labelledby="bm-h">
+    <header>
+      <h2 id="bm-h">Benchmark: Keel vs simple pay rules</h2>
+      <p id="bmsub"></p>
+    </header>
+    <div class="scroll"><table id="bmtable"></table></div>
+    <div class="legend" id="bmleg"></div>
+    <div class="bmgrid" id="bmbars"></div>
+    <h3 class="relh3">Across every run in the file</h3>
+    <ul class="plain" id="bmtally"></ul>
+    <h3 class="relh3">Model ablation (separate from the policy benchmark)</h3>
+    <p class="note" id="bmabl"></p>
+    <p class="note" id="bmnote"></p>
+  </section>
+
   <section class="card" aria-labelledby="lose-h">
     <header><h2 id="lose-h">Where Keel loses</h2><p>Across every driver, scenario and limit in the results file, not only the one selected above.</p></header>
     <ul class="plain" id="losslist"></ul>
@@ -384,6 +403,7 @@ footer { color: var(--muted); font-size: 12px; }
 </div>
 
 <script src="data.js"></script>
+<script src="benchmark.js"></script>
 <script src="recovery.js"></script>
 <script id="data">
 "use strict";
@@ -591,6 +611,7 @@ function render() {
     return "<tr" + (r.week === whyWeek ? ' aria-current="true"' : "") + "><td><button type=\"button\" data-why=\"" + r.week + "\" aria-label=\"Explain week " + r.week + "\">W" + r.week + "</button></td><td class=\"num\">" + money(r.lo) + "–" + money(r.hi) + "</td><td class=\"num\">" + money(r.buffer) + "</td><td class=\"num\">" + money(r.pay) + "</td><td>" + esc(r.reason) + "</td></tr>";
   }).join("");
   renderRecovery();
+  renderBenchmark();
   renderWhatIf();
   renderOptimizer();
   renderBreakdown();
@@ -610,7 +631,7 @@ function bar(label, v, target, off) {
 // Forecast reliability: coverage vs target, error metrics, forecast band vs actual, largest misses.
 // Everything is read from results.json (stored forecasts) and calibration.json; nothing is re-estimated here.
 var CAL = null;
-function renderCalib(cal) { CAL = cal; renderReliability(); }
+function renderCalib(cal) { CAL = cal; renderReliability(); renderBenchmark(); }
 function renderReliability() {
   if (!DATA) return;
   var C = { keel: css("--keel"), avg4: css("--avg4") };
@@ -910,6 +931,61 @@ function renderRecovery() {
     }).join("") + "</tbody>";
   document.getElementById("recnote").innerHTML = "<strong>The tradeoff:</strong> a looser risk limit pays a higher paycheck, so less goes back into the buffer each week; it falls further in bad weeks and takes longer to refill. " +
     "<strong>What this is:</strong> historical replay of " + (TOY ? "toy" : "simulated") + " drivers on past weeks, using the paychecks Keel actually chose. It is not a forecast: no future earnings are projected and no recovery date is promised. Not financial or tax advice.";
+}
+
+// Policy benchmark (KeelBenchmark): held-out replay weeks from results.json. The only model ablation shown is the one
+// calibration.json actually records (conformal calibration on vs off); nothing else is claimed.
+var BM_INFO = {
+  avgPay: ["Average paycheck", "What lands in the worker's account each week. Higher is better, but not at the cost of overdrafts.", true],
+  paySwing: ["Paycheck swing", "Gap between the best and worst paycheck. Smaller means easier to budget rent and bills.", true],
+  avgChange: ["Typical week-to-week change", "How much the paycheck usually moves from one week to the next. Smaller is steadier.", true],
+  emptyWeeks: ["Weeks with an empty buffer", "Weeks the savings buffer went below zero, meaning an overdraft. Fewer is better.", false],
+  lowestBuffer: ["Lowest buffer", "The worst balance the buffer reached. Higher means more cushion in a bad week.", true],
+  shortfall: ["Total overdraft", "Dollars below zero, added up over all weeks. Shows how deep the shortfalls went.", true]
+};
+function renderBenchmark() {
+  if (!DATA) return;
+  var run = findRun(state.driver, state.scenario, state.risk), TOY = DATA.meta.model === "toy";
+  if (!run) return;
+  var rows = KeelBenchmark.benchmark(run), NA = "—";
+  var fmt = function (id, v) { return v === null ? NA : id === "emptyWeeks" ? String(v) : money(v); };
+  var verdict = function (r) {
+    if (r.vsAvg4 === null || r.vsLast === null) return ["", "Not in file"];
+    if (r.vsAvg4 === "better" && r.vsLast === "better") return ["better", "Better than both"];
+    if (r.vsAvg4 === "worse" && r.vsLast === "worse") return ["worse", "Worse than both"];
+    if (r.vsAvg4 === "tie" && r.vsLast === "tie") return ["", "Tie"];
+    var w = r.vsAvg4 === "worse" ? "4-week average" : r.vsLast === "worse" ? "last week’s pay" : null;
+    return w ? ["worse", "Worse than " + w] : ["better", "Better or tied"];
+  };
+  document.getElementById("bmsub").textContent = (TOY ? "Toy sample, not our result. " : "Real model, simulated driver " + state.driver + ". ") +
+    "Policy benchmark on the held-out test weeks (" + run.weeks.length + " weeks, " + (NAMES[state.scenario] || state.scenario).toLowerCase() + ", " + pct(state.risk) + " limit). Same earnings, same starting buffer, three pay rules.";
+  document.getElementById("bmtable").innerHTML = "<thead><tr><th>Metric</th><th class=\"num\">Keel</th><th class=\"num\">4-week average</th><th class=\"num\">Last week’s pay</th><th>Keel vs rules</th></tr></thead><tbody>" +
+    rows.map(function (r) {
+      var v = verdict(r), info = BM_INFO[r.id];
+      return "<tr><td><strong>" + esc(info[0]) + "</strong><br><span class=\"note\">" + esc(info[1]) + "</span></td><td class=\"num\">" + fmt(r.id, r.keel) + "</td><td class=\"num\">" + fmt(r.id, r.avg4) +
+        "</td><td class=\"num\">" + fmt(r.id, r.last) + '</td><td class="' + v[0] + '">' + esc(v[1]) + "</td></tr>";
+    }).join("") + "</tbody>";
+  var C = { keel: css("--keel"), avg4: css("--avg4"), last: css("--last") }, label = { keel: "Keel", avg4: "4-week average", last: "Last week’s pay" };
+  legend(document.getElementById("bmleg"), KeelBenchmark.POLICIES.map(function (p) { return { name: label[p], color: C[p] }; }), false);
+  document.getElementById("bmbars").innerHTML = rows.filter(function (r) { return r.id !== "lowestBuffer"; }).map(function (r) {
+    var vals = KeelBenchmark.POLICIES.map(function (p) { return r[p]; }), max = Math.max.apply(null, vals.map(function (v) { return Math.abs(v || 0); }));
+    return "<div><h4>" + esc(BM_INFO[r.id][0]) + (r.better === "higher" ? " (higher is better)" : " (lower is better)") + '</h4><div class="bars">' + KeelBenchmark.POLICIES.map(function (p) {
+      var v = r[p], w = v === null || !max ? 0 : 100 * Math.abs(v) / max;
+      return '<div class="row"><span>' + label[p] + '</span><span class="track" role="img" aria-label="' + esc(label[p] + ": " + fmt(r.id, v)) + '"><span class="fill" style="width:' + w + "%;background:" + C[p] + '"></span></span><span class="n">' + fmt(r.id, v) + "</span></div>";
+    }).join("") + "</div></div>";
+  }).join("");
+  var t = KeelBenchmark.tally(DATA);
+  document.getElementById("bmtally").innerHTML = KeelBenchmark.METRICS.map(function (m) {
+    var x = t[m.id];
+    return "<li><strong>" + esc(BM_INFO[m.id][0]) + ":</strong> Keel beat both rules in " + x.beatsBoth + " of " + x.runs + " runs and did worse than at least one in " + x.losesToOne + (x.missing ? " (" + x.missing + " runs missing this metric)" : "") + ".</li>";
+  }).join("");
+  var abl = document.getElementById("bmabl");
+  if (CAL && typeof CAL.calibrated_hit_rate === "number" && typeof CAL.uncalibrated_hit_rate === "number")
+    abl.textContent = (CAL.model === "toy" ? "Toy calibration file. " : "") + "Conformal calibration on vs off, from calibration.json: the low case was right in " + pct(CAL.calibrated_hit_rate) + " of " + (CAL.n_test_weeks || "the") + " test weeks with calibration and " + pct(CAL.uncalibrated_hit_rate) +
+      " without (target " + pct(CAL.target_low_case) + "). This compares the forecast model, not the pay rule; details are in Forecast reliability. No other ablations were run, so none are shown.";
+  else abl.textContent = "No ablation results in the files (calibration.json is missing or has no before/after hit rates), so none are shown.";
+  document.getElementById("bmnote").textContent = (TOY ? "Toy data from the prototype simulation. " : "Simulated drivers on real NYC trip data. ") +
+    "One replay per setting, so these are descriptive counts, not statistically tested differences. Average paycheck, swing and empty weeks are copied from the results file; the rest is arithmetic on its weekly values. Not financial or tax advice.";
 }
 
 // What-if: compares precomputed runs for the selected driver; the badge text says whether they are toy or real.

@@ -364,7 +364,7 @@ footer { color: var(--muted); font-size: 12px; }
     <div class="scroll"><table id="log"></table></div>
   </section>
 
-  <footer>Draft for Bay Valley Hacks. Simulation only: no real money moves and nothing here is financial or tax advice.</footer>
+  <footer>Built for Bay Valley Hacks 2026. Simulation only: no real money moves and nothing here is financial or tax advice.</footer>
 </div>
 
 <script src="data.js"></script>
@@ -378,7 +378,7 @@ var fromRun = KeelData.fromRun;
 
 <script id="ui">
 "use strict";
-var state = { driver: "A", scenario: "storm", risk: 0.05, tables: false };
+var state = { driver: "C", scenario: "storm", risk: 0.05, tables: false }; // opens on the most volatile driver in the storm
 var NAMES = { normal: "Normal weeks", storm: "Snowstorm replay" };
 var NS = "http://www.w3.org/2000/svg";
 function money(n) { var r = Math.round(n); return (r < 0 ? "−$" : "$") + Math.abs(r).toLocaleString("en-US"); }
@@ -748,9 +748,11 @@ function renderStress() {
   if (!DATA) return;
   var TOY = DATA.meta.model === "toy", C = { keel: css("--keel"), avg4: css("--avg4"), last: css("--last"), muted: css("--muted") };
   var res = KeelData.stressTest(DATA, state.driver, state.risk, stScenario), sc = res.scenario;
-  document.getElementById("stseg").innerHTML = KeelData.STRESS_SCENARIOS.map(function (s) {
-    var ok = KeelData.stressTest(DATA, state.driver, state.risk, s.id).available;
-    return '<button type="button" data-st="' + s.id + '" aria-pressed="' + (s.id === stScenario) + '" data-off="' + !ok + '">' + esc(s.name) + (ok ? "" : " (not evaluated)") + "</button>";
+  // Only scenarios that were actually evaluated get a button.
+  document.getElementById("stseg").innerHTML = KeelData.STRESS_SCENARIOS.filter(function (s) {
+    return KeelData.stressTest(DATA, state.driver, state.risk, s.id).available;
+  }).map(function (s) {
+    return '<button type="button" data-st="' + s.id + '" aria-pressed="' + (s.id === stScenario) + '">' + esc(s.name) + "</button>";
   }).join("");
   document.getElementById("stsub").textContent = (TOY ? "Toy sample, not our result. " : "Simulated drivers, real evaluation runs. ") +
     "Driver " + state.driver + " at a " + pct(state.risk) + " limit (change both above). Before = normal weeks, after = the chosen scenario.";

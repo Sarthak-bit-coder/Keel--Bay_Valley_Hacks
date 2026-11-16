@@ -2,9 +2,110 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<title>Keel</title>
-<!-- Serve or deploy the repo root so app/ can fetch ../outputs/. This page just forwards to the app. -->
-<meta http-equiv="refresh" content="0; url=app/">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Keel: your work changes, your payday shouldn't (simulation)</title>
+<meta name="description" content="Keel turns uneven gig earnings into a steadier simulated weekly paycheck. Simulated drivers on real NYC ride-hail data. No real money, not financial or tax advice.">
+<!-- Serve or deploy the repo root: this page and app/ both read outputs/results.json. -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="app/home.css">
 </head>
-<body><p><a href="app/">Open the Keel app</a></p></body>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+
+<div class="night">
+  <header class="top">
+    <a class="brand" href="./" aria-label="Keel home">
+      <svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true"><path d="M2 6h16M10 6v6M4 12c1.5 3 4 4 6 4s4.5-1 6-4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      Keel
+    </a>
+    <nav class="links" aria-label="Main">
+      <a href="#how">How it works</a>
+      <a href="#storm">Stress test</a>
+      <a href="#honest">Where it loses</a>
+    </nav>
+    <a class="btn small" href="app/">Open the simulation</a>
+  </header>
+
+  <main id="main">
+    <section class="hero" aria-labelledby="hero-h">
+      <p class="kicker"><span id="datalabel">Simulation</span></p>
+      <h1 id="hero-h"><span class="dim">Your work changes.</span> <span>Your payday shouldn’t.</span></h1>
+      <p class="lede">Keel holds your gig payouts in a buffer, forecasts the week ahead, and pays you the steadiest paycheck it can without running the buffer dry.</p>
+      <div class="cta">
+        <a class="btn" href="app/">Open the simulation</a>
+        <a class="btn ghost" href="app/my-pay.html">Try it with your own pay</a>
+      </div>
+
+      <figure class="stage" id="stage">
+        <div class="chart">
+          <div class="legend">
+            <span><i class="key earn"></i>What the driver earned, after tax</span>
+            <span><i class="key keel"></i>Keel paycheck</span>
+          </div>
+          <div class="plot" id="heroplot"><p class="wait" id="herowait">Loading the simulation…</p></div>
+          <div class="capline">
+            <figcaption id="herocap"></figcaption>
+            <button type="button" class="replay" id="replay" hidden>Replay</button>
+          </div>
+        </div>
+        <div class="cards">
+          <div class="paycard" id="paycard" hidden></div>
+          <div class="bufcard" id="bufcard" hidden></div>
+        </div>
+      </figure>
+    </section>
+  </main>
+</div>
+
+<div class="day" data-needs-data hidden>
+  <section class="wrap proof" aria-labelledby="proof-h">
+    <h2 id="proof-h">Same earnings. A calmer paycheck.</h2>
+    <p class="sub" id="proofsub"></p>
+    <div class="figures" id="figures"></div>
+  </section>
+
+  <section class="wrap how" id="how" aria-labelledby="how-h">
+    <h2 id="how-h">Four steps, every week</h2>
+    <ol class="steps">
+      <li><b>Hold</b><span>Gig payouts land in a buffer, not straight in checking. A share is set aside for tax.</span></li>
+      <li><b>Forecast</b><span>A model predicts a low, middle and high case for next week’s take-home pay.</span></li>
+      <li><b>Calibrate</b><span>The low case is adjusted until it is right about as often as it claims.</span></li>
+      <li><b>Pay</b><span>Keel pays the highest paycheck that keeps the chance of an empty buffer under your limit.</span></li>
+    </ol>
+  </section>
+
+  <section class="wrap storm" id="storm" aria-labelledby="storm-h">
+    <div class="stormtext">
+      <p class="eyebrow">Stress test</p>
+      <h2 id="storm-h">The week the snow came</h2>
+      <p id="stormcopy"></p>
+      <p class="fine" id="stormfine"></p>
+      <a class="textlink" href="app/#plan">Run the stress test yourself</a>
+    </div>
+    <div class="flow" id="stormflow"></div>
+  </section>
+</div>
+
+<div class="night close" data-needs-data hidden>
+  <section class="wrap honest" id="honest" aria-labelledby="honest-h">
+    <p class="eyebrow">Evidence</p>
+    <h2 id="honest-h">We publish where Keel loses.</h2>
+    <p class="lede" id="honestcopy"></p>
+    <div class="cta">
+      <a class="btn" href="app/#evidence">See the evidence</a>
+      <a class="btn ghost" href="app/">Open the simulation</a>
+    </div>
+  </section>
+</div>
+
+<footer class="foot">
+  <p>Built for Bay Valley Hacks 2026. Simulation only: drivers are simulated on real NYC ride-hail data and no real money moves. Keel does not promise income. Not financial or tax advice.</p>
+</footer>
+
+<script src="app/data.js"></script>
+<script src="app/paycheck.js"></script>
+<script src="app/home.js"></script>
+</body>
 </html>

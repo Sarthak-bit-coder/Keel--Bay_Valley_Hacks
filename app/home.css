@@ -1,0 +1,174 @@
+/* Keel homepage. Two surfaces: night (deep navy) and day (warm off-white), one teal accent that always means Keel.
+   The product visual carries the page; nothing here is decoration. Shares the app's type family and accent hue. */
+:root {
+  --navy: #0a1422;
+  --navy-2: #0f1c2e;
+  --navy-3: #16273d;
+  --navy-line: rgba(233, 238, 245, .10);
+  --on-navy: #f3f1ea;
+  --on-navy-2: #a9b6c6;
+  --on-navy-3: #8494a8;
+  --teal: #5fd4b6;
+  --on-teal: #062019;
+  --paper: #f5f4ef;
+  --paper-line: #dfddd4;
+  --ink: #14171a;
+  --ink2: #474c52;
+  --muted: #696e75;
+  --teal-ink: #0b6b57;
+  --amber: #b0611a;
+  --font: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --max: 1160px;
+  --gutter: clamp(20px, 4vw, 40px);
+  --ease: cubic-bezier(.2, .7, .3, 1);
+}
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+html, body { margin: 0; }
+body { font-family: var(--font); font-size: 17px; line-height: 1.55; color: var(--ink); background: var(--paper); -webkit-font-smoothing: antialiased; overflow-x: hidden; }
+h1, h2, p, ol, figure { margin: 0; }
+[hidden] { display: none !important; }
+:focus-visible { outline: 2px solid var(--teal); outline-offset: 3px; border-radius: 4px; }
+.day :focus-visible { outline-color: var(--teal-ink); }
+.skip { position: absolute; left: 16px; top: -60px; z-index: 10; background: var(--on-navy); color: var(--navy); padding: 8px 16px; border-radius: 6px; }
+.skip:focus { top: 8px; }
+
+.night { background: var(--navy); color: var(--on-navy); }
+.day { background: var(--paper); }
+.wrap, .top, .hero { max-width: var(--max); margin: 0 auto; padding-left: var(--gutter); padding-right: var(--gutter); }
+
+/* Top bar */
+.top { display: flex; align-items: center; gap: 32px; height: 64px; }
+.brand { display: inline-flex; align-items: center; gap: 8px; font-size: 19px; font-weight: 600; letter-spacing: -.02em; color: var(--on-navy); text-decoration: none; }
+.brand svg { color: var(--teal); }
+.links { display: flex; gap: 28px; margin-left: auto; }
+.links a { color: var(--on-navy-2); text-decoration: none; font-size: 15px; transition: color .12s var(--ease); }
+.links a:hover { color: var(--on-navy); }
+.btn { display: inline-flex; align-items: center; justify-content: center; min-height: 48px; padding: 0 24px; border-radius: 8px; background: var(--teal); color: var(--on-teal); font-weight: 600; font-size: 16px; text-decoration: none; border: 1px solid transparent; transition: background .12s var(--ease), border-color .12s var(--ease), transform .12s var(--ease); }
+.btn:hover { background: #7be0c6; }
+.btn:active { transform: translateY(1px); }
+.btn.small { min-height: 40px; padding: 0 16px; font-size: 15px; }
+.btn.ghost { background: transparent; color: var(--on-navy); border-color: rgba(233, 238, 245, .28); font-weight: 500; }
+.btn.ghost:hover { border-color: var(--on-navy); background: rgba(233, 238, 245, .05); }
+
+/* Hero */
+.hero { padding-top: clamp(28px, 3.5vw, 48px); padding-bottom: clamp(48px, 7vw, 96px); }
+.kicker { font-size: 14px; color: var(--on-navy-2); display: inline-flex; align-items: center; gap: 10px; margin-bottom: 18px; }
+.kicker::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--teal); }
+h1 { font-size: clamp(44px, 7.4vw, 100px); font-weight: 600; line-height: .98; letter-spacing: -.045em; }
+h1 span { display: block; }
+h1 .dim { color: var(--on-navy-3); }
+.lede { margin-top: 22px; max-width: 34em; font-size: clamp(17px, 1.6vw, 21px); line-height: 1.5; color: var(--on-navy-2); }
+.cta { margin-top: 26px; display: flex; flex-wrap: wrap; gap: 12px; }
+
+/* The product stage: chart with the paycheck and buffer cards layered over it */
+.stage { margin-top: clamp(40px, 6vw, 76px); background: var(--navy-2); border: 1px solid var(--navy-line); border-radius: 16px; padding: 24px; display: grid; grid-template-columns: minmax(0, 1fr) 272px; gap: 32px; }
+.chart { min-width: 0; display: grid; gap: 12px; align-content: start; }
+.cards { display: grid; gap: 16px; align-content: start; margin-top: -60px; } /* the paycheck card rises out of the stage */
+.capline { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; }
+.legend { display: flex; flex-wrap: wrap; gap: 8px 24px; font-size: 14px; color: var(--on-navy-2); }
+.legend span { display: inline-flex; align-items: center; gap: 8px; }
+.key { width: 22px; height: 0; border-top: 2px solid; }
+.key.earn { border-color: var(--on-navy-3); } .key.keel { border-color: var(--teal); border-top-width: 3px; }
+.replay { flex: none; font: inherit; font-size: 14px; color: var(--on-navy-2); background: transparent; border: 1px solid var(--navy-line); border-radius: 6px; min-height: 32px; padding: 0 12px; cursor: pointer; transition: color .12s var(--ease), border-color .12s var(--ease); }
+.replay:hover { color: var(--on-navy); border-color: var(--on-navy-3); }
+.plot { min-height: 240px; }
+.plot svg { display: block; width: 100%; height: auto; }
+.plot text { font-family: var(--font); font-variant-numeric: tabular-nums; }
+.wait { color: var(--on-navy-2); padding: 80px 0; text-align: center; }
+.wait a { color: var(--teal); }
+figcaption { font-size: 13px; color: var(--on-navy-3); max-width: 70ch; }
+
+.paycard, .bufcard { background: var(--on-navy); color: var(--ink); border-radius: 12px; box-shadow: 0 1px 0 rgba(255, 255, 255, .5) inset, 0 24px 48px -16px rgba(0, 0, 0, .55); font-variant-numeric: tabular-nums; }
+.paycard { padding: 20px; }
+.paycard .lab { font-size: 13px; font-weight: 500; color: var(--muted); }
+.paycard .amt { font-size: 44px; font-weight: 600; letter-spacing: -.035em; line-height: 1.1; margin: 2px 0; }
+.paycard .when { font-size: 14px; color: var(--ink2); }
+.paycard .when b { color: var(--ink); font-weight: 600; }
+.paycard .ok { margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--paper-line); font-size: 13px; color: var(--ink2); display: flex; gap: 8px; align-items: baseline; }
+.paycard .ok::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--teal-ink); flex: none; }
+.paycard .ok.warn::before { background: var(--amber); }
+.bufcard { padding: 16px 20px; background: var(--navy-3); color: var(--on-navy); border: 1px solid var(--navy-line); box-shadow: 0 24px 48px -16px rgba(0, 0, 0, .55); }
+.bufcard .lab { font-size: 13px; color: var(--on-navy-2); display: flex; justify-content: space-between; gap: 8px; }
+.bufcard .lab b { color: var(--on-navy); font-weight: 600; font-size: 15px; }
+.bufbars { display: flex; align-items: flex-end; gap: 3px; height: 56px; margin: 12px 0 10px; }
+.bufbars i { flex: 1; background: var(--teal); opacity: .45; border-radius: 1.5px; min-height: 2px; transform-origin: bottom; }
+.bufbars i:last-child { opacity: 1; }
+.bufbars i.neg { background: #f0766a; opacity: 1; }
+.bufcard .foot2 { font-size: 12px; color: var(--on-navy-3); }
+@media (prefers-reduced-motion: no-preference) {
+  .paycard.in, .bufcard.in { animation: lift .5s var(--ease) both; }
+  .bufcard.in .bufbars i { animation: grow .5s var(--ease) both; animation-delay: calc(var(--i) * 30ms + 150ms); }
+}
+@keyframes lift { from { opacity: 0; transform: translateY(12px); } }
+@keyframes grow { from { transform: scaleY(0); } }
+
+/* Day sections */
+.day .wrap { padding-top: clamp(56px, 8vw, 104px); padding-bottom: 0; }
+.day .wrap:last-child { padding-bottom: clamp(56px, 8vw, 104px); }
+h2 { font-size: clamp(30px, 4.2vw, 52px); font-weight: 600; letter-spacing: -.035em; line-height: 1.05; text-wrap: balance; }
+.sub { margin-top: 14px; color: var(--ink2); max-width: 44em; }
+.eyebrow { font-size: 14px; font-weight: 500; color: var(--teal-ink); margin-bottom: 12px; }
+.night .eyebrow { color: var(--teal); }
+
+.figures { margin-top: 40px; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); border-top: 1px solid var(--ink); }
+.fig { padding: 24px 32px 0 0; }
+.fig + .fig { padding-left: 32px; border-left: 1px solid var(--paper-line); }
+.fig .n { font-size: clamp(44px, 6vw, 76px); font-weight: 600; letter-spacing: -.04em; line-height: 1; font-variant-numeric: tabular-nums; }
+.fig .n small { font-size: .42em; font-weight: 500; letter-spacing: -.01em; color: var(--muted); margin-left: 6px; }
+.fig .what { margin-top: 12px; font-weight: 600; }
+.fig .vs { margin-top: 4px; font-size: 15px; color: var(--ink2); }
+
+.steps { list-style: none; padding: 0; margin-top: 40px; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); counter-reset: s; }
+.steps li { counter-increment: s; position: relative; padding: 28px 28px 0 0; border-top: 1px solid var(--paper-line); display: grid; gap: 6px; align-content: start; color: var(--ink2); font-size: 16px; }
+.steps li::before { content: ""; position: absolute; top: -5px; left: 0; width: 9px; height: 9px; border-radius: 50%; background: var(--teal-ink); }
+.steps b { color: var(--ink); font-size: 22px; font-weight: 600; letter-spacing: -.02em; }
+.steps b::before { content: "0" counter(s); display: block; font-size: 13px; font-weight: 500; letter-spacing: 0; color: var(--muted); margin-bottom: 4px; font-variant-numeric: tabular-nums; }
+
+.storm { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 6fr); gap: clamp(32px, 6vw, 80px); align-items: center; }
+.stormtext p { margin-top: 16px; color: var(--ink2); max-width: 32em; }
+.stormtext .eyebrow { margin-top: 0; color: var(--teal-ink); }
+.stormtext strong { color: var(--ink); font-weight: 600; }
+.fine { font-size: 14px; color: var(--muted) !important; }
+.textlink { display: inline-block; margin-top: 20px; color: var(--teal-ink); font-weight: 600; text-underline-offset: 4px; }
+.flow { background: #fff; border: 1px solid var(--paper-line); border-radius: 14px; padding: 28px; display: grid; gap: 20px; box-shadow: 0 1px 2px rgba(20, 23, 26, .04), 0 16px 40px -24px rgba(20, 23, 26, .25); font-variant-numeric: tabular-nums; }
+.flow .row { display: grid; gap: 8px; }
+.flow .lab { font-size: 13px; font-weight: 500; color: var(--muted); }
+.flow .bar { display: flex; gap: 2px; height: 44px; border-radius: 8px; overflow: hidden; }
+.flow .bar span { display: flex; align-items: center; justify-content: center; min-width: 0; overflow: hidden; white-space: nowrap; font-size: 14px; font-weight: 600; color: #fff; }
+.flow .earn { background: var(--ink2); } .flow .draw { background: var(--amber); } .flow .pay { background: var(--teal-ink); } .flow .tax { background: var(--muted); } .flow .save { background: #55639f; }
+.flow dl { margin: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; padding-top: 20px; border-top: 1px solid var(--paper-line); }
+.flow dt { font-size: 13px; color: var(--muted); display: flex; align-items: center; gap: 6px; }
+.flow dt i { width: 10px; height: 10px; border-radius: 2px; flex: none; }
+.flow dd { margin: 2px 0 0; font-size: 24px; font-weight: 600; letter-spacing: -.02em; }
+
+/* Closing section and footer */
+.close .wrap { padding-top: clamp(64px, 9vw, 120px); padding-bottom: clamp(64px, 9vw, 120px); }
+.honest h2 { max-width: 14em; }
+.honest .lede { max-width: 38em; }
+.foot { background: var(--navy); color: var(--on-navy-3); font-size: 13px; border-top: 1px solid var(--navy-line); }
+.foot p { max-width: var(--max); margin: 0 auto; padding: 24px var(--gutter) 32px; }
+
+@media (max-width: 860px) {
+  .links { display: none; }
+  .top .btn { margin-left: auto; }
+  .stage { grid-template-columns: minmax(0, 1fr); gap: 16px; padding: 16px; border-radius: 14px; }
+  .cards { margin-top: 0; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+  .paycard, .bufcard { box-shadow: none; }
+  .figures { grid-template-columns: minmax(0, 1fr); border-top: 0; margin-top: 24px; }
+  .fig, .fig + .fig { padding: 24px 0 0; border-left: 0; border-top: 1px solid var(--paper-line); margin-top: 24px; }
+  .fig:first-child { border-top-color: var(--ink); margin-top: 0; }
+  .steps { grid-template-columns: repeat(2, minmax(0, 1fr)); row-gap: 32px; }
+  .storm { grid-template-columns: minmax(0, 1fr); }
+}
+@media (max-width: 520px) {
+  body { font-size: 16px; }
+  .cta .btn { flex: 1 1 100%; }
+  .cards { grid-template-columns: minmax(0, 1fr); }
+  .paycard .amt { font-size: 38px; }
+  .steps { grid-template-columns: minmax(0, 1fr); }
+  .flow { padding: 20px; }
+  .flow dd { font-size: 20px; }
+  .flow .bar span { font-size: 13px; }
+}
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }

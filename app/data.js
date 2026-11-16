@@ -195,6 +195,27 @@
     };
   }
 
+
+  // Paycheck breakdown for one week, from stored fields only. Tax reserve = gross - net (as stored). Beginning buffer
+  // is the previous week's stored buf_keel; week 1 has no stored opening balance, so it is null and the identity
+  // gross = paycheck + tax + buffer change cannot be checked there (identity: null). Stored values are rounded to cents (four of them, so up to 2c of drift); tolerance is 3c.
+  var IDENTITY_TOLERANCE = 0.03;
+  function paycheckBreakdown(run, week) {
+    if (!run || !Array.isArray(run.weeks) || !run.weeks.length) return null;
+    var i = Math.min(Math.max(1, week || 1), run.weeks.length) - 1, w = run.weeks[i];
+    var gross = typeof w.gross === "number" ? w.gross : null;
+    var tax = gross === null ? null : gross - w.net;
+    var start = i > 0 ? run.weeks[i - 1].buf_keel : null;
+    var change = start === null ? null : w.buf_keel - start;
+    var gap = change === null || gross === null ? null : gross - (w.pay_keel + tax + change);
+    return {
+      week: w.week, weekStart: w.week_start || null, gross: gross, net: w.net, tax: tax, pay: w.pay_keel,
+      bufferStart: start, bufferEnd: w.buf_keel, bufferChange: change,
+      flow: change === null ? "unknown" : change < -IDENTITY_TOLERANCE ? "draw" : change > IDENTITY_TOLERANCE ? "replenish" : "none",
+      identity: gap === null ? null : Math.abs(gap) <= IDENTITY_TOLERANCE, gap: gap
+    };
+  }
+
   // "Why this paycheck?" for one week of one run, using only what the results file stores. The policy tries
   // paychecks from a cap down in $5 steps and keeps the first whose estimated risk fits the limit (src/policy/salary.py).
   // The cap is not stored, so whether the cap or the limit stopped the search is not claimed.
@@ -231,7 +252,7 @@
     };
   }
 
-  var api = { SOURCES: SOURCES, validate: validate, loadData: loadData, findRun: findRun, options: options, stormWeeks: stormWeeks, whatIf: whatIf, paycheckChoices: paycheckChoices, reliability: reliability, STRESS_SCENARIOS: STRESS_SCENARIOS, stressTest: stressTest, explainWeek: explainWeek, fromRun: fromRun };
+  var api = { SOURCES: SOURCES, validate: validate, loadData: loadData, findRun: findRun, options: options, stormWeeks: stormWeeks, whatIf: whatIf, paycheckChoices: paycheckChoices, reliability: reliability, STRESS_SCENARIOS: STRESS_SCENARIOS, stressTest: stressTest, paycheckBreakdown: paycheckBreakdown, explainWeek: explainWeek, fromRun: fromRun };
   if (typeof module !== "undefined" && module.exports) module.exports = api;
   else root.KeelData = api;
 })(this);

@@ -149,6 +149,15 @@ td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; white-sp
 .note strong { color: var(--ink); }
 ul.plain { margin: 0; padding-left: 18px; color: var(--ink2); font-size: 13px; display: flex; flex-direction: column; gap: 4px; }
 .hidden { display: none; }
+.tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--border); }
+.tabs button { font: inherit; font-size: 15px; font-weight: 600; color: var(--ink2); background: transparent; border: 0; border-bottom: 3px solid transparent; padding: 8px 14px; cursor: pointer; }
+.tabs button[aria-selected="true"] { color: var(--ink); border-bottom-color: var(--keel); }
+.tabs button:focus-visible { outline: 2px solid var(--keel); outline-offset: 2px; }
+.panel { display: flex; flex-direction: column; gap: 20px; }
+.panel[hidden] { display: none; }
+.headsup .msg { font-size: 17px; font-weight: 600; }
+.empty { font-weight: 600; white-space: nowrap; }
+.empty svg { vertical-align: -2px; margin-right: 4px; }
 .payday { display: grid; grid-template-columns: minmax(0, 360px) minmax(0, 1fr); gap: 16px; align-items: center; }
 .phone { background: var(--surface); border: 1px solid var(--border); border-radius: 18px; padding: 14px 16px; box-shadow: 0 6px 20px rgba(0,0,0,.10); display: flex; flex-direction: column; gap: 6px; }
 .phone .app { font-size: 12px; color: var(--ink2); display: flex; justify-content: space-between; }
@@ -224,7 +233,15 @@ footer { color: var(--muted); font-size: 12px; }
 
   <section class="tiles" id="tiles" aria-label="Summary"></section>
 
+  <div class="tabs" role="tablist" aria-label="Views">
+    <button type="button" role="tab" id="tab-pay" aria-controls="panel-pay" aria-selected="true">My paycheck</button>
+    <button type="button" role="tab" id="tab-more" aria-controls="panel-more" aria-selected="false" tabindex="-1">How Keel compares</button>
+  </div>
+
+  <div class="panel" id="panel-pay" role="tabpanel" aria-labelledby="tab-pay">
   <section class="payday" id="payday" aria-label="Payday for the selected simulated driver" aria-live="polite"></section>
+
+  <section class="card headsup" id="headsup" aria-labelledby="hu-h" aria-live="polite"></section>
 
   <section class="card">
     <header>
@@ -235,6 +252,14 @@ footer { color: var(--muted); font-size: 12px; }
     <div class="plot" id="c1"></div>
     <div class="scroll hidden" id="c1table"></div>
   </section>
+
+  <section class="card" aria-labelledby="wk-h">
+    <header><h2 id="wk-h">Week by week</h2><p id="wksub"></p></header>
+    <div class="scroll"><table id="weektable"></table></div>
+  </section>
+  </div>
+
+  <div class="panel" id="panel-more" role="tabpanel" aria-labelledby="tab-more" hidden>
 
   <section class="card">
     <header>
@@ -398,6 +423,8 @@ footer { color: var(--muted); font-size: 12px; }
     </header>
     <div class="scroll"><table id="log"></table></div>
   </section>
+
+  </div>
 
   <footer>Built for Bay Valley Hacks 2026. Simulation only: no real money moves and nothing here is financial or tax advice.</footer>
 </div>
@@ -566,6 +593,27 @@ function render() {
     (R.net[pi] < R.pol.keel[pi] ? "Earnings came in below the paycheck, so the buffer covered the gap. " : "Earnings covered the paycheck, so the rest went into the buffer. ") +
     esc(R.log[pi].reason) + '</p>';
 
+  // Heads-up: next week's stored forecast low vs this week's paycheck. Reads lo, pay_keel, buf_keel only.
+  var cw = run.weeks[pi], nw = run.weeks[pi + 1], hu = '<header><h2 id="hu-h">Heads-up for next week</h2></header>';
+  if (!nw) {
+    hu += '<p class="msg">No forecast for the week after this replay.</p><p class="note">The results file ends at week ' + WEEKS + ".</p>";
+  } else {
+    var gap = cw.pay_keel - nw.lo;
+    hu += '<p class="msg">' + (gap > 0 ? "Next week could come in below your paycheck. " + (cw.buf_keel >= gap ? "Your buffer covers it." : "Your buffer may not cover all of it.") : "Next week looks comfortable.") + "</p>" +
+      '<p>Forecast low for week ' + nw.week + ": " + money(nw.lo) + " · this week’s paycheck: " + money(cw.pay_keel) + " · buffer after payday: " + money(cw.buf_keel) + "</p>";
+  }
+  hu += '<p class="note">The forecast low is calibrated to hold about 90% of the time' + (CAL && typeof CAL.calibrated_hit_rate === "number" ? " (" + pct(CAL.calibrated_hit_rate) + " on test weeks)" : "") + ", so about 1 week in 10 can come in lower. Nothing here is a promise or financial advice.</p>";
+  document.getElementById("headsup").innerHTML = hu;
+
+  // Week by week: stored values only. "Buffer empty" uses the same test as the empty-buffer tile (below zero).
+  var emptyIcon = '<svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M6 1 11 10.5H1z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><path d="M6 4.5v3M6 9v.3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>';
+  document.getElementById("wksub").textContent = "Simulated driver " + state.driver + ", " + (state.scenario === "storm" ? "snowstorm" : "normal weeks") + ", " + pct(state.risk) + " limit. Straight from the results file.";
+  document.getElementById("weektable").innerHTML = '<thead><tr><th scope="col">Week</th><th scope="col" class="num">Paycheck</th><th scope="col" class="num">Earned after tax</th><th scope="col" class="num">Buffer after payday</th><th scope="col">Why</th></tr></thead><tbody>' +
+    run.weeks.map(function (w) {
+      return '<tr><th scope="row">W' + w.week + (storm.indexOf(w.week) >= 0 ? " (storm)" : "") + '</th><td class="num">' + money(w.pay_keel) + '</td><td class="num">' + money(w.net) + '</td><td class="num">' + money(w.buf_keel) +
+        (w.buf_keel < 0 ? '<br><span class="empty">' + emptyIcon + "Buffer empty</span>" : "") + "</td><td>" + esc(w.reason) + "</td></tr>";
+    }).join("") + "</tbody>";
+
   document.getElementById("c1sub").textContent = "Weekly take-home earnings after the tax set-aside, next to the paycheck Keel pays. Simulated driver " + state.driver + (state.scenario !== "storm" ? ", normal weeks." : storm.length ? ", snowstorm in week" + (storm.length > 1 ? "s " + storm[0] + " to " + storm[storm.length - 1] : " " + storm[0]) + "." : ", snowstorm scenario (the results file does not mark which weeks).");
   var s1 = [{ name: "Take-home earnings", short: "Earnings", color: C.ink2, values: R.net }, { name: "Keel paycheck", short: "Keel", color: C.keel, values: R.pol.keel }];
   legend(document.getElementById("c1legend"), [{ name: "Keel paycheck", color: C.keel }, { name: "Take-home earnings", color: C.ink2 }], true);
@@ -631,7 +679,7 @@ function bar(label, v, target, off) {
 // Forecast reliability: coverage vs target, error metrics, forecast band vs actual, largest misses.
 // Everything is read from results.json (stored forecasts) and calibration.json; nothing is re-estimated here.
 var CAL = null;
-function renderCalib(cal) { CAL = cal; renderReliability(); renderBenchmark(); }
+function renderCalib(cal) { CAL = cal; render(); } // render() also redraws reliability, benchmark and the heads-up caption
 function renderReliability() {
   if (!DATA) return;
   var C = { keel: css("--keel"), avg4: css("--avg4") };
@@ -1043,6 +1091,23 @@ function setScenario(s) {
   setScenarioButtons();
   render();
 }
+// Tabs: click or arrow keys. Redraw on show so charts in a hidden panel lay out at full width.
+function showTab(id) {
+  ["pay", "more"].forEach(function (t) {
+    var on = t === id, b = document.getElementById("tab-" + t);
+    b.setAttribute("aria-selected", on);
+    b.tabIndex = on ? 0 : -1;
+    document.getElementById("panel-" + t).hidden = !on;
+  });
+  render();
+}
+document.querySelector(".tabs").addEventListener("click", function (e) { var b = e.target.closest("[role=tab]"); if (b) showTab(b.id.slice(4)); });
+document.querySelector(".tabs").addEventListener("keydown", function (e) {
+  if (e.key !== "ArrowLeft" && e.key !== "ArrowRight") return;
+  var next = document.getElementById("tab-pay").getAttribute("aria-selected") === "true" ? "more" : "pay";
+  showTab(next);
+  document.getElementById("tab-" + next).focus();
+});
 document.getElementById("driver").addEventListener("change", function (e) { state.driver = e.target.value; render(); });
 document.getElementById("risk").addEventListener("change", function (e) { state.risk = parseFloat(e.target.value); render(); });
 document.getElementById("tableview").addEventListener("change", function (e) { state.tables = e.target.checked; render(); });

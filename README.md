@@ -41,7 +41,7 @@ In good weeks the buffer grows. In bad weeks it absorbs the dip, so the paycheck
 One page, no install. It reads `outputs/results.json` and redraws everything when you change a control.
 
 ### Controls
-- **Driver:** A (full-time, steady), B (evenings, choppy) or C (weekends, very choppy). All simulated.
+- **Driver:** A (full-time, steady), B (part-time) or C (weekend-only, volatile). All simulated.
 - **Scenario:** normal weeks or a **snowstorm replay**.
 - **Allowed chance the buffer runs out:** 1%, 5%, 10% or 20%.
 - **Show data as tables:** swaps every chart for a table.

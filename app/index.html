@@ -13,11 +13,11 @@
   --surface: #fcfcfb;
   --ink: #0b0b0b;
   --ink2: #52514e;
-  --muted: #898781;
+  --muted: #6b6a65;
   --grid: #e1e0d9;
   --axis: #c3c2b7;
   --border: rgba(11, 11, 11, 0.10);
-  --keel: #2a78d6;
+  --keel: #2470cc;
   --avg4: #eb6834;
   --last: #1baf7a;
   --crit: #d03b3b;
@@ -38,7 +38,7 @@
     --keel: #3987e5;
     --avg4: #d95926;
     --last: #199e70;
-    --crit: #d03b3b;
+    --crit: #e35d5d;
     --good-text: #0ca30c;
   }
 }
@@ -55,7 +55,7 @@
   --keel: #3987e5;
   --avg4: #d95926;
   --last: #199e70;
-  --crit: #d03b3b;
+  --crit: #e35d5d;
   --good-text: #0ca30c;
 }
 * { box-sizing: border-box; }
@@ -77,6 +77,10 @@ h2 { font-size: 17px; text-wrap: balance; }
 .bdrow { display: grid; grid-template-columns: 72px 1fr; gap: 10px; align-items: center; font-size: 13px; color: var(--ink2); }
 .bdbar { display: flex; height: 34px; border-radius: 6px; overflow: hidden; background: var(--grid); }
 .bdbar span { display: flex; align-items: center; justify-content: center; min-width: 0; overflow: hidden; white-space: nowrap; font-size: 12px; font-weight: 600; color: #fff; }
+/* Bar labels: dark text where white falls under 4.5:1. */
+.bdbar .bd-buf, .bdbar .bd-draw { color: #0b0b0b; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .bdbar span, :root:not([data-theme="light"]) .seg button[aria-pressed="true"] { color: #0b0b0b; } }
+:root[data-theme="dark"] .bdbar span, :root[data-theme="dark"] .seg button[aria-pressed="true"] { color: #0b0b0b; }
 .bd-pay { background: var(--keel); } .bd-tax { background: var(--muted); } .bd-buf { background: var(--last); } .bd-draw { background: var(--avg4); } .bd-earn { background: var(--ink2); }
 #bdbody dl { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 8px 16px; margin: 0; }
 #bdbody dt { font-size: 13px; color: var(--ink2); } #bdbody dd { margin: 0; font-size: 18px; font-weight: 600; }
@@ -196,7 +200,7 @@ footer { color: var(--muted); font-size: 12px; }
   <div class="top">
     <div style="display:flex;flex-direction:column;gap:6px">
       <h1>Keel</h1>
-      <p class="sub">A steady weekly paycheck for people paid by the gig. Keel holds the payouts, pays a salary, and sets tax money aside.</p>
+      <p class="sub">A steadier weekly paycheck for people paid by the gig, tested on simulated drivers. In this simulation Keel holds the payouts, pays a salary, and sets tax money aside.</p>
     </div>
     <span class="badge" id="badge">
       <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><path d="M7 1.5 13 12H1z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><path d="M7 5.5v3M7 10v.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
@@ -215,7 +219,7 @@ footer { color: var(--muted); font-size: 12px; }
     <div class="field" role="group" aria-label="Scenario">Scenario
       <div class="seg">
         <button type="button" id="sc-normal" aria-pressed="false">Normal weeks</button>
-        <button type="button" id="sc-storm" aria-pressed="true">Snowstorm replay</button>
+        <button type="button" id="sc-storm" aria-pressed="true">Snowstorm stress test</button>
       </div>
     </div>
     <label class="field" for="risk">Allowed chance the buffer runs out
@@ -409,7 +413,7 @@ footer { color: var(--muted); font-size: 12px; }
         <li><b>Forecast a range.</b> Keel estimates a low and a high case for next week's take-home pay. The wider the range, the less sure it is.</li>
         <li><b>Imagine many possible weeks.</b> It plays out hundreds of possible next few weeks inside that range.</li>
         <li><b>Try paychecks from high to low.</b> It starts at a cap and steps down $5 at a time.</li>
-        <li><b>Stop at the first safe one.</b> It keeps the first paycheck where the chance of the buffer running dry stays within your limit.</li>
+        <li><b>Stop at the first one within your limit.</b> It keeps the first paycheck where the chance of the buffer running dry stays within your limit.</li>
       </ol>
       <p class="note">More uncertainty (a wider range) or a smaller buffer means a lower paycheck. A bigger buffer or a looser limit means a higher one. Keel does not show which model inputs mattered most, because the results file does not record that.</p>
     </details>
@@ -443,7 +447,7 @@ var fromRun = KeelData.fromRun;
 <script id="ui">
 "use strict";
 var state = { driver: "C", scenario: "storm", risk: 0.05, tables: false }; // opens on the most volatile driver in the storm
-var NAMES = { normal: "Normal weeks", storm: "Snowstorm replay" };
+var NAMES = { normal: "Normal weeks", storm: "Snowstorm stress test" };
 var NS = "http://www.w3.org/2000/svg";
 function money(n) { var r = Math.round(n); return (r < 0 ? "−$" : "$") + Math.abs(r).toLocaleString("en-US"); }
 function pct(n) { return Math.round(n * 100) + "%"; }
@@ -485,7 +489,7 @@ function lineChart(el, cfg) {
     var sx = (W - m.l - m.r) / (n - 1);
     var s0 = Math.min.apply(null, cfg.stormWeeks) - 1, s1 = Math.max.apply(null, cfg.stormWeeks) - 1;
     g += '<rect x="' + (X(s0) - sx / 2) + '" y="' + m.t + '" width="' + (sx * (s1 - s0 + 1)) + '" height="' + (H - m.t - m.b) + '" fill="' + ink2 + '" opacity="0.08"/>';
-    g += '<text x="' + ((X(s0) + X(s1)) / 2) + '" y="' + (m.t + 11) + '" text-anchor="middle" font-size="11" fill="' + ink2 + '">Snowstorm</text>';
+    g += '<text x="' + ((X(s0) + X(s1)) / 2) + '" y="' + (m.t + 11) + '" text-anchor="middle" font-size="11" fill="' + ink2 + '">Snowstorm stress test</text>';
   }
   if (cfg.band) {
     var up = cfg.band.hi.map(function (v, i) { return X(i) + "," + Y(v); }).join(" ");
@@ -589,7 +593,7 @@ function render() {
     '<dl><dt>Earned this week, after tax</dt><dd>' + money(R.net[pi]) + '</dd>' +
     '<dt>Tax set aside</dt><dd>' + money(R.gross[pi] - R.net[pi]) + '</dd>' +
     '<dt>Buffer after payday</dt><dd>' + money(R.buf.keel[pi]) + '</dd></dl></div>' +
-    '<p class="why"><strong>' + (storm.length ? "Snowstorm week. " : "Latest week. ") + '</strong>' +
+    '<p class="why"><strong>' + (storm.length ? "Snowstorm stress test week. " : "Latest week. ") + '</strong>' +
     (R.net[pi] < R.pol.keel[pi] ? "Earnings came in below the paycheck, so the buffer covered the gap. " : "Earnings covered the paycheck, so the rest went into the buffer. ") +
     esc(R.log[pi].reason) + '</p>';
 
@@ -599,7 +603,7 @@ function render() {
     hu += '<p class="msg">No forecast for the week after this replay.</p><p class="note">The results file ends at week ' + WEEKS + ".</p>";
   } else {
     var gap = cw.pay_keel - nw.lo;
-    hu += '<p class="msg">' + (gap > 0 ? "Next week could come in below your paycheck. " + (cw.buf_keel >= gap ? "Your buffer covers it." : "Your buffer may not cover all of it.") : "Next week looks comfortable.") + "</p>" +
+    hu += '<p class="msg">' + (gap > 0 ? "Next week could come in below your paycheck. " + (cw.buf_keel >= gap ? "The buffer is larger than the gap." : "Your buffer may not cover all of it.") : "The low case for next week is at or above your paycheck.") + "</p>" +
       '<p>Forecast low for week ' + nw.week + ": " + money(nw.lo) + " · this week’s paycheck: " + money(cw.pay_keel) + " · buffer after payday: " + money(cw.buf_keel) + "</p>";
   }
   hu += '<p class="note">The forecast low is calibrated to hold about 90% of the time' + (CAL && typeof CAL.calibrated_hit_rate === "number" ? " (" + pct(CAL.calibrated_hit_rate) + " on test weeks)" : "") + ", so about 1 week in 10 can come in lower. Nothing here is a promise or financial advice.</p>";
@@ -607,14 +611,14 @@ function render() {
 
   // Week by week: stored values only. "Buffer empty" uses the same test as the empty-buffer tile (below zero).
   var emptyIcon = '<svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M6 1 11 10.5H1z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><path d="M6 4.5v3M6 9v.3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>';
-  document.getElementById("wksub").textContent = "Simulated driver " + state.driver + ", " + (state.scenario === "storm" ? "snowstorm" : "normal weeks") + ", " + pct(state.risk) + " limit. Straight from the results file.";
+  document.getElementById("wksub").textContent = "Simulated driver " + state.driver + ", " + (state.scenario === "storm" ? "snowstorm stress test" : "normal weeks") + ", " + pct(state.risk) + " limit. Straight from the results file.";
   document.getElementById("weektable").innerHTML = '<thead><tr><th scope="col">Week</th><th scope="col" class="num">Paycheck</th><th scope="col" class="num">Earned after tax</th><th scope="col" class="num">Buffer after payday</th><th scope="col">Why</th></tr></thead><tbody>' +
     run.weeks.map(function (w) {
-      return '<tr><th scope="row">W' + w.week + (storm.indexOf(w.week) >= 0 ? " (storm)" : "") + '</th><td class="num">' + money(w.pay_keel) + '</td><td class="num">' + money(w.net) + '</td><td class="num">' + money(w.buf_keel) +
+      return '<tr><th scope="row">W' + w.week + (storm.indexOf(w.week) >= 0 ? " (snowstorm stress test)" : "") + '</th><td class="num">' + money(w.pay_keel) + '</td><td class="num">' + money(w.net) + '</td><td class="num">' + money(w.buf_keel) +
         (w.buf_keel < 0 ? '<br><span class="empty">' + emptyIcon + "Buffer empty</span>" : "") + "</td><td>" + esc(w.reason) + "</td></tr>";
     }).join("") + "</tbody>";
 
-  document.getElementById("c1sub").textContent = "Weekly take-home earnings after the tax set-aside, next to the paycheck Keel pays. Simulated driver " + state.driver + (state.scenario !== "storm" ? ", normal weeks." : storm.length ? ", snowstorm in week" + (storm.length > 1 ? "s " + storm[0] + " to " + storm[storm.length - 1] : " " + storm[0]) + "." : ", snowstorm scenario (the results file does not mark which weeks).");
+  document.getElementById("c1sub").textContent = "Weekly take-home earnings after the tax set-aside, next to the paycheck Keel pays. Simulated driver " + state.driver + (state.scenario !== "storm" ? ", normal weeks." : storm.length ? ", snowstorm stress test in week" + (storm.length > 1 ? "s " + storm[0] + " to " + storm[storm.length - 1] : " " + storm[0]) + "." : ", snowstorm stress test (the results file does not mark which weeks).");
   var s1 = [{ name: "Take-home earnings", short: "Earnings", color: C.ink2, values: R.net }, { name: "Keel paycheck", short: "Keel", color: C.keel, values: R.pol.keel }];
   legend(document.getElementById("c1legend"), [{ name: "Keel paycheck", color: C.keel }, { name: "Take-home earnings", color: C.ink2 }], true);
   lineChart(document.getElementById("c1"), { series: [s1[1], s1[0]], band: { lo: R.lo, hi: R.hi }, zero: true, stormWeeks: storm, endLabels: true, label: "Weekly take-home earnings and Keel paycheck for " + WEEKS + " weeks." });
@@ -685,7 +689,7 @@ function renderReliability() {
   var C = { keel: css("--keel"), avg4: css("--avg4") };
   var TOY = DATA.meta.model === "toy", rel = KeelData.reliability(DATA, CAL), o = rel.overall, T = rel.targets;
   var src = TOY ? "Toy sample, not our result: the forecast is the prototype's toy, not the real model. " : "Real evaluation on simulated drivers. ";
-  document.getElementById("relsub").textContent = src + "Normal weeks only, on test weeks the model never saw. The snowstorm is left out because it was added after forecasting.";
+  document.getElementById("relsub").textContent = src + "Normal weeks only, on test weeks the model never saw. The snowstorm stress test is left out because it was added after forecasting.";
   document.getElementById("relexplain").innerHTML = "<strong>What calibration means:</strong> each week Keel forecasts a low case and a high case for take-home pay. " +
     "A low case that claims to be right 9 times in 10 should have actual pay at or above it on about 9 weeks in 10. " +
     "Calibration nudges the forecasts, using weeks held back from training, until that claim is true. If the low case is too high, Keel would pay out money that never arrives.";
@@ -727,7 +731,7 @@ function renderReliability() {
 function renderLosses() {
   var name = { avg4: "4-week average", last: "last week’s pay" }, items = [], payGaps = [];
   DATA.runs.forEach(function (r) {
-    var o = r.metrics.overdraft_weeks, tag = "Driver " + r.driver + ", " + (r.scenario === "storm" ? "snowstorm" : "normal weeks") + ", " + pct(r.risk_limit) + " limit";
+    var o = r.metrics.overdraft_weeks, tag = "Driver " + r.driver + ", " + (r.scenario === "storm" ? "snowstorm stress test" : "normal weeks") + ", " + pct(r.risk_limit) + " limit";
     ["avg4", "last"].forEach(function (k) {
       if (o.keel > o[k]) items.push(tag + ": Keel had " + o.keel + " empty-buffer week" + (o.keel === 1 ? "" : "s") + ", " + name[k] + " had " + o[k] + ".");
     });
@@ -844,7 +848,7 @@ function renderStress() {
   document.getElementById("stsub").textContent = (TOY ? "Toy sample, not our result. " : "Simulated drivers, real evaluation runs. ") +
     "Driver " + state.driver + " at a " + pct(state.risk) + " limit (change both above). Before = normal weeks, after = the chosen scenario.";
   document.getElementById("stnote").textContent = "Every number comes from runs in the results file; nothing is simulated in the browser. " +
-    (DATA.meta.storm ? "Snowstorm: " + DATA.meta.storm + ". " : "") + "Depletion risk is the policy's own estimate for the next " + DATA.meta.horizon_weeks + " weeks. Not financial or tax advice.";
+    (DATA.meta.storm ? "Snowstorm stress test: " + DATA.meta.storm + ". " : "") + "Depletion risk is the policy's own estimate for the next " + DATA.meta.horizon_weeks + " weeks. Not financial or tax advice.";
   var charts = document.getElementById("stcharts"), body = document.getElementById("stbody");
   if (!res.available) {
     charts.classList.add("hidden");
@@ -925,7 +929,7 @@ function renderWhy(run) {
     unknown: "<strong>The rule it had to meet:</strong> the risk estimate is not in the file, so we do not guess."
   };
   h += '<p class="note">' + limits[e.constraint] + "</p>";
-  h += '<p class="note"><strong>If earnings fall unexpectedly:</strong> the paycheck for the week is already set, so the buffer covers the gap. ' +
+  h += '<p class="note"><strong>If earnings fall unexpectedly:</strong> the paycheck for the week is already set, so the gap is drawn from the buffer. ' +
     "Next week Keel sees the smaller buffer and the weaker earnings, and may lower the paycheck to keep the risk within your limit. ";
   if (e.fellShort) h += "That happened here: take-home pay was " + money(e.net) + ", " + money(e.shortfall) + " under the low case. The buffer went from " + money(e.bufferBefore) + " to " + money(e.bufferAfter) +
     (e.nextPay === null ? "." : ", and next week's paycheck was " + money(e.nextPay) + " (" + (e.nextPay < e.pay ? "down " : e.nextPay > e.pay ? "up " : "no change") + (e.nextPay === e.pay ? "" : money(Math.abs(e.nextPay - e.pay))) + ").");
@@ -1103,8 +1107,9 @@ function showTab(id) {
 }
 document.querySelector(".tabs").addEventListener("click", function (e) { var b = e.target.closest("[role=tab]"); if (b) showTab(b.id.slice(4)); });
 document.querySelector(".tabs").addEventListener("keydown", function (e) {
-  if (e.key !== "ArrowLeft" && e.key !== "ArrowRight") return;
-  var next = document.getElementById("tab-pay").getAttribute("aria-selected") === "true" ? "more" : "pay";
+  if (["ArrowLeft", "ArrowRight", "Home", "End"].indexOf(e.key) < 0) return;
+  e.preventDefault();
+  var next = e.key === "Home" ? "pay" : e.key === "End" ? "more" : document.getElementById("tab-pay").getAttribute("aria-selected") === "true" ? "more" : "pay";
   showTab(next);
   document.getElementById("tab-" + next).focus();
 });

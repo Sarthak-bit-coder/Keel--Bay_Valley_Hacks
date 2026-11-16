@@ -585,12 +585,14 @@ function render() {
 
   var better = M.keel.overdraft < Math.min(M.avg4.overdraft, M.last.overdraft);
   var tied = M.keel.overdraft === Math.min(M.avg4.overdraft, M.last.overdraft);
-  var steadier = M.keel.swing < M.earnSwing;
+  var STEADY_CUT = 0.3; // pass mark from docs/preregistration.md: paycheck swing at least 30% smaller than earnings swing
+  var steadier = M.keel.swing <= (1 - STEADY_CUT) * M.earnSwing;
+  var target = CAL && typeof CAL.target_low_case === "number" ? " (target " + pct(CAL.target_low_case) + ")" : "";
   document.getElementById("score").innerHTML =
     "<thead><tr><th>Question we wrote down first</th><th>" + (TOY ? "Toy sample (not our result)" : "Real model") + "</th></tr></thead><tbody>" +
-    "<tr><td>Is the low-case forecast right as often as it claims (target 90%)?</td><td>" + pct(M.lowHit) + " of weeks at or above the low case</td></tr>" +
+    "<tr><td>Is the low-case forecast right as often as it claims" + target + "?</td><td>" + pct(M.lowHit) + " of weeks at or above the low case</td></tr>" +
     "<tr><td>Does Keel run out of buffer less often than the two simple rules?</td><td>" + pill(better, "Yes: " + M.keel.overdraft + " vs " + M.avg4.overdraft + " and " + M.last.overdraft, tied ? "Tie: " + M.keel.overdraft + " weeks each" : "No: " + M.keel.overdraft + " vs " + M.avg4.overdraft + " and " + M.last.overdraft) + "</td></tr>" +
-    "<tr><td>Is the paycheck steadier than the earnings?</td><td>" + pill(steadier, "Yes: swing " + money(M.keel.swing) + " vs " + money(M.earnSwing), "No: swing " + money(M.keel.swing) + " vs " + money(M.earnSwing)) + "</td></tr></tbody>";
+    "<tr><td>Is the paycheck swing at least 30% smaller than the earnings swing?</td><td>" + pill(steadier, "Yes: " + money(M.keel.swing) + " vs " + money(M.earnSwing), "No: " + money(M.keel.swing) + " vs " + money(M.earnSwing) + " (" + pct(Math.abs(1 - M.keel.swing / M.earnSwing)) + (M.keel.swing <= M.earnSwing ? " smaller)" : " larger)")) + "</td></tr></tbody>";
 
   var cost = M.avg4.avgPay - M.keel.avgPay;
   var txt = "<strong>Where Keel pays a price.</strong> ";
@@ -631,7 +633,7 @@ function bar(label, v, target, off) {
 // Forecast reliability: coverage vs target, error metrics, forecast band vs actual, largest misses.
 // Everything is read from results.json (stored forecasts) and calibration.json; nothing is re-estimated here.
 var CAL = null;
-function renderCalib(cal) { CAL = cal; renderReliability(); renderBenchmark(); }
+function renderCalib(cal) { CAL = cal; render(); }
 function renderReliability() {
   if (!DATA) return;
   var C = { keel: css("--keel"), avg4: css("--avg4") };
@@ -689,7 +691,7 @@ function renderLosses() {
   var lower = payGaps.filter(function (g) { return g > 0; });
   if (lower.length) items.push("Keel paid less on average than the 4-week average in " + lower.length + " of " + DATA.runs.length + " runs, by " + money(Math.min.apply(null, lower)) + " to " + money(Math.max.apply(null, lower)) + " a week. That is the price of a safer buffer.");
   if (!items.length) items.push("No run in this file where Keel did worse than a simple rule on empty-buffer weeks or average pay.");
-  items.push("Hand-written reasons for each loss go in outputs/failures.md once the real run is done.");
+  items.push("Why each loss happened is written up in outputs/failures.md in the repo.");
   document.getElementById("losslist").innerHTML = items.map(function (t) { return "<li>" + esc(t) + "</li>"; }).join("");
 }
 

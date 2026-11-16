@@ -38,7 +38,6 @@ Give new users one clear path through the app:
 
 - **No login wall.** Guest mode must always work, and the simulation (`app/index.html`) must never require login.
 - **Never** put the Supabase `service_role` key in any file. Only the anon key goes in `config.js`.
-- **No real money, no real personal data.** Keep the existing notes: use made-up numbers, simulation only, not financial or tax advice. Show that line on the login page and the dashboard footer.
 - Don't invent numbers. Anything shown from the simulation must come from `outputs/results.json`.
 - Don't edit `outputs/`, `src/`, `eval/`, `data/` or `CONTRACT.md`.
 - Accessibility: every input has a label; errors appear in text next to the field (not only red); keyboard focus visible; buttons are real `<button>`s.

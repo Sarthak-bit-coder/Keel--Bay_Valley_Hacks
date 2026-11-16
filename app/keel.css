@@ -395,3 +395,17 @@ select { border-color: var(--border); border-radius: 9px; box-shadow: 0 1px 2px 
   .tiles { gap: 10px; }
   .tile, .tile + .tile { padding: var(--s4); border-top: 1px solid color-mix(in srgb, var(--border) 70%, transparent); }
 }
+
+/* Editorial pass */
+.viewhead h1 { font-family: var(--display); font-weight: 400; letter-spacing: -.015em; font-size: clamp(44px, 6vw, 76px); line-height: .95; }
+.card > header h2 { font-family: var(--display); font-weight: 400; font-size: 30px; letter-spacing: -.005em; }
+.hero .pay .figure { background: none; color: var(--on-navy); }
+.hero .pay .figure.counting { color: var(--teal); }
+.card:hover, .tile:hover { transform: none; }
+/* Photography in the banners (AI-generated illustrative stills, Higgsfield). */
+.viewhead::before { inset: 0; background-position: 75% 50%; background-size: cover; opacity: 1; filter: none; -webkit-mask-image: none; mask-image: none; }
+#view-plan .viewhead::before { background-image: url(media/photo-plan.webp); }
+#view-evidence .viewhead::before { background-image: url(media/photo-storm.webp); }
+.viewhead::after { background: linear-gradient(90deg, var(--navy) 22%, color-mix(in srgb, var(--navy) 40%, transparent) 60%, transparent); }
+.viewhead { min-height: 300px; align-content: end; }
+@media (max-width: 640px) { .viewhead::before { inset: 0; opacity: .5; } .viewhead::after { background: linear-gradient(180deg, color-mix(in srgb, var(--navy) 50%, transparent), var(--navy) 85%); } }

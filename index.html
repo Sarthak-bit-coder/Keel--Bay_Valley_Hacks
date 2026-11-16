@@ -8,10 +8,10 @@
 <!-- Serve or deploy the repo root: this page and app/ both read outputs/results.json. -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400..700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400..700&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="app/tokens.css">
 <link rel="stylesheet" href="app/home.css">
-<link rel="preload" as="image" href="app/media/hero-wave.webp" imagesrcset="app/media/hero-wave-sm.webp 760w, app/media/hero-wave.webp 1344w" imagesizes="(max-width: 1400px) 100vw, 1400px">
+<link rel="preload" as="image" href="app/media/photo-drive.webp">
 </head>
 <body>
 <a class="skip" href="#main">Skip to content</a>
@@ -41,8 +41,7 @@
         <a class="btn ghost" href="app/my-pay.html">Try it with your own pay</a>
       </div>
       <div class="film" aria-hidden="true">
-        <img src="app/media/hero-wave.webp" srcset="app/media/hero-wave-sm.webp 760w, app/media/hero-wave.webp 1344w" sizes="(max-width: 1400px) 100vw, 1400px" width="1344" height="752" alt="" fetchpriority="high" decoding="async">
-        <video id="herovideo" muted loop playsinline preload="none" width="1344" height="752" data-src-webm="app/media/hero-wave.webm" data-src-mp4="app/media/hero-wave.mp4"></video>
+        <img src="app/media/photo-drive.webp" width="1344" height="752" alt="" fetchpriority="high" decoding="async">
       </div>
 
       <figure class="stage" id="stage">
@@ -89,6 +88,7 @@
     </ol>
   </section>
 
+  <div class="photoband" aria-hidden="true"><img src="app/media/photo-storm.webp" alt="" loading="lazy" width="1344" height="576"></div>
   <section class="wrap storm" data-reveal id="storm" aria-labelledby="storm-h">
     <div class="stormtext">
       <p class="eyebrow">Stress test</p>
@@ -114,7 +114,7 @@
 </div>
 
 <footer class="foot">
-  <p>Built for Bay Valley Hacks 2026. Simulation only: drivers are simulated on real NYC ride-hail data and no real money moves. Keel does not promise income. Not financial or tax advice.</p>
+  <p>Built for Bay Valley Hacks 2026. Simulation only: drivers are simulated on real NYC ride-hail data and no real money moves. Keel does not promise income. Not financial or tax advice. Photos are AI-generated illustrations, not real drivers.</p>
 </footer>
 
 <script src="app/data.js"></script>

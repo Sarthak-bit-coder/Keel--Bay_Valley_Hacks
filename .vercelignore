@@ -1,0 +1,11 @@
+# The website is static; the Python pipeline and raw data are not deployed.
+requirements.txt
+run_all.py
+src/
+tests/
+eval/
+prompts/
+data/raw/
+.venv/
+demo/
+**/__pycache__/

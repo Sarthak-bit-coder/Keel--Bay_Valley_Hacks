@@ -15,10 +15,12 @@
 <link rel="stylesheet" href="ds.css">
 <link rel="stylesheet" href="mypay.css">
 <link rel="stylesheet" href="site.css">
+<link rel="stylesheet" href="fx.css">
 <script src="theme.js"></script>
 <script src="signedin.js"></script>
 </head>
 <body>
+<div class="fx-progress" aria-hidden="true"></div>
 <a class="skip" href="#main">Skip to content</a>
 <p class="strip">Practice demo. No real money moves. Not financial or tax advice.</p>
 <header class="top"><div class="topin">
@@ -91,7 +93,7 @@
   </section>
   <main class="wizard">
     <form id="f-profile" novalidate>
-      <section class="card pad" data-pane="1">
+      <section class="card pad" data-fx data-pane="1">
         <h2>About you</h2>
         <label class="lf" for="p-name"><span class="lab">Your first name</span>
           <input id="p-name" maxlength="60" autocomplete="given-name" placeholder="e.g. Sam">
@@ -103,7 +105,7 @@
         </div>
       </section>
 
-      <section class="card pad" data-pane="2" hidden>
+      <section class="card pad" data-fx data-pane="2" hidden>
         <h2>Your money</h2>
         <p class="hint">Rough numbers are fine. Please don't enter real account numbers.</p>
         <div class="two">
@@ -130,7 +132,7 @@
         </fieldset>
       </section>
 
-      <section class="card pad" data-pane="3" hidden>
+      <section class="card pad" data-fx data-pane="3" hidden>
         <h2>Your choices</h2>
         <div class="lf">
           <span class="lab">How much should we set aside for taxes?</span>
@@ -206,7 +208,7 @@
 
     <!-- Home -->
     <section class="sec" data-sec="home" aria-label="Home">
-      <section class="card pad empty-card" id="d-empty" hidden>
+      <section class="card pad empty-card" data-fx id="d-empty" hidden>
         <span class="ms big">hourglass_top</span>
         <h2>Add 4 weeks of pay to see your paycheck</h2>
         <p class="hint">Keel needs a few weeks to see how your pay goes up and down.</p>
@@ -215,19 +217,19 @@
 
       <div id="d-results" class="stack" hidden>
         <div id="d-warn"></div>
-        <section class="card pad cushion">
+        <section class="card pad cushion" data-fx>
           <div class="row between"><h2>Your savings cushion</h2><a class="linkbtn" href="#example">Confused? See an example →</a></div>
           <p class="hint">Extra money from good weeks goes in. Slow weeks take money out. That's how your paycheck stays the same.</p>
           <div class="cbar"><div class="cbarfill" id="cbar"></div></div>
           <p class="cnow" id="cnow"></p>
           <p class="lastweek" id="lastweek"></p>
         </section>
-        <section class="card pad">
+        <section class="card pad" data-fx>
           <h2>Why this amount?</h2>
           <p class="quote" id="ph-reason"></p>
           <p class="hint" id="ph-basis"></p>
         </section>
-        <section class="card pad">
+        <section class="card pad" data-fx>
           <div class="cardtop"><div><h2>Your pay vs. your paycheck</h2><p class="hint">Your pay jumps around. Your Keel paycheck stays steady.</p></div></div>
           <div class="legend">
             <span><i class="key" style="border-color:var(--ink2);border-top-style:dashed"></i>What you earned (after taxes)</span>
@@ -235,7 +237,7 @@
           </div>
           <div class="plot" id="c-pay"></div>
         </section>
-        <section class="card pad">
+        <section class="card pad" data-fx>
           <h2>How your money moves each week</h2>
           <ol class="simple3">
             <li><b>You earn money</b> from your work, like normal.</li>
@@ -250,7 +252,7 @@
 
     <!-- My weeks -->
     <section class="sec" data-sec="weeks" aria-label="My weeks" hidden>
-      <section class="card pad">
+      <section class="card pad" data-fx>
         <h2>Add a week</h2>
         <form id="f-entry" novalidate>
           <div class="entry">
@@ -264,7 +266,7 @@
         </form>
       </section>
 
-      <section class="card pad" id="w-compare" hidden>
+      <section class="card pad" data-fx id="w-compare" hidden>
         <h2>Did Keel help? Your weeks with and without it</h2>
         <p class="hint">"Without Keel" means spending whatever you earned that week (after taxes). "With Keel" means getting your steady paycheck. Your bills are <b id="w-billsline"></b>.</p>
         <div class="vs">
@@ -283,7 +285,7 @@
         <div class="plot" id="c-cushion"></div>
       </section>
 
-      <section class="card">
+      <section class="card" data-fx>
         <div class="cardtop pad">
           <div><h2>Week by week</h2><p class="hint">What you earned, what went into or out of your cushion, and what Keel paid you. Your paycheck starts from your 5th week.</p></div>
           <div class="row">
@@ -298,7 +300,7 @@
 
     <!-- Example with real New York data -->
     <section class="sec" data-sec="example" aria-label="Example" hidden>
-      <section class="card pad">
+      <section class="card pad" data-fx>
         <span class="caps">Example</span>
         <h2>Meet a weekend ride-share driver in New York</h2>
         <p>This driver is made up, but their pay is real: every hour they drive, they earn what real New York ride-share drivers earned in that same hour in 2025. They only drive on weekends, so their pay jumps around a lot. Two of these weeks had big snowstorms.</p>
@@ -322,14 +324,14 @@
     <!-- Settings -->
     <section class="sec" data-sec="settings" aria-label="Settings" hidden>
       <div class="grid2 even">
-        <section class="card pad">
+        <section class="card pad" data-fx>
           <h2>About you</h2>
           <label class="lf" for="s-name"><span class="lab">First name</span><input id="s-name" maxlength="60"></label>
           <label class="lf" for="s-job"><span class="lab">Kind of work</span><select id="s-job"></select></label>
           <label class="lf" for="s-pay"><span class="lab">Usual weekly pay</span><span class="inwrap left"><span class="cur">$</span><input id="s-pay" type="number" min="0" step="1"></span></label>
           <label class="lf" for="s-savings"><span class="lab">Savings you started with</span><span class="inwrap left"><span class="cur">$</span><input id="s-savings" type="number" min="0" step="1"></span></label>
         </section>
-        <section class="card pad">
+        <section class="card pad" data-fx>
           <h2>Your choices</h2>
           <div class="lf"><span class="lab">Set aside for taxes</span><div class="seg taxseg" id="s-taxseg" role="group" aria-label="Tax set-aside"></div></div>
           <div class="lf"><span class="lab">How careful should your paycheck be?</span><div class="risktiles" id="s-risk"></div></div>
@@ -342,7 +344,7 @@
         <button type="button" class="btn quiet" id="s-discard">Undo changes</button>
         <button type="button" class="btn primary" id="s-save"><span class="ms">check</span>Save</button>
       </div>
-      <section class="card pad">
+      <section class="card pad" data-fx>
         <h2>Account</h2>
         <p class="hint" id="set-session"></p>
         <div class="setrow"><div><b>Download my data</b><span class="hint">All your weeks as a spreadsheet file.</span></div><button type="button" class="btn quiet" data-export="csv"><span class="ms">download</span>Download</button></div>
@@ -368,5 +370,6 @@
 <script src="https://accounts.google.com/gsi/client" async></script>
 <script src="mypay.js"></script>
 <script src="bg.js"></script>
+<script src="fx.js"></script>
 </body>
 </html>

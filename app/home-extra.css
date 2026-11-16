@@ -1,0 +1,75 @@
+/* Homepage interactive sections layered on the main design: week-by-week tape, the comparison table, one real
+   week step by step, and the "test a bad stretch" lab. Uses the shared tokens, radii and type of home.css. */
+
+/* Week-by-week tape under the hero */
+.tape { background: var(--navy-2); color: var(--on-navy); border-top: 1px solid var(--navy-line); border-bottom: 1px solid var(--navy-line); padding: 14px 0; }
+.ticker-track li { display: inline-flex; gap: 14px; align-items: baseline; white-space: nowrap; font-size: 14px; color: var(--on-navy-2); font-variant-numeric: tabular-nums; }
+.ticker-track li b { color: var(--on-navy); font-weight: 600; }
+.ticker-track li .up { color: var(--teal); }
+.ticker-track li .down { color: #ff9d8f; }
+.ticker:focus-visible { outline: 2px solid var(--teal); outline-offset: -2px; }
+
+/* Comparison table: rows touch, every other row a tone darker, the Keel column one filled block */
+.ctable { margin-top: 32px; display: grid; grid-template-columns: minmax(0, 5fr) repeat(3, minmax(0, 6fr)); font-size: 15px; font-variant-numeric: tabular-nums; }
+.ctable [role=cell], .ctable [role=rowheader], .ctable [role=columnheader] { padding: 16px; min-height: 60px; display: flex; align-items: center; transition: background .2s var(--ease); }
+.ctable [role=columnheader] { font-weight: 600; font-size: 14px; color: var(--ink2); }
+.ctable .cn { font-weight: 600; color: var(--ink); padding-left: 0; }
+.ctable .alt { background: var(--surface-2); }
+.ctable .k { background: var(--navy); color: var(--on-navy-2); }
+.ctable .k b { color: var(--teal); font-weight: 600; }
+.ctable .k.ch { background: var(--keel); color: #fffefb; border-radius: 12px 12px 0 0; margin-top: -12px; padding-top: 28px; }
+.ctable [role=row]:last-child .k { border-radius: 0 0 12px 12px; }
+.ctable [role=row]:hover > [role=cell]:not(.k), .ctable [role=row]:hover > .cn { background: color-mix(in srgb, var(--keel) 9%, var(--surface-2)); }
+.ctable [role=row]:hover > .k { background: var(--navy-3); }
+
+/* One real week, step by step: what happens, then what Keel shows */
+.calls { margin-top: 40px; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; }
+.call { display: grid; gap: 10px; align-content: start; }
+.call > p { font-size: 18px; font-weight: 600; letter-spacing: -.01em; color: var(--ink); }
+.call .in { background: var(--surface-2); border: 1px solid var(--border); padding: 14px 16px; border-radius: 12px; font-size: 14px; color: var(--ink2); display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.call .in b { color: var(--ink); }
+.call .out { background: var(--navy); color: var(--on-navy-2); padding: 16px 18px; border-radius: 12px; font-size: 14px; display: grid; gap: 8px; transition: transform .35s var(--ease-out); }
+.call:hover .out { transform: translateY(-3px); }
+.call .out .row { display: flex; justify-content: space-between; gap: 12px; }
+.call .out .row b { color: var(--on-navy); font-variant-numeric: tabular-nums; }
+.call .out .row.k b { color: var(--teal); font-size: 26px; font-weight: 650; letter-spacing: -.03em; }
+.call .range { position: relative; height: 12px; background: var(--navy-3); border-radius: 6px; margin: 6px 0; }
+.call .range i { position: absolute; top: 0; bottom: 0; background: color-mix(in srgb, var(--teal) 45%, transparent); border-radius: 6px; }
+.call .range u { position: absolute; top: -4px; bottom: -4px; width: 3px; background: var(--on-navy); border-radius: 2px; }
+
+/* Test a bad stretch: a dark band with the moving currents behind it */
+.labsec { position: relative; isolation: isolate; overflow: hidden; margin-top: clamp(56px, 8vw, 104px); background: var(--navy); color: var(--on-navy); }
+.labin { max-width: var(--max); margin: 0 auto; padding: clamp(56px, 8vw, 104px) var(--gutter); }
+.labsec .eyebrow { color: var(--teal); }
+.labsec h2 { color: var(--on-navy); }
+.labsec .sub { color: var(--on-navy-2); }
+.labgrid { margin-top: 32px; display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); gap: 16px; }
+.labctl, .labout { background: color-mix(in srgb, var(--navy-2) 90%, transparent); border: 1px solid var(--navy-line); border-radius: 16px; padding: clamp(18px, 2.4vw, 28px); }
+.labctl { display: grid; gap: 20px; align-content: start; }
+.ctl { display: flex; gap: 4px; padding: 4px; background: var(--navy); border: 1px solid var(--navy-line); border-radius: 10px; }
+.ctl button { flex: 1; font: inherit; font-size: 14px; font-weight: 600; color: var(--on-navy-2); background: transparent; border: 0; border-radius: 7px; min-height: 40px; padding: 0 10px; cursor: pointer; transition: background .2s var(--ease-out), color .2s var(--ease-out); }
+.ctl button:hover { background: var(--navy-3); color: var(--on-navy); }
+.ctl button[aria-pressed="true"] { background: var(--teal); color: var(--on-teal); }
+.slider { display: grid; gap: 10px; font-size: 14px; color: var(--on-navy-2); }
+.slider span { display: flex; justify-content: space-between; align-items: baseline; }
+.slider b { font-size: 24px; font-weight: 650; color: var(--teal); }
+.slider input { width: 100%; accent-color: var(--teal); height: 28px; cursor: pointer; }
+.hint { font-size: 13px; color: var(--on-navy-3); }
+.labout { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px; align-content: start; }
+.lfig { display: grid; gap: 6px; font-size: 13px; color: var(--on-navy-3); }
+.lfig b { font-size: clamp(28px, 3vw, 40px); font-weight: 650; letter-spacing: -.03em; color: var(--on-navy); font-variant-numeric: tabular-nums; transition: color .3s var(--ease); }
+.lfig b.flash { color: var(--teal); }
+.lspark { grid-column: 1 / -1; min-height: 120px; }
+.lspark svg { display: block; width: 100%; height: auto; }
+
+@media (max-width: 860px) {
+  .calls, .labgrid { grid-template-columns: minmax(0, 1fr); }
+}
+@media (max-width: 600px) {
+  .ctable { grid-template-columns: repeat(3, minmax(0, 1fr)); font-size: 14px; }
+  .ctable .cn { grid-column: 1 / -1; min-height: 0; padding: 20px 0 6px; }
+  .ctable .corner { display: none; }
+  .ctable [role=cell], .ctable [role=columnheader] { padding: 10px; min-height: 48px; }
+  .ctable .k.ch { margin-top: 0; padding-top: 10px; }
+  .labout { grid-template-columns: minmax(0, 1fr); }
+}

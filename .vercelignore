@@ -9,3 +9,5 @@ data/raw/
 .venv/
 demo/
 **/__pycache__/
+.env*
+.vercel/

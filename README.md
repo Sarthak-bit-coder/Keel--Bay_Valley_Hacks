@@ -38,24 +38,32 @@ In good weeks the buffer grows. In bad weeks it absorbs the dip, so the paycheck
 
 ## The app
 
-One page, no install. It reads `outputs/results.json` and redraws everything when you change a control.
+One page, no install, no build step. It reads `outputs/results.json` and redraws everything when you change a setting. It has three views, from simple to detailed:
 
-### Controls
-- **Driver:** A (full-time, steady), B (part-time) or C (weekend-only, volatile). All simulated.
-- **Scenario:** normal weeks or a **snowstorm replay**.
-- **Allowed chance the buffer runs out:** 1%, 5%, 10% or 20%.
-- **Show data as tables:** swaps every chart for a table.
+### Settings (always visible)
+- **Simulated driver:** A (full-time, steady), B (part-time) or C (weekend-only, volatile).
+- **Weeks to replay:** normal weeks or the **snowstorm** weeks.
+- **Risk limit:** the chance of an empty buffer you accept: 1%, 5%, 10% or 20%.
 
-### What you see
-- **Headline tiles:** weeks with an empty buffer (Keel vs the two simple rules), paycheck swing vs earnings swing, and the average weekly paycheck with the tax set aside.
-- **"Earnings swing, the paycheck does not":** jagged take-home earnings next to the flat Keel paycheck, with the forecast band and the snowstorm weeks shaded.
-- **Buffer balance under three ways of paying:** Keel vs last week's pay vs the 4-week average. Below zero means overdraft.
-- **How it works:** a four-step strip (hold, forecast, calibrate, pay).
-- **Scorecard:** the three questions we wrote down before the real run, answered from the results file, plus the cost of safety (how much less Keel pays than the 4-week average).
-- **Where Keel loses:** every case in the results file where Keel did worse than a simple rule, scanned across all drivers, scenarios and limits, so it can't be cherry-picked.
-- **Safety checks:** every week, payout = paycheck + tax set-aside + change in buffer; the buffer and paycheck are never negative.
-- **Is the low case honest?:** calibration bars showing the target vs the actual hit rate, overall and per driver.
-- **Decision log:** the plain-English reason for each weekly paycheck.
+### 1. Paycheck
+The first screen answers five questions: how much the next simulated paycheck is, when payday is, how much is in the buffer, whether the paycheck fits the risk limit, and what to do next.
+- **Run simulated payday** replays that week from the results file: what was earned, what was set aside for tax, what was paid, and what the buffer covered. Step week by week through the replay. No real money moves.
+- **Earnings swing, the paycheck holds steady:** earnings next to the Keel paycheck, with the forecast range and the snowstorm weeks marked.
+- **The buffer absorbs the bad weeks:** Keel's buffer against two simple rules (pay last week's earnings, pay the 4-week average). Below zero means overdraft.
+- **Show as tables** swaps the charts for tables.
+
+### 2. Plan
+- **Choose a paycheck:** the paycheck Keel set under each risk limit, for any week.
+- **Stress test:** normal weeks against the snowstorm, for earnings, paychecks and the buffer.
+- **Buffer recovery:** how far the buffer fell and how fast it came back.
+- **Where the money went:** one week's earnings split into paycheck, tax reserve and buffer.
+- **Why this paycheck?:** how one week's amount was chosen, plus the decision log for every week.
+- **Compare all settings:** every scenario and risk limit for the driver in one table.
+
+### 3. Evidence
+How it works, the scorecard (the three questions we wrote down before the real run), forecast reliability and calibration, the benchmark against the simple rules, where Keel loses (scanned across every run, so it can't be cherry-picked), and the safety checks.
+
+Charts use one grammar throughout: a solid line is replayed data, the shaded band is a forecast made before the week, and a dashed line is a comparison.
 
 ### Honest labels
 - A **"Toy data"** badge shows while the app runs on the sample file (`outputs/sample/results.json`, made from a toy simulation).
@@ -136,7 +144,9 @@ python3 -m http.server 8000   # from the repo root, then open http://localhost:8
 
 The app fetches `../outputs/results.json` (falling back to `outputs/sample/results.json`), so it must be served over HTTP from the **repo root**. Opening `app/index.html` as a file, or deploying only `app/`, cannot reach `outputs/`. To deploy, publish the whole repo root as a static site (GitHub Pages: Settings → Pages → branch `main`, folder `/`); the root `index.html` forwards to `app/`.
 
-App tests (Node 18+, no install): `node --test app/data.test.js`
+App tests (Node 18+, no install): `node --test app/`
+
+App files: `app/index.html` (markup), `app/keel.css` (design system), `app/ui.js` (rendering), and the tested data helpers `data.js`, `paycheck.js`, `benchmark.js`, `recovery.js`.
 
 `run_all.py` is a skeleton. Each role fills in its step.
 

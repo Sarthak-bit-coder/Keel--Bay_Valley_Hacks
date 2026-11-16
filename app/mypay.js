@@ -259,11 +259,19 @@
 
   // ---- Dashboard shell ------------------------------------------------------------------------------
   var SECS = ["overview", "log", "plan", "settings"];
+  var HEADS = {};
+  $$(".sec").forEach(function (el) { HEADS[el.getAttribute("data-sec")] = el.querySelector(".pagehead"); });
   function section() { var h = location.hash.slice(1); return SECS.indexOf(h) >= 0 ? h : "overview"; }
   function showSection() {
     var s = section();
     $$(".sec").forEach(function (el) { el.hidden = el.getAttribute("data-sec") !== s; });
-    $$(".sidenav a[data-sec]").forEach(function (a) { if (a.getAttribute("data-sec") === s) a.setAttribute("aria-current", "page"); else a.removeAttribute("aria-current"); });
+    // The section's title block (and, on Overview, the KPI cards) sit in the navy hero, like the homepage.
+    var slot = $("hero-slot");
+    slot.innerHTML = "";
+    if (HEADS[s]) slot.appendChild(HEADS[s]);
+    if (s === "overview") slot.appendChild($("kpis")); else $("d-results").insertBefore($("kpis"), $("d-results").firstChild);
+    if (window.KeelCurrents) window.KeelCurrents.init();
+    $$("a[data-sec]").forEach(function (a) { if (a.getAttribute("data-sec") === s) a.setAttribute("aria-current", "page"); else a.removeAttribute("aria-current"); });
     if (st.plan) drawCharts();
   }
   window.addEventListener("hashchange", function () { if (!$("v-dash").hidden) { showSection(); window.scrollTo(0, 0); } });
@@ -282,7 +290,7 @@
     $("d-out-t").textContent = guest ? "Leave guest mode" : "Sign out";
     $("s-out-t").textContent = guest ? "Leave guest mode" : "Sign out";
     var initial = (name || "K").charAt(0).toUpperCase();
-    $("tb-avatar").textContent = initial; $("set-avatar").textContent = initial;
+    $("tb-avatar").textContent = initial; $("tb-avatar2").textContent = initial; $("set-avatar").textContent = initial;
     $("set-name").textContent = name || "Guest";
     $("set-email").textContent = guest ? "Guest: no email needed" : st.email;
     $("set-kind").textContent = guest ? "Guest" : "Account";
@@ -323,6 +331,7 @@
     preview();
     $("d-empty").hidden = !!st.plan;
     $("d-results").hidden = !st.plan;
+    $("kpis").hidden = !st.plan;
     $("plan-empty").hidden = !!st.plan;
     $("plan-body").hidden = !st.plan;
     $("tb-buffer").hidden = !st.plan;
@@ -544,9 +553,9 @@
       $("e-table").innerHTML = '<thead><tr><th>Week of</th><th class="num">Paid</th><th class="num">Tax (' + pct(tax) + ')</th><th class="num">Keel paycheck</th><th class="num">Buffer change</th><th class="num">Running buffer</th><th>Note</th><th class="num">Actions</th></tr></thead><tbody>' +
         slice.map(function (e) {
           var r = pw[e.week_start], d = r ? r.w.buf_keel - r.prev : null;
-          return "<tr" + (r && r.w.buf_keel < r.prev ? ' class="drawn"' : "") + "><td><b>" + fmtWeek(e.week_start) + '</b></td><td class="num">' + money(e.gross) + '</td><td class="num neg">' + (e.gross > 0 ? "−" : "") + money(e.gross * tax) +
+          return "<tr" + (r && Math.round(d) < 0 ? ' class="drawn"' : "") + "><td><b>" + fmtWeek(e.week_start) + '</b></td><td class="num">' + money(e.gross) + '</td><td class="num neg">' + (e.gross > 0 ? "−" : "") + money(e.gross * tax) +
             '</td><td class="num">' + (r ? "<b>" + money(r.w.pay_keel) + "</b>" : '<span class="hint">—</span>') +
-            '</td><td class="num">' + (r ? '<span class="' + (d < 0 ? "neg" : "pos") + '">' + signed(d) + "</span>" : '<span class="hint">—</span>') +
+            '</td><td class="num">' + (r ? '<span class="' + (Math.round(d) < 0 ? "neg" : "pos") + '">' + signed(d) + "</span>" : '<span class="hint">—</span>') +
             '</td><td class="num">' + (r ? "<b>" + money(r.w.buf_keel) + "</b>" : '<span class="hint">—</span>') +
             '</td><td class="notecell">' + esc(e.note) + '</td><td class="num"><span class="acts"><button type="button" class="iconbtn sm" data-edit="' + e.week_start + '" aria-label="Edit week of ' + fmtWeek(e.week_start) + '"><span class="ms">edit</span></button><button type="button" class="iconbtn sm del" data-del="' + e.week_start + '" aria-label="Delete week of ' + fmtWeek(e.week_start) + '"><span class="ms">delete</span></button></span></td></tr>';
         }).join("") + "</tbody>";

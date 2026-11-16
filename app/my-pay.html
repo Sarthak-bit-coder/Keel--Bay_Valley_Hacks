@@ -12,6 +12,7 @@
 <link rel="stylesheet" href="tokens.css">
 <link rel="stylesheet" href="ds.css">
 <link rel="stylesheet" href="mypay.css">
+<link rel="stylesheet" href="site.css">
 <script src="theme.js"></script>
 </head>
 <body>
@@ -19,14 +20,14 @@
 
 <!-- ================= Sign in / create account ================= -->
 <div class="auth" id="v-signin" hidden>
-  <header class="authtop">
-    <a class="brand" href="../" aria-label="Keel home"><span class="logo"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M2 6h16M10 6v6M4 12c1.5 3 4 4 6 4s4.5-1 6-4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></span>Keel</a>
-    <div class="right">
-      <a class="btn ghost" href="../"><span class="ms">arrow_back</span>Back to home</a>
-      <button type="button" class="iconbtn" data-theme-toggle><span class="ms"></span></button>
-    </div>
-  </header>
-  <main class="authmain" data-currents="light">
+  <p class="strip">Financial planning &amp; simulation demo. No real money moves. Not financial or tax advice.</p>
+<header class="top"><div class="topin">
+  <a class="brand" href="../" aria-label="Keel home"><span class="logo"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M2 6h16M10 6v6M4 12c1.5 3 4 4 6 4s4.5-1 6-4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></span>Keel</a>
+  <nav class="links" aria-label="Main"><a href="../">Home</a><a href="../#how">How it works</a><a href="./">Research demo</a><a href="my-pay.html#overview" aria-current="page">My pay</a></nav>
+  <div class="acts2"><button type="button" class="iconbtn" data-theme-toggle><span class="ms"></span></button><a class="btn quiet" href="./">Explore demo</a></div>
+</div></header>
+
+  <main class="authmain" data-currents="dark" data-keel="0.9">
     <section class="authcard" aria-labelledby="auth-h">
       <span class="anchor"><span class="ms">anchor</span></span>
       <h1 id="auth-h">Welcome back to Keel</h1>
@@ -59,14 +60,14 @@
 
 <!-- ================= Setup wizard (profile) ================= -->
 <div class="auth" id="v-profile" hidden>
-  <header class="authtop">
-    <a class="brand" href="../" aria-label="Keel home"><span class="logo"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M2 6h16M10 6v6M4 12c1.5 3 4 4 6 4s4.5-1 6-4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></span>Keel</a>
-    <div class="right">
-      <a class="btn ghost" href="../"><span class="ms">arrow_back</span>Back to home</a>
-      <button type="button" class="iconbtn" data-theme-toggle><span class="ms"></span></button>
-    </div>
-  </header>
-  <main class="wizard">
+  <p class="strip">Financial planning &amp; simulation demo. No real money moves. Not financial or tax advice.</p>
+<header class="top"><div class="topin">
+  <a class="brand" href="../" aria-label="Keel home"><span class="logo"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M2 6h16M10 6v6M4 12c1.5 3 4 4 6 4s4.5-1 6-4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></span>Keel</a>
+  <nav class="links" aria-label="Main"><a href="../">Home</a><a href="../#how">How it works</a><a href="./">Research demo</a><a href="my-pay.html#overview" aria-current="page">My pay</a></nav>
+  <div class="acts2"><button type="button" class="iconbtn" data-theme-toggle><span class="ms"></span></button><a class="btn quiet" href="./">Explore demo</a></div>
+</div></header>
+
+  <section class="phero" data-currents="dark" data-keel="0.93"><div class="pheroin wizhero">
     <div class="pagehead">
       <div class="t"><span class="caps">Paycheck setup</span><h1 id="p-title">Set up your runway</h1></div>
       <span class="chip"><span class="dot" style="color:var(--keel)"></span><span id="p-stage">Step 1 of 3: Profile &amp; trade</span></span>
@@ -76,6 +77,8 @@
       <li data-step="2"><button type="button"><span class="caps">02 / Calibration</span><b>Paycheck &amp; tax</b><i></i></button></li>
       <li data-step="3"><button type="button"><span class="caps">03 / Starter weeks</span><b>Starter weeks</b><i></i></button></li>
     </ol>
+    </div></section>
+  <main class="wizard">
     <form id="f-profile" novalidate>
       <div class="grid2">
         <section class="card pad" data-pane="1">
@@ -150,6 +153,7 @@
       </div>
     </form>
   </main>
+<footer class="foot"><div class="footin"><a class="brand" href="../"><span class="logo"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M2 6h16M10 6v6M4 12c1.5 3 4 4 6 4s4.5-1 6-4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></span>Keel</a><p>Demo for Bay Valley Hacks 2026. No real money moves and nothing here is financial or tax advice. Please do not enter real financial information.</p><nav aria-label="Footer"><a href="../#how">Methodology</a><a href="./#evidence">Evidence</a><a href="./">Research demo</a></nav></div></footer>
 </div>
 
 <!-- ================= Dashboard ================= -->
@@ -171,6 +175,23 @@
   </aside>
 
   <div class="main">
+<p class="strip">Financial planning &amp; simulation demo. No real money moves. Not financial or tax advice.</p>
+<header class="top"><div class="topin">
+  <a class="brand" href="../" aria-label="Keel home"><span class="logo"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M2 6h16M10 6v6M4 12c1.5 3 4 4 6 4s4.5-1 6-4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></span>Keel</a>
+  <nav class="links" aria-label="Main"><a href="../">Home</a><a href="../#how">How it works</a><a href="./">Research demo</a><a href="my-pay.html#overview" aria-current="page">My pay</a></nav>
+  <div class="acts2"><button type="button" class="iconbtn" data-theme-toggle><span class="ms"></span></button><a class="avatar" href="#settings" aria-label="Profile and settings" id="tb-avatar2">K</a></div>
+</div></header>
+    <section class="phero" data-currents="dark" data-keel="0.93">
+      <div class="pheroin">
+        <div id="hero-slot" class="stack"></div>
+        <nav class="tabs" aria-label="My pay sections">
+          <a href="#overview" data-sec="overview"><span class="ms">grid_view</span>Overview</a>
+          <a href="#log" data-sec="log"><span class="ms">receipt_long</span>Earnings log</a>
+          <a href="#plan" data-sec="plan"><span class="ms">tune</span>Planning</a>
+          <a href="#settings" data-sec="settings"><span class="ms">settings</span>Profile &amp; settings</a>
+        </nav>
+      </div>
+    </section>
     <header class="topbar">
       <button type="button" class="iconbtn menu-btn" data-menu aria-label="Open navigation" aria-expanded="false" aria-controls="side"><span class="ms">menu</span></button>
       <span class="caps">Volatility cushion engine</span>
@@ -215,7 +236,7 @@
         </section>
 
         <div id="d-results" class="stack" hidden>
-          <div class="kpis">
+          <div class="kpis" id="kpis">
             <div class="kpi accent">
               <div class="top"><span><span class="caps">Recommended paycheck</span><br><span class="hint" id="k-week"></span></span><span class="ms">payments</span></div>
               <div class="v" id="ph-pay"></div>
@@ -448,8 +469,15 @@
         </section>
       </section>
 
-      <footer class="meta fine">Demo for Bay Valley Hacks 2026. No real money moves and nothing here is financial or tax advice. Please do not enter real financial information.</footer>
+      <section class="ctaband" data-currents="light" data-keel="0.9">
+        <p class="eyebrow2">See the proof</p>
+        <h2>How does this rule hold up on real ride-hail weeks?</h2>
+        <p>The research demo replays simulated drivers built on real NYC trip data, and shows where Keel loses.</p>
+        <div class="row"><a class="btn primary" href="./">Explore the research demo<span class="ms">arrow_forward</span></a><a class="btn quiet" href="../">Back to homepage</a></div>
+      </section>
     </main>
+<footer class="foot"><div class="footin"><a class="brand" href="../"><span class="logo"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M2 6h16M10 6v6M4 12c1.5 3 4 4 6 4s4.5-1 6-4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></span>Keel</a><p>Demo for Bay Valley Hacks 2026. No real money moves and nothing here is financial or tax advice. Please do not enter real financial information.</p><nav aria-label="Footer"><a href="../#how">Methodology</a><a href="./#evidence">Evidence</a><a href="./">Research demo</a></nav></div></footer>
+
   </div>
 </div>
 

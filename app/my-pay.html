@@ -1,0 +1,663 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Keel · My pay</title>
+<style>
+:root {
+  color-scheme: light;
+  --bg: #f9f9f7; --surface: #fcfcfb; --ink: #0b0b0b; --ink2: #52514e; --muted: #898781;
+  --grid: #e1e0d9; --axis: #c3c2b7; --border: rgba(11, 11, 11, 0.10);
+  --keel: #2a78d6; --avg4: #eb6834; --last: #1baf7a; --crit: #d03b3b; --good-text: #006300; --warn: #9a5b00;
+  --font: system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --bg: #0d0d0d; --surface: #1a1a19; --ink: #f0efec; --ink2: #b5b3ad; --muted: #898781;
+    --grid: #2c2c2a; --axis: #383835; --border: rgba(255, 255, 255, 0.10);
+    --keel: #3987e5; --avg4: #e8703f; --last: #199e70; --crit: #e05252; --good-text: #0ca30c; --warn: #f0b45a;
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #0d0d0d; --surface: #1a1a19; --ink: #f0efec; --ink2: #b5b3ad; --muted: #898781;
+  --grid: #2c2c2a; --axis: #383835; --border: rgba(255, 255, 255, 0.10);
+  --keel: #3987e5; --avg4: #e8703f; --last: #199e70; --crit: #e05252; --good-text: #0ca30c; --warn: #f0b45a;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body { background: var(--bg); color: var(--ink); font-family: var(--font); font-size: 15px; line-height: 1.5; }
+.wrap { max-width: 1080px; margin: 0 auto; padding: 24px 16px 48px; display: flex; flex-direction: column; gap: 20px; }
+h1, h2, h3, p { margin: 0; }
+h1 { font-size: 28px; letter-spacing: -0.01em; text-wrap: balance; }
+h2 { font-size: 17px; text-wrap: balance; }
+a { color: var(--keel); }
+.sub { color: var(--ink2); max-width: 62ch; }
+.top { display: flex; flex-wrap: wrap; gap: 12px 24px; align-items: flex-end; justify-content: space-between; }
+.badge { display: inline-flex; gap: 8px; align-items: center; border: 1px solid var(--border); background: var(--surface); border-radius: 999px; padding: 4px 12px; font-size: 13px; color: var(--ink2); }
+.card, .tile { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 16px; }
+.card { display: flex; flex-direction: column; gap: 12px; }
+.card header { display: flex; flex-direction: column; gap: 2px; }
+.card header p, .note { color: var(--ink2); font-size: 13px; }
+.narrow { max-width: 460px; }
+form { display: flex; flex-direction: column; gap: 12px; }
+label.f { display: flex; flex-direction: column; gap: 4px; font-size: 13px; color: var(--ink2); }
+input, select { font: inherit; color: var(--ink); background: var(--surface); border: 1px solid var(--axis); border-radius: 6px; padding: 8px 10px; min-width: 0; }
+input[aria-invalid="true"] { border-color: var(--crit); }
+.row { display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end; }
+.row > label.f { flex: 1 1 140px; }
+button { font: inherit; cursor: pointer; border-radius: 6px; padding: 8px 14px; border: 1px solid var(--axis); background: var(--surface); color: var(--ink); }
+button.primary { background: var(--keel); border-color: var(--keel); color: #fff; font-weight: 600; }
+button.link { border: 0; background: none; padding: 0; color: var(--keel); text-decoration: underline; text-underline-offset: 2px; }
+button.danger { color: var(--crit); border-color: var(--crit); }
+button:disabled { opacity: .55; cursor: not-allowed; }
+button:focus-visible, select:focus-visible, input:focus-visible { outline: 2px solid var(--keel); outline-offset: 2px; }
+.seg { display: inline-flex; border: 1px solid var(--axis); border-radius: 6px; overflow: hidden; }
+.seg button { border: 0; border-radius: 0; font-size: 13px; color: var(--ink2); background: transparent; padding: 6px 12px; }
+.seg button + button { border-left: 1px solid var(--axis); }
+.seg button[aria-pressed="true"] { background: var(--keel); color: #fff; }
+.msg { font-size: 13px; min-height: 1.5em; }
+.msg.err { color: var(--crit); }
+.msg.ok { color: var(--good-text); }
+.or { display: flex; align-items: center; gap: 10px; color: var(--muted); font-size: 13px; }
+.or::before, .or::after { content: ""; flex: 1; border-top: 1px solid var(--grid); }
+.bar, .card.bar { display: flex; flex-direction: row; flex-wrap: wrap; gap: 8px 16px; align-items: center; justify-content: space-between; }
+.bar .who { font-weight: 600; }
+.bar .who span { color: var(--ink2); font-weight: 400; }
+.bar .acts { display: flex; gap: 8px; flex-wrap: wrap; }
+.tiles { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.tile .label { font-size: 13px; color: var(--ink2); }
+.tile .value { font-size: 28px; font-weight: 600; line-height: 1.2; margin: 4px 0; }
+.tile .cmp { font-size: 13px; color: var(--ink2); }
+.payday { display: grid; grid-template-columns: minmax(0, 360px) minmax(0, 1fr); gap: 16px; align-items: center; }
+.phone { background: var(--surface); border: 1px solid var(--border); border-radius: 18px; padding: 14px 16px; box-shadow: 0 6px 20px rgba(0,0,0,.10); display: flex; flex-direction: column; gap: 6px; }
+.phone .app { font-size: 12px; color: var(--ink2); display: flex; justify-content: space-between; gap: 8px; }
+.phone .big { font-size: 34px; font-weight: 700; line-height: 1.1; color: var(--keel); font-variant-numeric: tabular-nums; }
+.phone dl { margin: 4px 0 0; display: grid; grid-template-columns: 1fr auto; gap: 2px 12px; font-size: 13px; color: var(--ink2); }
+.phone dd { margin: 0; text-align: right; color: var(--ink); font-variant-numeric: tabular-nums; }
+.why { font-size: 14px; color: var(--ink2); display: flex; flex-direction: column; gap: 10px; max-width: 56ch; }
+.why strong { color: var(--ink); }
+.legend { display: flex; flex-wrap: wrap; gap: 6px 18px; font-size: 13px; color: var(--ink2); }
+.legend span { display: inline-flex; align-items: center; gap: 6px; }
+.key { display: inline-block; width: 18px; border-top: 2px solid; }
+.swatch { display: inline-block; width: 14px; height: 10px; border-radius: 2px; opacity: .25; }
+.plot svg { display: block; width: 100%; height: auto; }
+.scroll { overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; font-size: 13px; }
+th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--grid); vertical-align: middle; }
+th { color: var(--ink2); font-weight: 600; white-space: nowrap; }
+td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+td.note-cell { color: var(--ink2); }
+.warn { border-left: 3px solid var(--warn); padding: 8px 12px; font-size: 13px; color: var(--ink2); background: color-mix(in srgb, var(--warn) 10%, transparent); border-radius: 0 6px 6px 0; }
+.confirm { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; font-size: 13px; }
+.cols { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.jobshape { font-size: 13px; color: var(--ink2); min-height: 1.5em; }
+footer { font-size: 13px; color: var(--muted); }
+[hidden] { display: none !important; }
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.stack { display: flex; flex-direction: column; gap: 20px; }
+@media (max-width: 760px) {
+  .tiles, .cols, .payday { grid-template-columns: 1fr; }
+}
+@media (max-width: 520px) {
+  #e-table .note-cell, #e-table th.notecol { display: none; }
+  th, td { padding: 8px 6px; }
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top">
+    <div>
+      <h1>Keel · My pay</h1>
+      <p class="sub">A steady weekly paycheck for anyone whose pay is uneven: drivers, plumbers, gardeners, cleaners, designers. Log what you earn each week; Keel works out a paycheck you can count on.</p>
+    </div>
+    <span class="badge">Demo: use made-up numbers · not financial or tax advice</span>
+  </div>
+  <p class="note"><a href="index.html">See the main results on simulated NYC drivers</a></p>
+
+  <!-- Signed out -->
+  <section class="card narrow" id="v-signin" hidden>
+    <header>
+      <h2>Sign in to track your pay</h2>
+      <p>Your account keeps your job and weekly pay so Keel can pick up where you left off.</p>
+    </header>
+    <div class="seg" role="group" aria-label="Sign in or create an account">
+      <button type="button" id="tab-in" aria-pressed="true">Sign in</button>
+      <button type="button" id="tab-up" aria-pressed="false">Create account</button>
+    </div>
+    <form id="f-auth" novalidate>
+      <label class="f" for="a-email">Email
+        <input id="a-email" type="email" autocomplete="email" required>
+      </label>
+      <label class="f" for="a-pass">Password <span id="a-pass-hint">(at least 6 characters)</span>
+        <input id="a-pass" type="password" autocomplete="current-password" minlength="6" required>
+      </label>
+      <button class="primary" type="submit" id="a-submit">Sign in</button>
+      <p class="msg" id="a-msg" role="status"></p>
+    </form>
+    <p class="note" id="a-off" hidden>Accounts are not switched on for this copy of the app yet (see <code>app/MY_PAY_SETUP.md</code>). You can still try everything as a guest.</p>
+    <div class="or">or</div>
+    <button type="button" id="b-guest">Try it as a guest</button>
+    <p class="note">Guest mode saves your numbers only in this browser. Nothing is sent anywhere.</p>
+  </section>
+
+  <!-- Profile -->
+  <section class="card narrow" id="v-profile" hidden>
+    <header>
+      <h2 id="p-title">What kind of work do you do?</h2>
+      <p>Keel uses this to show an example history and to describe how uneven your pay is.</p>
+    </header>
+    <form id="f-profile" novalidate>
+      <label class="f" for="p-name">Your first name (optional)
+        <input id="p-name" maxlength="60" autocomplete="given-name">
+      </label>
+      <label class="f" for="p-job">Job
+        <select id="p-job"></select>
+      </label>
+      <p class="jobshape" id="p-jobshape"></p>
+      <div class="row">
+        <label class="f" for="p-tax">Set aside for tax
+          <select id="p-tax">
+            <option value="0.10">10%</option><option value="0.15" selected>15%</option>
+            <option value="0.20">20%</option><option value="0.25">25%</option>
+          </select>
+        </label>
+        <label class="f" for="p-risk">Allowed chance of running out
+          <select id="p-risk">
+            <option value="0.01">1%</option><option value="0.05" selected>5%</option>
+            <option value="0.1">10%</option><option value="0.2">20%</option>
+          </select>
+        </label>
+      </div>
+      <p class="note">The tax share is illustrative. Ask a tax professional what you actually owe.</p>
+      <label class="f" id="p-example-wrap" style="flex-direction:row;align-items:center;gap:8px" for="p-example">
+        <input id="p-example" type="checkbox" checked> Start with 26 example weeks for this job (simulated, you can delete them)
+      </label>
+      <div class="row">
+        <button class="primary" type="submit" id="p-save">Save and continue</button>
+        <button type="button" id="p-cancel" hidden>Cancel</button>
+      </div>
+      <p class="msg" id="p-msg" role="status"></p>
+    </form>
+  </section>
+
+  <!-- Dashboard -->
+  <div id="v-dash" class="stack" hidden>
+    <div class="bar card">
+      <p class="who" id="d-who"></p>
+      <div class="acts">
+        <button type="button" id="d-edit">Change job or settings</button>
+        <button type="button" id="d-out">Sign out</button>
+      </div>
+    </div>
+
+    <section class="card" id="d-empty" hidden>
+      <header>
+        <h2>Add at least 4 weeks of pay to get your first paycheck</h2>
+        <p>Keel needs a few weeks to see how your pay moves. Add them in the pay log below, or add example weeks for your job.</p>
+      </header>
+      <div><button type="button" class="primary" id="d-example1">Add example weeks for my job</button></div>
+    </section>
+
+    <div id="d-results" class="stack" hidden>
+      <section class="card">
+        <div class="bar">
+          <h2>Next paycheck</h2>
+          <div class="seg" role="group" aria-label="Allowed chance the buffer runs out" id="d-risk"></div>
+        </div>
+        <div class="payday">
+          <div class="phone">
+            <div class="app"><span id="ph-who">Keel</span><span id="ph-week"></span></div>
+            <p>Your paycheck next week</p>
+            <p class="big" id="ph-pay"></p>
+            <dl>
+              <dt>Expected take-home, low to high</dt><dd id="ph-range"></dd>
+              <dt>Set aside for tax</dt><dd id="ph-tax"></dd>
+              <dt>Buffer before payday</dt><dd id="ph-buf"></dd>
+            </dl>
+          </div>
+          <div class="why">
+            <p><strong>Why this amount.</strong> <span id="ph-reason"></span></p>
+            <p id="ph-basis"></p>
+          </div>
+        </div>
+      </section>
+
+      <div id="d-warn"></div>
+
+      <div class="tiles">
+        <div class="tile"><p class="label">How uneven your pay is</p><p class="value" id="t-shape"></p><p class="cmp" id="t-shape2"></p></div>
+        <div class="tile"><p class="label">Paycheck swing vs pay swing</p><p class="value" id="t-swing"></p><p class="cmp" id="t-swing2"></p></div>
+        <div class="tile"><p class="label">Weeks the buffer ran out</p><p class="value" id="t-od"></p><p class="cmp" id="t-od2"></p></div>
+      </div>
+
+      <div class="cols">
+        <section class="card">
+          <header><h2>Your pay swings, the paycheck doesn't</h2><p>Weekly take-home pay after the tax set-aside, and what Keel would have paid you.</p></header>
+          <div class="legend">
+            <span><i class="key" style="border-color:var(--ink2)"></i>Take-home pay</span>
+            <span><i class="key" style="border-color:var(--keel)"></i>Keel paycheck</span>
+            <span><i class="swatch" style="background:var(--keel)"></i>Forecast range</span>
+          </div>
+          <div class="plot" id="c-pay"></div>
+        </section>
+        <section class="card">
+          <header><h2>Buffer under three ways of paying</h2><p>Same pay, same starting buffer. Below zero means the buffer ran out.</p></header>
+          <div class="legend">
+            <span><i class="key" style="border-color:var(--keel)"></i>Keel</span>
+            <span><i class="key" style="border-color:var(--avg4)"></i>4-week average</span>
+            <span><i class="key" style="border-color:var(--last)"></i>Last week's pay</span>
+          </div>
+          <div class="plot" id="c-buf"></div>
+        </section>
+      </div>
+    </div>
+
+    <section class="card">
+      <header>
+        <h2>Pay log</h2>
+        <p>One row per week, before tax. Adding a week that is already there replaces it.</p>
+      </header>
+      <form id="f-entry" novalidate>
+        <div class="row">
+          <label class="f" for="e-week">Any day in the week
+            <input id="e-week" type="date" required>
+          </label>
+          <label class="f" for="e-gross">Paid that week ($)
+            <input id="e-gross" type="number" inputmode="decimal" min="0" max="99999" step="0.01" required>
+          </label>
+          <label class="f" for="e-note">Note (optional)
+            <input id="e-note" maxlength="80" placeholder="e.g. snow week">
+          </label>
+          <button class="primary" type="submit" id="e-add">Add week</button>
+        </div>
+        <p class="msg" id="e-msg" role="status"></p>
+      </form>
+      <div class="scroll"><table id="e-table"></table></div>
+      <div class="row">
+        <button type="button" id="d-example2">Add example weeks for my job</button>
+        <span class="confirm" id="clear-wrap">
+          <button type="button" class="danger" id="d-clear">Delete all weeks</button>
+        </span>
+      </div>
+    </section>
+
+    <section class="card">
+      <header><h2>How this page works</h2></header>
+      <p class="note">Keel replays your own weeks: from week 5 on, it picks each paycheck with the same Monte Carlo rule as the main results (highest paycheck whose chance of an empty buffer in the next 4 weeks stays under your limit) and compares it with paying last week's pay or the 4-week average. The starting buffer is half a week of your average take-home pay.</p>
+      <p class="note"><strong>One difference:</strong> the main results forecast with a LightGBM model and conformal calibration. Here the low, middle and high case are simply the 10%, 50% and 90% points of your last 12 weeks, so they are uncalibrated and less reliable, especially with few weeks. Example weeks are simulated from our own assumptions, not data about real workers.</p>
+    </section>
+  </div>
+
+  <p class="msg err" id="g-msg" role="alert"></p>
+  <footer>Draft for Bay Valley Hacks. Demo only: no real money moves and nothing here is financial or tax advice. Please do not enter real financial information.</footer>
+</div>
+
+<script src="config.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<script src="engine.js"></script>
+<script src="jobs.js"></script>
+<script src="store.js"></script>
+<script>
+"use strict";
+(function () {
+  var E = window.KeelEngine, J = window.KeelJobs, S = window.KeelStore;
+  var MODE_KEY = "keel-mypay-mode";
+  var cfg = window.KEEL_SUPABASE || {};
+  var client = null;
+  var st = { store: null, profile: null, entries: [], plan: null, authTab: "in", editing: false };
+
+  function $(id) { return document.getElementById(id); }
+  function esc(s) { return String(s).replace(/[&<>"']/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]; }); }
+  function money(n) { var r = Math.round(n); return (r < 0 ? "−$" : "$") + Math.abs(r).toLocaleString("en-US"); }
+  function pct(x) { return Math.round(x * 100) + "%"; }
+  function css(v) { return getComputedStyle(document.documentElement).getPropertyValue(v).trim(); }
+  function fmtWeek(ws) { var d = new Date(ws + "T00:00:00Z"); return d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric", timeZone: "UTC" }); }
+  function today() { var d = new Date(); return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 10); }
+  function setMode(m) { try { if (m) localStorage.setItem(MODE_KEY, m); else localStorage.removeItem(MODE_KEY); } catch (e) { /* ignore */ } }
+  function getMode() { try { return localStorage.getItem(MODE_KEY); } catch (e) { return null; } }
+  function msg(id, text, kind) { var el = $(id); el.textContent = text || ""; el.className = "msg" + (kind ? " " + kind : ""); }
+  function fail(e) { msg("g-msg", "Something went wrong: " + (e && e.message ? e.message : e) + ". Your last change may not be saved; reload the page and try again.", "err"); }
+
+  function show(view) {
+    ["v-signin", "v-profile", "v-dash"].forEach(function (v) { $(v).hidden = v !== view; });
+    msg("g-msg", "");
+  }
+
+  // ---- Sign in --------------------------------------------------------------------------------
+  var accountsOn = !!(cfg.url && cfg.anonKey && window.supabase && window.supabase.createClient);
+  if (accountsOn) {
+    try { client = window.supabase.createClient(cfg.url, cfg.anonKey); } catch (e) { accountsOn = false; }
+  }
+
+  function setAuthTab(t) {
+    st.authTab = t;
+    $("tab-in").setAttribute("aria-pressed", String(t === "in"));
+    $("tab-up").setAttribute("aria-pressed", String(t === "up"));
+    $("a-submit").textContent = t === "in" ? "Sign in" : "Create account";
+    $("a-pass").setAttribute("autocomplete", t === "in" ? "current-password" : "new-password");
+    msg("a-msg", "");
+  }
+  $("tab-in").addEventListener("click", function () { setAuthTab("in"); });
+  $("tab-up").addEventListener("click", function () { setAuthTab("up"); });
+
+  function friendlyAuthError(m) {
+    m = String(m || "");
+    if (/invalid login credentials/i.test(m)) return "That email and password don't match an account. Check them, or create an account.";
+    if (/already registered/i.test(m)) return "That email already has an account. Sign in instead.";
+    if (/email not confirmed/i.test(m)) return "Confirm your email first: open the link we sent you, then sign in.";
+    if (/password/i.test(m)) return "Use a password with at least 6 characters.";
+    if (/fetch|network/i.test(m)) return "Can't reach the account service. Check your connection, or try as a guest.";
+    return m;
+  }
+
+  $("f-auth").addEventListener("submit", function (ev) {
+    ev.preventDefault();
+    var email = $("a-email").value.trim(), pass = $("a-pass").value;
+    var okEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email), okPass = pass.length >= 6;
+    $("a-email").setAttribute("aria-invalid", String(!okEmail));
+    $("a-pass").setAttribute("aria-invalid", String(!okPass));
+    if (!okEmail) return msg("a-msg", "Enter an email address like name@example.com.", "err");
+    if (!okPass) return msg("a-msg", "Use a password with at least 6 characters.", "err");
+    $("a-submit").disabled = true;
+    msg("a-msg", st.authTab === "in" ? "Signing in…" : "Creating your account…");
+    var call = st.authTab === "in"
+      ? client.auth.signInWithPassword({ email: email, password: pass })
+      : client.auth.signUp({ email: email, password: pass });
+    call.then(function (res) {
+      $("a-submit").disabled = false;
+      if (res.error) return msg("a-msg", friendlyAuthError(res.error.message), "err");
+      if (!res.data.session) return msg("a-msg", "Account created. Open the link in the email we sent you, then sign in here.", "ok");
+      $("a-pass").value = "";
+      startAccount(res.data.session.user);
+    }).catch(function (e) { $("a-submit").disabled = false; msg("a-msg", friendlyAuthError(e.message), "err"); });
+  });
+
+  $("b-guest").addEventListener("click", function () {
+    setMode("guest");
+    begin(new S.GuestStore());
+  });
+
+  function startAccount(user) {
+    setMode("account");
+    begin(new S.AccountStore(client, user), user.email);
+  }
+
+  // ---- Load a person ----------------------------------------------------------------------------
+  function begin(store, email) {
+    st.store = store;
+    st.email = email || null;
+    Promise.all([store.getProfile(), store.listEntries()]).then(function (r) {
+      st.profile = r[0];
+      st.entries = r[1];
+      if (!st.profile) openProfile(false); else openDash();
+    }).catch(fail);
+  }
+
+  // ---- Profile ---------------------------------------------------------------------------------
+  J.JOBS.forEach(function (j) {
+    var o = document.createElement("option");
+    o.value = j.id; o.textContent = j.label;
+    $("p-job").appendChild(o);
+  });
+  function jobShape() { var j = J.byId($("p-job").value); $("p-jobshape").textContent = j ? j.shape : ""; }
+  $("p-job").addEventListener("change", jobShape);
+
+  function openProfile(editing) {
+    st.editing = editing;
+    var p = st.profile || { display_name: "", job: "driver", tax_rate: 0.15, risk_limit: 0.05 };
+    $("p-title").textContent = editing ? "Your job and settings" : "What kind of work do you do?";
+    $("p-name").value = p.display_name || "";
+    $("p-job").value = J.byId(p.job) ? p.job : "other";
+    $("p-tax").value = String(p.tax_rate.toFixed(2));
+    $("p-risk").value = String(p.risk_limit);
+    $("p-example-wrap").hidden = st.entries.length > 0;
+    $("p-example").checked = st.entries.length === 0;
+    $("p-cancel").hidden = !editing;
+    jobShape();
+    msg("p-msg", "");
+    show("v-profile");
+  }
+  $("p-cancel").addEventListener("click", openDash);
+
+  $("f-profile").addEventListener("submit", function (ev) {
+    ev.preventDefault();
+    var p = {
+      display_name: $("p-name").value.trim().slice(0, 60),
+      job: $("p-job").value,
+      tax_rate: Number($("p-tax").value),
+      risk_limit: Number($("p-risk").value)
+    };
+    var addExample = !$("p-example-wrap").hidden && $("p-example").checked;
+    $("p-save").disabled = true;
+    msg("p-msg", "Saving…");
+    st.store.saveProfile(p).then(function () {
+      st.profile = p;
+      return addExample ? st.store.upsertEntries(J.exampleHistory(p.job, today(), 26, E)) : null;
+    }).then(function () { return st.store.listEntries(); })
+      .then(function (list) { st.entries = list; $("p-save").disabled = false; openDash(); })
+      .catch(function (e) { $("p-save").disabled = false; msg("p-msg", "Could not save: " + e.message, "err"); });
+  });
+
+  // ---- Dashboard -------------------------------------------------------------------------------
+  function openDash() {
+    var p = st.profile, job = J.byId(p.job) || J.byId("other");
+    var name = p.display_name ? esc(p.display_name) : (st.email ? esc(st.email) : "Guest");
+    $("d-who").innerHTML = name + " <span>· " + esc(job.label) + (st.store.kind === "guest" ? " · guest, saved in this browser only" : "") + "</span>";
+    $("d-out").textContent = st.store.kind === "guest" ? "Leave guest mode" : "Sign out";
+    show("v-dash");
+    render();
+  }
+  $("d-edit").addEventListener("click", function () { openProfile(true); });
+  $("d-out").addEventListener("click", function () {
+    setMode(null);
+    var done = function () { st.store = null; show("v-signin"); };
+    if (st.store.kind === "account") client.auth.signOut().then(done, done); else done();
+  });
+
+  var RISKS = [0.01, 0.05, 0.1, 0.2];
+  function renderRisk() {
+    $("d-risk").innerHTML = RISKS.map(function (r) {
+      return '<button type="button" data-r="' + r + '" aria-pressed="' + (r === st.profile.risk_limit) + '">' + pct(r) + "</button>";
+    }).join("");
+  }
+  $("d-risk").addEventListener("click", function (ev) {
+    var b = ev.target.closest("button[data-r]");
+    if (!b) return;
+    st.profile.risk_limit = Number(b.getAttribute("data-r"));
+    render();
+    st.store.saveProfile(st.profile).catch(fail);
+  });
+
+  function render() {
+    var p = st.profile;
+    st.plan = E.plan(st.entries, { taxRate: p.tax_rate, riskLimit: p.risk_limit });
+    renderLog();
+    $("d-empty").hidden = !!st.plan;
+    $("d-results").hidden = !st.plan;
+    if (!st.plan) return;
+    renderRisk();
+    var pl = st.plan, nx = pl.next;
+    $("ph-who").textContent = "Keel · " + (p.display_name || "you");
+    $("ph-week").textContent = "Week of " + fmtWeek(nx.week_start);
+    $("ph-pay").textContent = money(nx.pay);
+    $("ph-range").textContent = money(nx.lo) + " to " + money(nx.hi);
+    $("ph-tax").textContent = pct(p.tax_rate) + " of what you're paid";
+    $("ph-buf").textContent = money(nx.buffer_before);
+    $("ph-reason").textContent = nx.reason;
+    var used = Math.min(E.WINDOW, st.entries.length);
+    $("ph-basis").textContent = "Based on your last " + used + " week" + (used === 1 ? "" : "s") + " and the buffer you would have now if you had used Keel since week 5 at this risk limit. A higher limit pays more along the way, so it can leave a smaller buffer and a smaller paycheck today." +
+      (st.entries.length < 12 ? " With fewer than 12 weeks the forecast is rough; keep logging." : "");
+
+    $("d-warn").innerHTML = pl.warnings.map(function (w) { return '<p class="warn">' + esc(w) + "</p>"; }).join("");
+
+    var sh = E.shape(st.entries.map(function (e) { return e.gross; }));
+    $("t-shape").textContent = sh.label.charAt(0).toUpperCase() + sh.label.slice(1);
+    $("t-shape2").textContent = "Typical week " + money(sh.mean) + " · best " + money(sh.best) + " · worst " + money(sh.worst) +
+      (sh.zero_weeks ? " · " + sh.zero_weeks + " week" + (sh.zero_weeks > 1 ? "s" : "") + " at $0" : "");
+
+    var m = pl.metrics, nW = pl.weeks.length;
+    if (nW) {
+      $("t-swing").textContent = money(m.pay_swing.keel);
+      $("t-swing2").textContent = "Keel paycheck, best to worst week, vs " + money(m.earnings_swing) + " for take-home pay over the same " + nW + " weeks.";
+      $("t-od").textContent = m.overdraft_weeks.keel + " of " + nW;
+      $("t-od2").textContent = "Keel " + m.overdraft_weeks.keel + " · 4-week average " + m.overdraft_weeks.avg4 + " · last week's pay " + m.overdraft_weeks.last +
+        (m.overdraft_weeks.keel ? ". An empty buffer is a risk outcome Keel reports, not an error." : "");
+    } else {
+      $("t-swing").textContent = "—"; $("t-swing2").textContent = "Needs a 5th week to compare.";
+      $("t-od").textContent = "—"; $("t-od2").textContent = "Needs a 5th week to compare.";
+    }
+    var labels = pl.weeks.map(function (w) { return w.week_start; });
+    chart($("c-pay"), labels, [
+      { color: "--ink2", values: pl.weeks.map(function (w) { return w.net; }) },
+      { color: "--keel", values: pl.weeks.map(function (w) { return w.pay_keel; }) }
+    ], { lo: pl.weeks.map(function (w) { return w.lo; }), hi: pl.weeks.map(function (w) { return w.hi; }) }, "Take-home pay and Keel paycheck by week");
+    chart($("c-buf"), labels, [
+      { color: "--avg4", values: pl.weeks.map(function (w) { return w.buf_avg4; }) },
+      { color: "--last", values: pl.weeks.map(function (w) { return w.buf_last; }) },
+      { color: "--keel", values: pl.weeks.map(function (w) { return w.buf_keel; }) }
+    ], null, "Buffer balance under each pay rule by week", true);
+  }
+
+  // Small SVG line chart, drawn with the theme's colours.
+  function niceTicks(min, max) {
+    var span = max - min || 1, raw = span / 4, mag = Math.pow(10, Math.floor(Math.log10(raw)));
+    var step = [1, 2, 2.5, 5, 10].map(function (k) { return k * mag; }).find(function (s) { return s >= raw; });
+    var out = [], lo = Math.floor(min / step) * step, hi = Math.ceil(max / step) * step;
+    if (hi === lo) hi = lo + step;
+    for (var v = lo; v <= hi + 1e-9; v += step) out.push(Math.round(v * 100) / 100);
+    return out;  // first tick <= min and last tick >= max, so no line leaves the chart
+  }
+  function chart(el, labels, series, band, title, zeroLine) {
+    var n = labels.length;
+    if (n < 2) { el.innerHTML = '<p class="note">The chart appears from your 6th week.</p>'; return; }
+    var all = [];
+    series.forEach(function (s) { all = all.concat(s.values); });
+    if (band) all = all.concat(band.lo, band.hi);
+    if (zeroLine) all.push(0);
+    var ticks = niceTicks(Math.min.apply(null, all), Math.max.apply(null, all));
+    var y0 = ticks[0], y1 = ticks[ticks.length - 1];
+    var W = 640, H = 260, m = { l: 64, r: 12, t: 10, b: 28 };
+    var X = function (i) { return m.l + i * (W - m.l - m.r) / (n - 1); };
+    var Y = function (v) { return m.t + (1 - (v - y0) / (y1 - y0 || 1)) * (H - m.t - m.b); };
+    var g = [];
+    ticks.forEach(function (v) {
+      g.push('<line x1="' + m.l + '" x2="' + (W - m.r) + '" y1="' + Y(v) + '" y2="' + Y(v) + '" stroke="' + css(v === 0 && zeroLine ? "--crit" : "--grid") + '" stroke-width="1"/>');
+      g.push('<text x="' + (m.l - 8) + '" y="' + (Y(v) + 4) + '" text-anchor="end" font-size="12" fill="' + css("--muted") + '">' + money(v) + "</text>");
+    });
+    if (zeroLine && y0 < 0) g.push('<rect x="' + m.l + '" y="' + Y(0) + '" width="' + (W - m.l - m.r) + '" height="' + (Y(y0) - Y(0)) + '" fill="' + css("--crit") + '" opacity="0.06"/>');
+    [0, Math.floor((n - 1) / 2), n - 1].forEach(function (i) {
+      g.push('<text x="' + X(i) + '" y="' + (H - 8) + '" text-anchor="' + (i === 0 ? "start" : i === n - 1 ? "end" : "middle") + '" font-size="12" fill="' + css("--muted") + '">' + fmtWeek(labels[i]).replace(/, \d{4}$/, "") + "</text>");
+    });
+    if (band) {
+      var up = band.hi.map(function (v, i) { return X(i) + "," + Y(v); }).join(" ");
+      var dn = band.lo.map(function (v, i) { return X(i) + "," + Y(v); }).reverse().join(" ");
+      g.push('<polygon points="' + up + " " + dn + '" fill="' + css("--keel") + '" opacity="0.15"/>');
+    }
+    series.forEach(function (s) {
+      var pts = s.values.map(function (v, i) { return X(i) + "," + Y(v); }).join(" ");
+      g.push('<polyline points="' + pts + '" fill="none" stroke="' + css(s.color) + '" stroke-width="2" stroke-linejoin="round"/>');
+      g.push('<circle cx="' + X(n - 1) + '" cy="' + Y(s.values[n - 1]) + '" r="3.5" fill="' + css(s.color) + '"/>');
+    });
+    el.innerHTML = '<svg viewBox="0 0 ' + W + " " + H + '" role="img" aria-label="' + esc(title) + '">' + g.join("") + "</svg>";
+  }
+
+  // ---- Pay log -----------------------------------------------------------------------------------
+  function renderLog() {
+    var tax = st.profile.tax_rate;
+    if (!st.entries.length) { $("e-table").innerHTML = '<tbody><tr><td class="note-cell">No weeks yet.</td></tr></tbody>'; }
+    else {
+      var rows = st.entries.slice().reverse().map(function (e) {
+        return "<tr><td>" + fmtWeek(e.week_start) + '</td><td class="num">' + money(e.gross) + '</td><td class="num">' + money(e.gross * (1 - tax)) +
+          '</td><td class="note-cell">' + esc(e.note) + '</td><td class="num"><button type="button" class="link" data-del="' + e.week_start + '">Delete</button></td></tr>';
+      }).join("");
+      $("e-table").innerHTML = '<thead><tr><th>Week of</th><th class="num">Paid</th><th class="num">Take-home</th><th class="notecol">Note</th><th class="num"><span class="sr-only">Actions</span></th></tr></thead><tbody>' + rows + "</tbody>";
+    }
+    resetClear();
+  }
+  function reload() { return st.store.listEntries().then(function (list) { st.entries = list; render(); }); }
+
+  $("e-week").value = E.addWeeks(E.mondayOf(today()), -1);
+  $("f-entry").addEventListener("submit", function (ev) {
+    ev.preventDefault();
+    var day = $("e-week").value, g = $("e-gross").value;
+    var okDay = /^\d{4}-\d{2}-\d{2}$/.test(day), num = Number(g), okG = g !== "" && isFinite(num) && num >= 0 && num < 100000;
+    $("e-week").setAttribute("aria-invalid", String(!okDay));
+    $("e-gross").setAttribute("aria-invalid", String(!okG));
+    if (!okDay) return msg("e-msg", "Pick a date in the week you were paid for.", "err");
+    if (!okG) return msg("e-msg", "Enter what you were paid that week, from $0 to $99,999.", "err");
+    var ws = E.mondayOf(day);
+    $("e-add").disabled = true;
+    st.store.upsertEntries([{ week_start: ws, gross: Math.round(num * 100) / 100, note: $("e-note").value.trim().slice(0, 80) }])
+      .then(reload).then(function () {
+        $("e-add").disabled = false;
+        msg("e-msg", "Saved the week of " + fmtWeek(ws) + ".", "ok");
+        $("e-gross").value = ""; $("e-note").value = "";
+        $("e-week").value = E.addWeeks(ws, 1);
+      }).catch(function (e) { $("e-add").disabled = false; msg("e-msg", "Could not save: " + e.message, "err"); });
+  });
+  ["e-week", "e-gross"].forEach(function (id) { $(id).addEventListener("input", function () { $(id).removeAttribute("aria-invalid"); msg("e-msg", ""); }); });
+
+  $("e-table").addEventListener("click", function (ev) {
+    var b = ev.target.closest("button[data-del]");
+    if (!b) return;
+    st.store.deleteEntry(b.getAttribute("data-del")).then(reload).catch(fail);
+  });
+
+  function addExample() {
+    var hist = J.exampleHistory(st.profile.job, today(), 26, E);
+    var have = {};
+    st.entries.forEach(function (e) { have[e.week_start] = true; });
+    var fresh = hist.filter(function (e) { return !have[e.week_start]; });  // never overwrite weeks you entered
+    st.store.upsertEntries(fresh).then(reload).then(function () {
+      msg("e-msg", fresh.length ? "Added " + fresh.length + " example weeks (simulated). Delete them any time." : "Example weeks are already filled in.", "ok");
+    }).catch(fail);
+  }
+  $("d-example1").addEventListener("click", addExample);
+  $("d-example2").addEventListener("click", addExample);
+
+  function resetClear() {
+    $("clear-wrap").innerHTML = '<button type="button" class="danger" id="d-clear"' + (st.entries.length ? "" : " hidden") + ">Delete all weeks</button>";
+  }
+  $("clear-wrap").addEventListener("click", function (ev) {
+    var id = ev.target.id;
+    if (id === "d-clear") {
+      $("clear-wrap").innerHTML = "<span>Delete all " + st.entries.length + " weeks? This can't be undone.</span>" +
+        '<button type="button" class="danger" id="d-clear-yes">Delete ' + st.entries.length + " weeks</button>" +
+        '<button type="button" id="d-clear-no">Keep them</button>';
+      $("d-clear-no").focus();
+    } else if (id === "d-clear-no") {
+      resetClear();
+    } else if (id === "d-clear-yes") {
+      st.store.clearEntries().then(reload).catch(fail);
+    }
+  });
+
+  // ---- Start -------------------------------------------------------------------------------------
+  if (!accountsOn) {
+    $("f-auth").hidden = true;
+    document.querySelector("#v-signin .seg").hidden = true;
+    $("a-off").hidden = false;
+  }
+  function start() {
+    if (getMode() === "guest") return begin(new S.GuestStore());
+    if (!accountsOn) return show("v-signin");
+    client.auth.getSession().then(function (res) {
+      var s = res.data && res.data.session;
+      if (s) startAccount(s.user); else show("v-signin");
+    }).catch(function () { show("v-signin"); });
+  }
+  if (accountsOn) {
+    client.auth.onAuthStateChange(function (event) {
+      if (event === "SIGNED_OUT" && st.store && st.store.kind === "account") { st.store = null; show("v-signin"); }
+    });
+  }
+  if (window.matchMedia) window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", function () { if (st.plan) render(); });
+  start();
+})();
+</script>
+</body>
+</html>

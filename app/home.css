@@ -288,3 +288,18 @@ h2 { font-size: clamp(28px, 3.4vw, 38px); font-weight: 650; letter-spacing: -.02
 }
 .steps.three { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 @media (max-width: 760px) { .steps.three { grid-template-columns: minmax(0, 1fr); } }
+.btn.ghostlight { background: transparent; color: var(--ink); border-color: var(--border); }
+.btn.ghostlight:hover { background: var(--surface); border-color: var(--keel); box-shadow: none; }
+.topin .btn.small + .btn.small { margin-left: -12px; }
+.links { margin-left: 32px; margin-right: auto; }
+.proof .storm { margin-top: 40px; }
+.proof .storm h3 { font-size: 22px; font-weight: 650; letter-spacing: -.015em; margin: 0; }
+.honestline { margin-top: 28px; max-width: 70em; }
+@media (max-width: 860px) { .links { display: flex; margin-left: 12px; gap: 14px; } .topin .btn.ghostlight { display: none; } .topin .btn.small { margin-left: auto; } }
+.btn.small2 { min-height: 38px; padding: 0 16px; font-size: 14px; }
+.btn.quiet { background: transparent; color: var(--ink); border-color: var(--border); }
+.btn.quiet:hover { background: var(--surface); border-color: var(--keel); box-shadow: none; }
+.auth-in { display: none; }
+.signed-in .auth-out { display: none !important; }
+.signed-in .auth-in { display: inline-flex; }
+.links a[aria-current="page"] { color: var(--keel); } .links a[aria-current="page"]::after { transform: scaleX(1); }

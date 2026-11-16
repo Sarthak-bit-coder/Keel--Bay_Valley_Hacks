@@ -225,3 +225,18 @@ footer.meta { border-top: 1px solid var(--border); padding-top: 16px; }
 .setrow b { font-size: 15px; }
 @media (max-width: 1000px) { .herocards { grid-template-columns: repeat(2, minmax(0, 1fr)); } .herocards .big { grid-column: 1 / -1; } }
 @media (max-width: 640px) { .two, .billgrid { grid-template-columns: minmax(0, 1fr); } .herocards { grid-template-columns: minmax(0, 1fr); } .billgrid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.gis { display: flex; justify-content: center; min-height: 44px; }
+.cushion p { color: var(--ink2); }
+.cushion b { color: var(--ink); }
+.cflow { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.cflow > div { display: grid; grid-template-columns: auto 1fr; gap: 2px 10px; align-items: center; padding: 12px 14px; border-radius: var(--r-ctl); border: 1px solid var(--border); font-size: 14px; color: var(--ink2); }
+.cflow .ms { grid-row: span 2; width: 34px; height: 34px; border-radius: 50%; display: grid; place-items: center; }
+.cflow .up .ms { background: var(--keel-soft); color: var(--keel); }
+.cflow .down .ms { background: color-mix(in srgb, var(--crit) 10%, transparent); color: var(--crit); }
+.cbar { height: 12px; border-radius: 6px; background: var(--grid); overflow: hidden; }
+.cbarfill { height: 100%; border-radius: 6px; background: var(--keel); transition: width .6s var(--ease-out); }
+.cbarfill.low { background: var(--avg4); }
+.cnow { font-size: 16px; }
+.lastweek { background: color-mix(in srgb, var(--keel-soft) 50%, transparent); border-radius: var(--r-ctl); padding: 12px 14px; font-size: 14px; color: var(--ink2); line-height: 1.6; }
+.lastweek .good { color: var(--good-text); font-weight: 600; } .lastweek .bad { color: var(--crit); font-weight: 600; }
+@media (max-width: 640px) { .cflow { grid-template-columns: minmax(0, 1fr); } }

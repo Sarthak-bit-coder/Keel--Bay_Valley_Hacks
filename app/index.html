@@ -90,6 +90,9 @@ h2 { font-size: 17px; text-wrap: balance; }
 .whysteps b { color: var(--ink); }
 #log button[data-why] { font: inherit; color: var(--keel); background: none; border: 0; padding: 0; cursor: pointer; text-decoration: underline; text-underline-offset: 2px; }
 #log tr[aria-current="true"] td { background: color-mix(in srgb, var(--keel) 10%, transparent); }
+#rectable tr[aria-current="true"] td { background: color-mix(in srgb, var(--keel) 10%, transparent); }
+.recdl { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 8px 16px; margin: 0; }
+.recdl dt { font-size: 13px; color: var(--ink2); } .recdl dd { margin: 0; font-size: 18px; font-weight: 600; }
 .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 #optlist { border: 0; margin: 0; padding: 0; display: grid; gap: 8px; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); }
 #optlist label { display: flex; gap: 8px; align-items: flex-start; border: 1px solid var(--border); border-radius: 8px; padding: 10px; cursor: pointer; }
@@ -282,6 +285,19 @@ footer { color: var(--muted); font-size: 12px; }
     <p class="note" id="stnote"></p>
   </section>
 
+  <section class="card" aria-labelledby="rec-h">
+    <header>
+      <h2 id="rec-h">Buffer recovery</h2>
+      <p id="recsub"></p>
+    </header>
+    <div id="recbody" aria-live="polite"></div>
+    <h3 class="relh3">Replayed buffer under each risk limit</h3>
+    <div class="legend" id="recleg"></div>
+    <div class="plot" id="recchart"></div>
+    <div class="scroll"><table id="rectable"></table></div>
+    <p class="note" id="recnote"></p>
+  </section>
+
   <section class="card" aria-labelledby="whatif-h">
     <header>
       <h2 id="whatif-h">What if?</h2>
@@ -368,6 +384,7 @@ footer { color: var(--muted); font-size: 12px; }
 </div>
 
 <script src="data.js"></script>
+<script src="recovery.js"></script>
 <script id="data">
 "use strict";
 // Loading, validation and run shaping live in app/data.js (tested in app/data.test.js).
@@ -573,6 +590,7 @@ function render() {
   var rows = R.log.slice(-8).map(function (r) {
     return "<tr" + (r.week === whyWeek ? ' aria-current="true"' : "") + "><td><button type=\"button\" data-why=\"" + r.week + "\" aria-label=\"Explain week " + r.week + "\">W" + r.week + "</button></td><td class=\"num\">" + money(r.lo) + "–" + money(r.hi) + "</td><td class=\"num\">" + money(r.buffer) + "</td><td class=\"num\">" + money(r.pay) + "</td><td>" + esc(r.reason) + "</td></tr>";
   }).join("");
+  renderRecovery();
   renderWhatIf();
   renderOptimizer();
   renderBreakdown();
@@ -852,6 +870,45 @@ document.getElementById("log").addEventListener("click", function (ev) {
   render();
   document.getElementById("whycard").scrollIntoView({ block: "start", behavior: "smooth" });
 });
+
+// Buffer recovery: replayed runs only (KeelRecovery). No projection beyond the replay, so no recovery dates are promised.
+function renderRecovery() {
+  var run = findRun(state.driver, state.scenario, state.risk), TOY = DATA.meta.model === "toy", NA = "Not in file";
+  if (!run) return;
+  var rec = KeelRecovery.bufferRecovery(run), rows = KeelRecovery.recoveryCompare(DATA, state.driver);
+  var scen = function (id) { return NAMES[id] || id; };
+  function status(r) {
+    if (!r) return NA;
+    if (r.status === "never_below") return "Never fell below target";
+    if (r.status === "recovered") return r.weeksToRecover + " week" + (r.weeksToRecover === 1 ? "" : "s") + " (back by week " + r.recoveredWeek + ")";
+    return "Not back by end of replay (" + r.weeks + " weeks)";
+  }
+  document.getElementById("recsub").textContent = (TOY ? "Toy sample, not our result. " : "Simulated driver " + state.driver + ", " + scen(state.scenario).toLowerCase() + ". ") +
+    "How far the buffer fell and how fast it came back, in the historical replay.";
+  var el = document.getElementById("recbody");
+  if (!rec) { el.innerHTML = '<p class="note">This run is missing buffer data, so recovery cannot be shown.</p>'; }
+  else el.innerHTML = "<dl class=\"recdl\">" +
+    "<div><dt>Current buffer (end of replay)</dt><dd>" + money(rec.current) + "</dd></div>" +
+    "<div><dt>Recovery target (starting buffer)</dt><dd>" + money(rec.target) + "</dd></div>" +
+    "<div><dt>Lowest point</dt><dd>" + money(rec.lowest) + " · week " + rec.lowWeek + "</dd></div>" +
+    "<div><dt>Time to recover</dt><dd>" + esc(status(rec)) + "</dd></div></dl>" +
+    (rec.empty ? '<p class="note"><strong>The buffer ran empty</strong> in week ' + rec.lowWeek + " (" + money(rec.lowest) + "). Below zero means an overdraft in this simulation.</p>" : "");
+  // Chart: the selected scenario under every risk limit, with the target as a flat line.
+  var C = [css("--keel"), css("--last"), css("--avg4"), css("--crit")], same = DATA.runs.filter(function (r) { return r.driver === state.driver && r.scenario === state.scenario; })
+    .sort(function (a, b) { return a.risk_limit - b.risk_limit; });
+  var series = same.map(function (r, i) { return { name: "Limit " + pct(r.risk_limit), color: C[i % C.length], values: r.weeks.map(function (w) { return w.buf_keel; }) }; });
+  if (rec) series.push({ name: "Target", color: css("--muted"), values: run.weeks.map(function () { return rec.target; }) });
+  legend(document.getElementById("recleg"), series, false);
+  lineChart(document.getElementById("recchart"), { series: series, zero: true, stormWeeks: KeelData.stormWeeks(run, DATA.meta), endLabels: false, label: "Replayed buffer balance by week for each risk limit, with the recovery target." });
+  document.getElementById("rectable").innerHTML = "<thead><tr><th>Scenario</th><th class=\"num\">Risk limit</th><th class=\"num\">Average paycheck</th><th class=\"num\">Lowest buffer</th><th>Time to recover</th></tr></thead><tbody>" +
+    rows.map(function (x) {
+      var cur = x.scenario === state.scenario && Math.abs(x.risk - state.risk) < 1e-9;
+      return "<tr" + (cur ? ' aria-current="true"' : "") + "><td>" + esc(scen(x.scenario)) + "</td><td class=\"num\">" + pct(x.risk) + "</td><td class=\"num\">" + money(x.avgPay) +
+        "</td><td class=\"num\">" + (x.rec ? money(x.rec.lowest) : NA) + "</td><td>" + esc(status(x.rec)) + "</td></tr>";
+    }).join("") + "</tbody>";
+  document.getElementById("recnote").innerHTML = "<strong>The tradeoff:</strong> a looser risk limit pays a higher paycheck, so less goes back into the buffer each week; it falls further in bad weeks and takes longer to refill. " +
+    "<strong>What this is:</strong> historical replay of " + (TOY ? "toy" : "simulated") + " drivers on past weeks, using the paychecks Keel actually chose. It is not a forecast: no future earnings are projected and no recovery date is promised. Not financial or tax advice.";
+}
 
 // What-if: compares precomputed runs for the selected driver; the badge text says whether they are toy or real.
 function renderWhatIf() {

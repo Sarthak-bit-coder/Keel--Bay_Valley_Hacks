@@ -2,1080 +2,272 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Keel</title>
-<style>
-/* Plan: a calm instrument-panel look. Blue is Keel everywhere, orange and aqua are the two simple rules it is compared with.
-   Layout: one filter row, three summary tiles, two charts, scorecard, checks, decision log. */
-:root {
-  color-scheme: light;
-  --bg: #f9f9f7;
-  --surface: #fcfcfb;
-  --ink: #0b0b0b;
-  --ink2: #52514e;
-  --muted: #898781;
-  --grid: #e1e0d9;
-  --axis: #c3c2b7;
-  --border: rgba(11, 11, 11, 0.10);
-  --keel: #2a78d6;
-  --avg4: #eb6834;
-  --last: #1baf7a;
-  --crit: #d03b3b;
-  --good-text: #006300;
-  --font: system-ui, -apple-system, "Segoe UI", sans-serif;
-}
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) {
-    color-scheme: dark;
-    --bg: #0d0d0d;
-    --surface: #1a1a19;
-    --ink: #f0efec;
-    --ink2: #c3c2b7;
-    --muted: #898781;
-    --grid: #2c2c2a;
-    --axis: #383835;
-    --border: rgba(255, 255, 255, 0.10);
-    --keel: #3987e5;
-    --avg4: #d95926;
-    --last: #199e70;
-    --crit: #d03b3b;
-    --good-text: #0ca30c;
-  }
-}
-:root[data-theme="dark"] {
-  color-scheme: dark;
-  --bg: #0d0d0d;
-  --surface: #1a1a19;
-  --ink: #f0efec;
-  --ink2: #c3c2b7;
-  --muted: #898781;
-  --grid: #2c2c2a;
-  --axis: #383835;
-  --border: rgba(255, 255, 255, 0.10);
-  --keel: #3987e5;
-  --avg4: #d95926;
-  --last: #199e70;
-  --crit: #d03b3b;
-  --good-text: #0ca30c;
-}
-* { box-sizing: border-box; }
-html, body { margin: 0; }
-body { background: var(--bg); color: var(--ink); font-family: var(--font); font-size: 15px; line-height: 1.5; }
-.wrap { max-width: 1080px; margin: 0 auto; padding: 24px 16px 48px; display: flex; flex-direction: column; gap: 20px; }
-h1, h2, h3, p { margin: 0; }
-h1 { font-size: 28px; letter-spacing: -0.01em; text-wrap: balance; }
-h2 { font-size: 17px; text-wrap: balance; }
-.sub { color: var(--ink2); max-width: 62ch; }
-.top { display: flex; flex-wrap: wrap; gap: 12px 24px; align-items: flex-end; justify-content: space-between; }
-.badge { display: inline-flex; gap: 8px; align-items: center; border: 1px solid var(--border); background: var(--surface); border-radius: 999px; padding: 4px 12px; font-size: 13px; color: var(--ink2); }
-.badge svg { flex: none; }
-.relh3 { margin: 4px 0 0; font-size: 15px; }
-#stseg { flex-wrap: wrap; align-self: flex-start; }
-#stseg button[data-off="true"] { color: var(--muted); }
-#sttable td.up { color: var(--good-text); } #sttable td.down { color: #c2410c; }
-.bdflow { display: grid; gap: 10px; }
-.bdrow { display: grid; grid-template-columns: 72px 1fr; gap: 10px; align-items: center; font-size: 13px; color: var(--ink2); }
-.bdbar { display: flex; height: 34px; border-radius: 6px; overflow: hidden; background: var(--grid); }
-.bdbar span { display: flex; align-items: center; justify-content: center; min-width: 0; overflow: hidden; white-space: nowrap; font-size: 12px; font-weight: 600; color: #fff; }
-.bd-pay { background: var(--keel); } .bd-tax { background: var(--muted); } .bd-buf { background: var(--last); } .bd-draw { background: var(--avg4); } .bd-earn { background: var(--ink2); }
-#bdbody dl { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 8px 16px; margin: 0; }
-#bdbody dt { font-size: 13px; color: var(--ink2); } #bdbody dd { margin: 0; font-size: 18px; font-weight: 600; }
-.bdwarn { border: 1px solid var(--crit); color: var(--crit); border-radius: 8px; padding: 8px 12px; font-size: 14px; }
-@media (max-width: 520px) { .bdrow { grid-template-columns: 1fr; gap: 4px; } }
-#whybody dl { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 8px 16px; margin: 0; }
-#whybody dt { font-size: 13px; color: var(--ink2); }
-#whybody dd { margin: 0; font-size: 18px; font-weight: 600; }
-.whyhow summary { cursor: pointer; font-weight: 600; }
-.whysteps { margin: 8px 0; padding-left: 20px; display: grid; gap: 6px; font-size: 14px; color: var(--ink2); }
-.whysteps b { color: var(--ink); }
-#log button[data-why] { font: inherit; color: var(--keel); background: none; border: 0; padding: 0; cursor: pointer; text-decoration: underline; text-underline-offset: 2px; }
-#log tr[aria-current="true"] td { background: color-mix(in srgb, var(--keel) 10%, transparent); }
-#rectable tr[aria-current="true"] td { background: color-mix(in srgb, var(--keel) 10%, transparent); }
-.recdl { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 8px 16px; margin: 0; }
-.recdl dt { font-size: 13px; color: var(--ink2); } .recdl dd { margin: 0; font-size: 18px; font-weight: 600; }
-.bmgrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px 20px; }
-.bmgrid h4 { margin: 0 0 4px; font-size: 13px; font-weight: 600; }
-.bmgrid .bars .row { grid-template-columns: 7.5em 1fr 4.5em; }
-#bmtable td.better { color: var(--good-text); } #bmtable td.worse { color: var(--crit); }
-.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
-#optlist { border: 0; margin: 0; padding: 0; display: grid; gap: 8px; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); }
-#optlist label { display: flex; gap: 8px; align-items: flex-start; border: 1px solid var(--border); border-radius: 8px; padding: 10px; cursor: pointer; }
-#optlist label:has(input:checked) { border-color: var(--keel); background: color-mix(in srgb, var(--keel) 10%, transparent); }
-#optlist .big { font-size: 18px; font-weight: 600; color: var(--ink); display: block; }
-#optlist .sub { font-size: 13px; color: var(--ink2); }
-#optdetail dl { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 8px 16px; margin: 0; }
-#optdetail dt { font-size: 13px; color: var(--ink2); }
-#optdetail dd { margin: 0; font-size: 18px; font-weight: 600; }
-.badge.toy { border-color: currentColor; color: #b35c00; font-weight: 600; }
-@media (prefers-color-scheme: dark) { .badge.toy { color: #ffb86b; } }
-.filters { display: flex; flex-wrap: wrap; gap: 12px 20px; align-items: center; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 12px 16px; }
-.field { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--ink2); }
-select { font: inherit; color: var(--ink); background: var(--surface); border: 1px solid var(--axis); border-radius: 6px; padding: 6px 8px; }
-.seg { display: inline-flex; border: 1px solid var(--axis); border-radius: 6px; overflow: hidden; }
-.seg button { font: inherit; font-size: 13px; color: var(--ink2); background: transparent; border: 0; padding: 6px 12px; cursor: pointer; }
-.seg button + button { border-left: 1px solid var(--axis); }
-.seg button[aria-pressed="true"] { background: var(--keel); color: #fff; }
-.check { display: inline-flex; gap: 6px; align-items: center; cursor: pointer; }
-button:focus-visible, select:focus-visible, input:focus-visible, svg:focus-visible { outline: 2px solid var(--keel); outline-offset: 2px; }
-.tiles { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
-.tile, .card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 16px; }
-.tile .label { font-size: 13px; color: var(--ink2); }
-.tile .value { font-size: 32px; font-weight: 600; line-height: 1.2; margin: 4px 0; }
-.tile .cmp { font-size: 13px; color: var(--ink2); display: flex; flex-direction: column; gap: 2px; }
-.dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 6px; vertical-align: baseline; }
-.card { display: flex; flex-direction: column; gap: 12px; }
-.card header { display: flex; flex-direction: column; gap: 2px; }
-.card header p { color: var(--ink2); font-size: 13px; }
-.legend { display: flex; flex-wrap: wrap; gap: 6px 18px; font-size: 13px; color: var(--ink2); }
-.legend span { display: inline-flex; align-items: center; gap: 6px; }
-.key { display: inline-block; width: 18px; height: 0; border-top: 2px solid; border-radius: 1px; }
-.swatch { display: inline-block; width: 14px; height: 10px; border-radius: 2px; opacity: .25; }
-.plot { position: relative; }
-.plot svg { display: block; width: 100%; height: auto; }
-.tip { position: absolute; top: 8px; pointer-events: none; background: var(--surface); border: 1px solid var(--axis); border-radius: 8px; padding: 8px 10px; font-size: 12px; line-height: 1.5; min-width: 150px; box-shadow: 0 2px 8px rgba(0,0,0,.12); display: none; z-index: 2; }
-.tip b { display: block; margin-bottom: 2px; }
-.tip div { display: flex; justify-content: space-between; gap: 12px; }
-.tip .n { font-variant-numeric: tabular-nums; }
-.scroll { overflow-x: auto; }
-table { border-collapse: collapse; width: 100%; font-size: 13px; }
-th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--grid); vertical-align: top; }
-th { color: var(--ink2); font-weight: 600; white-space: nowrap; }
-td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
-.pill { display: inline-flex; gap: 6px; align-items: center; border-radius: 999px; padding: 2px 10px; font-size: 12px; border: 1px solid var(--axis); color: var(--ink2); white-space: nowrap; }
-.pill.ok { color: var(--good-text); border-color: var(--good-text); }
-.pill.bad { color: var(--crit); border-color: var(--crit); }
-.cols { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
-.note { font-size: 13px; color: var(--ink2); max-width: 75ch; }
-.note strong { color: var(--ink); }
-ul.plain { margin: 0; padding-left: 18px; color: var(--ink2); font-size: 13px; display: flex; flex-direction: column; gap: 4px; }
-.hidden { display: none; }
-.payday { display: grid; grid-template-columns: minmax(0, 360px) minmax(0, 1fr); gap: 16px; align-items: center; }
-.phone { background: var(--surface); border: 1px solid var(--border); border-radius: 18px; padding: 14px 16px; box-shadow: 0 6px 20px rgba(0,0,0,.10); display: flex; flex-direction: column; gap: 6px; }
-.phone .app { font-size: 12px; color: var(--ink2); display: flex; justify-content: space-between; }
-.phone .big { font-size: 30px; font-weight: 700; line-height: 1.1; color: var(--keel); }
-.phone dl { margin: 4px 0 0; display: grid; grid-template-columns: 1fr auto; gap: 2px 12px; font-size: 13px; color: var(--ink2); }
-.phone dd { margin: 0; text-align: right; color: var(--ink); font-variant-numeric: tabular-nums; }
-.payday .why { font-size: 14px; color: var(--ink2); max-width: 52ch; }
-.payday .why strong { color: var(--ink); }
-#whatif button { white-space: nowrap; font: inherit; font-size: 13px; color: var(--keel); background: none; border: 0; padding: 0; cursor: pointer; text-decoration: underline; text-underline-offset: 2px; }
-#whatif tr[aria-current="true"] td { background: color-mix(in srgb, var(--keel) 10%, transparent); }
-#whatif tr[aria-current="true"] button { color: var(--ink); text-decoration: none; font-weight: 600; }
-.steps { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; counter-reset: s; }
-.steps li { counter-increment: s; display: flex; flex-direction: column; gap: 4px; font-size: 13px; color: var(--ink2); border-top: 3px solid var(--keel); padding-top: 8px; }
-.steps b { color: var(--ink); font-size: 15px; }
-.steps b::before { content: counter(s) ". "; color: var(--keel); }
-.bars { display: flex; flex-direction: column; gap: 8px; font-size: 13px; }
-.bars .row { display: grid; grid-template-columns: 9.5em 1fr 3em; gap: 8px; align-items: center; color: var(--ink2); }
-.bars .track { position: relative; height: 12px; background: var(--grid); border-radius: 6px; }
-.bars .fill { position: absolute; inset: 0 auto 0 0; border-radius: 6px; background: var(--keel); }
-.bars .fill.off { background: var(--axis); }
-.bars .target { position: absolute; top: -3px; bottom: -3px; width: 2px; background: var(--ink); }
-.bars .n { text-align: right; font-variant-numeric: tabular-nums; color: var(--ink); }
-footer { color: var(--muted); font-size: 12px; }
-@media (max-width: 720px) {
-  .tiles, .cols { grid-template-columns: 1fr; }
-  .steps { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .payday { grid-template-columns: 1fr; }
-  h1 { font-size: 24px; }
-}
-@media (prefers-reduced-motion: no-preference) { .tip { transition: opacity .1s; } }
-</style>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Keel: a steady paycheck from gig earnings (simulation)</title>
+<meta name="description" content="Keel turns uneven gig earnings into a steadier simulated weekly paycheck. Simulated drivers, no real money, not financial or tax advice.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<!-- Falls back to the system font if offline. -->
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="keel.css">
 </head>
 <body>
-<div class="wrap">
+<a class="skip" href="#main">Skip to content</a>
 
-  <div class="top">
-    <div style="display:flex;flex-direction:column;gap:6px">
-      <h1>Keel</h1>
-      <p class="sub">A steady weekly paycheck for people paid by the gig. Keel holds the payouts, pays a salary, and sets tax money aside.</p>
-    </div>
-    <span class="badge" id="badge">
-      <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><path d="M7 1.5 13 12H1z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><path d="M7 5.5v3M7 10v.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
-      <span id="badgetext">Loading data…</span>
-    </span>
+<header class="masthead">
+  <div class="bar">
+    <a class="brand" href="#paycheck" aria-label="Keel, my paycheck">
+      <svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true"><path d="M2 6h16M10 6v6M4 12c1.5 3 4 4 6 4s4.5-1 6-4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      Keel
+    </a>
+    <nav class="nav" aria-label="Main">
+      <a href="#paycheck" data-view="paycheck">Paycheck</a>
+      <a href="#plan" data-view="plan">Plan</a>
+      <a href="#evidence" data-view="evidence">Evidence</a>
+    </nav>
+    <span class="badge" id="badge"><span id="badgetext">Loading…</span></span>
   </div>
+</header>
 
-  <section class="filters" aria-label="Scenario controls">
-    <label class="field" for="driver">Driver
-      <select id="driver">
-        <option value="A">A: full-time, steady</option>
-        <option value="B">B: evenings, choppy</option>
-        <option value="C">C: weekends, very choppy</option>
-      </select>
+<div class="wrap">
+  <section class="controls" aria-label="Simulation settings">
+    <label class="field wide" for="driver">Simulated driver
+      <select id="driver"></select>
     </label>
-    <div class="field" role="group" aria-label="Scenario">Scenario
+    <div class="field" role="group" aria-label="Weeks to replay">Weeks to replay
       <div class="seg">
-        <button type="button" id="sc-normal" aria-pressed="false">Normal weeks</button>
-        <button type="button" id="sc-storm" aria-pressed="true">Snowstorm replay</button>
+        <button type="button" id="sc-normal" aria-pressed="false">Normal</button>
+        <button type="button" id="sc-storm" aria-pressed="true">Snowstorm</button>
       </div>
     </div>
-    <label class="field" for="risk">Allowed chance the buffer runs out
-      <select id="risk">
-        <option value="0.01">1%</option>
-        <option value="0.05" selected>5%</option>
-        <option value="0.10">10%</option>
-        <option value="0.20">20%</option>
-      </select>
+    <label class="field" for="risk" title="The chance of the buffer running out that you are willing to accept. Keel pays the most it can within it.">Risk limit
+      <select id="risk"></select>
     </label>
-    <label class="field check"><input type="checkbox" id="tableview"> Show data as tables</label>
   </section>
 
-  <p class="note hidden" id="loaderr" role="alert"></p>
+  <p class="note loaderr hidden" id="loaderr" role="alert"></p>
 
-  <section class="tiles" id="tiles" aria-label="Summary"></section>
+  <main id="main">
+    <!-- 1. My paycheck -->
+    <section class="view" id="view-paycheck" aria-labelledby="paycheck-h">
+      <h1 class="sr-only" id="paycheck-h">My paycheck</h1>
+      <div id="hero" aria-live="polite"><p class="skeleton">Loading the simulation…</p></div>
+      <div id="payday" aria-live="polite"></div>
+      <section class="tiles" id="tiles" aria-label="How steady the paycheck was"></section>
 
-  <section class="payday" id="payday" aria-label="Payday for the selected simulated driver" aria-live="polite"></section>
+      <section class="card" aria-labelledby="c1-h">
+        <div class="cardtop">
+          <header>
+            <h2 id="c1-h">Earnings swing. The paycheck holds steady.</h2>
+            <p id="c1sub"></p>
+          </header>
+          <label class="check"><input type="checkbox" id="tableview"> Show as tables</label>
+        </div>
+        <div class="legend" id="c1legend"></div>
+        <div class="plot" id="c1"></div>
+        <div class="scroll hidden" id="c1table"></div>
+      </section>
 
-  <section class="card">
-    <header>
-      <h2>Earnings swing, the paycheck does not</h2>
-      <p id="c1sub"></p>
-    </header>
-    <div class="legend" id="c1legend"></div>
-    <div class="plot" id="c1"></div>
-    <div class="scroll hidden" id="c1table"></div>
-  </section>
+      <section class="card" aria-labelledby="c2-h">
+        <header>
+          <h2 id="c2-h">The buffer absorbs the bad weeks</h2>
+          <p>Same earnings and same starting buffer under three ways of paying yourself. Below zero means an overdraft.</p>
+        </header>
+        <div class="legend" id="c2legend"></div>
+        <div class="plot" id="c2"></div>
+        <div class="scroll hidden" id="c2table"></div>
+      </section>
+    </section>
 
-  <section class="card">
-    <header>
-      <h2>Buffer balance under three ways of paying</h2>
-      <p>Same earnings, same starting buffer, three pay rules. Below zero means the account overdrafts.</p>
-    </header>
-    <div class="legend" id="c2legend"></div>
-    <div class="plot" id="c2"></div>
-    <div class="scroll hidden" id="c2table"></div>
-  </section>
+    <!-- 2. Plan -->
+    <section class="view" id="view-plan" aria-labelledby="plan-h" hidden>
+      <div class="viewhead">
+        <h1 id="plan-h">Plan your paycheck</h1>
+        <p>Try a different paycheck, see what a bad stretch does, and check where each week's money went. Every number is read from runs that were already evaluated.</p>
+      </div>
+      <div class="split">
+        <nav class="toc" aria-label="Plan sections">
+          <button type="button" data-jump="opt-h">Choose a paycheck</button>
+          <button type="button" data-jump="st-h">Stress test</button>
+          <button type="button" data-jump="rec-h">Buffer recovery</button>
+          <button type="button" data-jump="bd-h">Where the money went</button>
+          <button type="button" data-jump="why-h">Why this paycheck?</button>
+          <button type="button" data-jump="whatif-h">Compare all settings</button>
+        </nav>
+        <div class="stack">
+          <section class="card" aria-labelledby="opt-h">
+            <header>
+              <h2 id="opt-h">Choose a paycheck</h2>
+              <p id="optsub"></p>
+            </header>
+            <label class="field inline" for="optweek">Week <select id="optweek"></select></label>
+            <fieldset id="optlist"><legend class="sr-only">Paycheck and risk options</legend></fieldset>
+            <div id="optdetail" aria-live="polite"></div>
+            <p class="note" id="optnote"></p>
+          </section>
 
-  <section class="card" aria-labelledby="opt-h">
-    <header>
-      <h2 id="opt-h">Paycheck optimizer</h2>
-      <p id="optsub">Pick a week, then pick a paycheck. Each choice is one risk limit Keel was actually run with.</p>
-    </header>
-    <label class="field" for="optweek">Week
-      <select id="optweek"></select>
-    </label>
-    <fieldset id="optlist"><legend class="sr-only">Paycheck and risk options</legend></fieldset>
-    <div id="optdetail" aria-live="polite"></div>
-    <p class="note" id="optnote"></p>
-  </section>
+          <section class="card" aria-labelledby="st-h">
+            <header>
+              <h2 id="st-h">Stress test</h2>
+              <p id="stsub"></p>
+            </header>
+            <div class="seg" id="stseg" role="group" aria-label="Stress scenario"></div>
+            <div id="stbody" aria-live="polite"></div>
+            <div id="stcharts" class="stack">
+              <h3 class="relh3">Take-home pay and Keel paycheck</h3>
+              <div class="legend" id="stleg1"></div>
+              <div class="plot" id="stc1"></div>
+              <h3 class="relh3">Buffer under each way of paying</h3>
+              <div class="legend" id="stleg2"></div>
+              <div class="plot" id="stc2"></div>
+            </div>
+            <p class="note" id="stnote"></p>
+          </section>
 
-  <section class="card" aria-labelledby="bd-h">
-    <header>
-      <h2 id="bd-h">Paycheck breakdown and money flow</h2>
-      <p id="bdsub">Where one week's simulated earnings went: paycheck, tax reserve and buffer.</p>
-    </header>
-    <label class="field" for="bdweek">Week
-      <select id="bdweek"></select>
-    </label>
-    <div id="bdbody" aria-live="polite"></div>
-    <p class="note" id="bdnote"></p>
-  </section>
+          <section class="card" aria-labelledby="rec-h">
+            <header>
+              <h2 id="rec-h">Buffer recovery</h2>
+              <p id="recsub"></p>
+            </header>
+            <div id="recbody" aria-live="polite"></div>
+            <h3 class="relh3">Buffer under each risk limit</h3>
+            <div class="legend" id="recleg"></div>
+            <div class="plot" id="recchart"></div>
+            <div class="scroll"><table id="rectable"></table></div>
+            <p class="note" id="recnote"></p>
+          </section>
 
-  <section class="card" aria-labelledby="st-h">
-    <header>
-      <h2 id="st-h">Stress test lab</h2>
-      <p id="stsub">Pick a scenario to see what it does to earnings, paychecks and the buffer, against normal weeks.</p>
-    </header>
-    <div class="seg" id="stseg" role="group" aria-label="Stress scenario"></div>
-    <div id="stbody" aria-live="polite"></div>
-    <div id="stcharts">
-      <h3 class="relh3">Take-home pay and Keel paycheck</h3>
-      <div class="legend" id="stleg1"></div>
-      <div class="plot" id="stc1"></div>
-      <h3 class="relh3">Buffer under each pay rule</h3>
-      <div class="legend" id="stleg2"></div>
-      <div class="plot" id="stc2"></div>
-    </div>
-    <p class="note" id="stnote"></p>
-  </section>
+          <section class="card" aria-labelledby="bd-h">
+            <header>
+              <h2 id="bd-h">Where the money went</h2>
+              <p id="bdsub"></p>
+            </header>
+            <label class="field inline" for="bdweek">Week <select id="bdweek"></select></label>
+            <div id="bdbody" class="stack" aria-live="polite"></div>
+            <p class="note" id="bdnote"></p>
+          </section>
 
-  <section class="card" aria-labelledby="rec-h">
-    <header>
-      <h2 id="rec-h">Buffer recovery</h2>
-      <p id="recsub"></p>
-    </header>
-    <div id="recbody" aria-live="polite"></div>
-    <h3 class="relh3">Replayed buffer under each risk limit</h3>
-    <div class="legend" id="recleg"></div>
-    <div class="plot" id="recchart"></div>
-    <div class="scroll"><table id="rectable"></table></div>
-    <p class="note" id="recnote"></p>
-  </section>
+          <section class="card" aria-labelledby="why-h" id="whycard">
+            <header>
+              <h2 id="why-h">Why this paycheck?</h2>
+              <p id="whysub"></p>
+            </header>
+            <div id="whybody" class="stack" aria-live="polite"></div>
+            <details class="whyhow">
+              <summary>How Keel sets a paycheck</summary>
+              <ol class="whysteps">
+                <li><b>Forecast a range.</b> Keel estimates a low and a high case for next week's take-home pay. The wider the range, the less sure it is.</li>
+                <li><b>Imagine many possible weeks.</b> It plays out hundreds of possible next few weeks inside that range.</li>
+                <li><b>Try paychecks from high to low.</b> It starts at a cap and steps down $5 at a time.</li>
+                <li><b>Stop at the first safe one.</b> It keeps the first paycheck where the chance of the buffer running dry stays within your limit.</li>
+              </ol>
+              <p class="note">More uncertainty (a wider range) or a smaller buffer means a lower paycheck. A bigger buffer or a looser limit means a higher one. Keel does not show which model inputs mattered most, because the results file does not record that.</p>
+            </details>
+            <h3 class="relh3">Decision log</h3>
+            <p class="note">Keel's reason for each week's paycheck. Pick a week to explain it above.</p>
+            <div class="scroll"><table id="log"></table></div>
+            <p class="note" id="whynote"></p>
+          </section>
 
-  <section class="card" aria-labelledby="whatif-h">
-    <header>
-      <h2 id="whatif-h">What if?</h2>
-      <p id="whatifsub">Every scenario and risk limit for this driver, read from the results file. Nothing here is re-simulated in the browser. Pick a row to load it above.</p>
-    </header>
-    <p class="note" id="whatifsum"></p>
-    <div class="scroll"><table id="whatif"></table></div>
-  </section>
+          <section class="card" aria-labelledby="whatif-h">
+            <header>
+              <h2 id="whatif-h">Compare all settings</h2>
+              <p id="whatifsub"></p>
+            </header>
+            <p class="note" id="whatifsum"></p>
+            <div class="scroll"><table id="whatif"></table></div>
+          </section>
+        </div>
+      </div>
+    </section>
 
-  <section class="card" aria-labelledby="how-h">
-    <header><h2 id="how-h">How it works</h2><p>Four steps run every week for each simulated driver.</p></header>
-    <ol class="steps">
-      <li><b>Hold</b><span>Gig payouts land in a buffer, not straight in checking. A share is set aside for tax.</span></li>
-      <li><b>Forecast</b><span>LightGBM predicts a low, middle and high case for next week’s take-home pay.</span></li>
-      <li><b>Calibrate</b><span>Conformal prediction adjusts the low case so it is right as often as it claims.</span></li>
-      <li><b>Pay</b><span>A Monte Carlo test picks the highest salary that keeps the chance of an empty buffer under your limit.</span></li>
-    </ol>
-  </section>
+    <!-- 3. Evidence -->
+    <section class="view" id="view-evidence" aria-labelledby="evidence-h" hidden>
+      <div class="viewhead">
+        <h1 id="evidence-h">The evidence</h1>
+        <p>How well the forecasts held up, how Keel compares with simpler rules, and where it loses. For readers who want to check the work.</p>
+      </div>
+      <div class="split">
+        <nav class="toc" aria-label="Evidence sections">
+          <button type="button" data-jump="how-h">How it works</button>
+          <button type="button" data-jump="score-h">Scorecard</button>
+          <button type="button" data-jump="rel-h">Forecast reliability</button>
+          <button type="button" data-jump="bm-h">Benchmark</button>
+          <button type="button" data-jump="lose-h">Where Keel loses</button>
+          <button type="button" data-jump="checks-h">Safety checks</button>
+        </nav>
+        <div class="stack">
+          <section class="card" aria-labelledby="how-h">
+            <header><h2 id="how-h">How it works</h2><p>Four steps run every week for each simulated driver.</p></header>
+            <ol class="steps">
+              <li><b>Hold</b><span>Gig payouts land in a buffer, not straight in checking. A share is set aside for tax.</span></li>
+              <li><b>Forecast</b><span>LightGBM predicts a low, middle and high case for next week’s take-home pay.</span></li>
+              <li><b>Calibrate</b><span>Conformal prediction adjusts the low case so it is right as often as it claims.</span></li>
+              <li><b>Pay</b><span>A Monte Carlo test picks the highest salary that keeps the chance of an empty buffer under your limit.</span></li>
+            </ol>
+          </section>
 
-  <section class="card">
-    <header>
-      <h2>Scorecard</h2>
-      <p>The three questions we wrote down before the real run. Read from the results file; check the badge at the top for whether they are toy or real.</p>
-    </header>
-    <div class="scroll"><table id="score"></table></div>
-    <p class="note" id="loses"></p>
-  </section>
+          <section class="card" aria-labelledby="score-h">
+            <header>
+              <h2 id="score-h">Scorecard</h2>
+              <p>The three questions we wrote down before the real run, answered from the results file for the driver and settings selected above.</p>
+            </header>
+            <div class="scroll"><table id="score"></table></div>
+            <p class="note" id="loses"></p>
+          </section>
 
-  <section class="card" aria-labelledby="bm-h">
-    <header>
-      <h2 id="bm-h">Benchmark: Keel vs simple pay rules</h2>
-      <p id="bmsub"></p>
-    </header>
-    <div class="scroll"><table id="bmtable"></table></div>
-    <div class="legend" id="bmleg"></div>
-    <div class="bmgrid" id="bmbars"></div>
-    <h3 class="relh3">Across every run in the file</h3>
-    <ul class="plain" id="bmtally"></ul>
-    <h3 class="relh3">Model ablation (separate from the policy benchmark)</h3>
-    <p class="note" id="bmabl"></p>
-    <p class="note" id="bmnote"></p>
-  </section>
+          <section class="card" aria-labelledby="rel-h">
+            <header>
+              <h2 id="rel-h">Forecast reliability</h2>
+              <p id="relsub"></p>
+            </header>
+            <p class="note" id="relexplain"></p>
+            <div id="calib" class="stack"></div>
+            <h3 class="relh3">Forecast range against what was earned</h3>
+            <div class="legend" id="rellegend"></div>
+            <div class="plot" id="relchart"></div>
+            <div class="scroll"><table id="relstats"></table></div>
+            <h3 class="relh3">Largest misses</h3>
+            <div class="scroll"><table id="relworst"></table></div>
+            <p class="note" id="relnote"></p>
+          </section>
 
-  <section class="card" aria-labelledby="lose-h">
-    <header><h2 id="lose-h">Where Keel loses</h2><p>Across every driver, scenario and limit in the results file, not only the one selected above.</p></header>
-    <ul class="plain" id="losslist"></ul>
-  </section>
+          <section class="card" aria-labelledby="bm-h">
+            <header>
+              <h2 id="bm-h">Benchmark: Keel against simple pay rules</h2>
+              <p id="bmsub"></p>
+            </header>
+            <div class="scroll"><table id="bmtable"></table></div>
+            <div class="legend" id="bmleg"></div>
+            <div class="bmgrid" id="bmbars"></div>
+            <h3 class="relh3">Across every run in the file</h3>
+            <ul class="plain" id="bmtally"></ul>
+            <h3 class="relh3">Model ablation (separate from the policy benchmark)</h3>
+            <p class="note" id="bmabl"></p>
+            <p class="note" id="bmnote"></p>
+          </section>
 
-  <section class="cols">
-    <div class="card">
-      <header><h2>Safety checks</h2><p>Plain arithmetic that must hold every week, whatever the model says.</p></header>
-      <div class="scroll"><table id="checks"></table></div>
-    </div>
-  </section>
+          <section class="card" aria-labelledby="lose-h">
+            <header><h2 id="lose-h">Where Keel loses</h2><p>Across every driver, scenario and limit in the results file, not only the one selected above.</p></header>
+            <ul class="plain" id="losslist"></ul>
+          </section>
 
-  <section class="card" aria-labelledby="rel-h">
-    <header>
-      <h2 id="rel-h">Forecast reliability</h2>
-      <p id="relsub">How well Keel's forecasts held up on weeks the model never saw.</p>
-    </header>
-    <p class="note" id="relexplain"></p>
-    <div id="calib"></div>
-    <div class="legend" id="rellegend"></div>
-    <div class="plot" id="relchart"></div>
-    <div class="scroll"><table id="relstats"></table></div>
-    <h3 class="relh3">Largest misses</h3>
-    <div class="scroll"><table id="relworst"></table></div>
-    <p class="note" id="relnote"></p>
-  </section>
+          <section class="card" aria-labelledby="checks-h">
+            <header><h2 id="checks-h">Safety checks</h2><p>Plain arithmetic that must hold every week, whatever the model says.</p></header>
+            <div class="scroll"><table id="checks"></table></div>
+          </section>
+        </div>
+      </div>
+    </section>
+  </main>
 
-  <section class="card" aria-labelledby="why-h" id="whycard">
-    <header>
-      <h2 id="why-h">Why this paycheck?</h2>
-      <p id="whysub">How Keel picked one week's paycheck. Pick a week in the decision log below to explain it.</p>
-    </header>
-    <div id="whybody" aria-live="polite"></div>
-    <details class="whyhow">
-      <summary>How Keel sets a paycheck</summary>
-      <ol class="whysteps">
-        <li><b>Forecast a range.</b> Keel estimates a low and a high case for next week's take-home pay. The wider the range, the less sure it is.</li>
-        <li><b>Imagine many possible weeks.</b> It plays out hundreds of possible next few weeks inside that range.</li>
-        <li><b>Try paychecks from high to low.</b> It starts at a cap and steps down $5 at a time.</li>
-        <li><b>Stop at the first safe one.</b> It keeps the first paycheck where the chance of the buffer running dry stays within your limit.</li>
-      </ol>
-      <p class="note">More uncertainty (a wider range) or a smaller buffer means a lower paycheck. A bigger buffer or a looser limit means a higher one. Keel does not show which model inputs mattered most, because the results file does not record that.</p>
-    </details>
-    <p class="note" id="whynote"></p>
-  </section>
-
-  <section class="card">
-    <header>
-      <h2>Decision log</h2>
-      <p>Why Keel chose each week's paycheck. The last eight weeks are shown.</p>
-    </header>
-    <div class="scroll"><table id="log"></table></div>
-  </section>
-
-  <footer>Built for Bay Valley Hacks 2026. Simulation only: no real money moves and nothing here is financial or tax advice.</footer>
+  <footer>Built for Bay Valley Hacks 2026. Simulation only: drivers are simulated on real NYC ride-hail data, no real money moves, and nothing here is financial or tax advice.</footer>
 </div>
 
 <script src="data.js"></script>
 <script src="benchmark.js"></script>
 <script src="recovery.js"></script>
-<script id="data">
-"use strict";
-// Loading, validation and run shaping live in app/data.js (tested in app/data.test.js).
-var DATA = null, WEEKS = 0, TAX = 0, HORIZON = 0;
-function findRun(driver, scenario, risk) { return KeelData.findRun(DATA, driver, scenario, risk); }
-var fromRun = KeelData.fromRun;
-</script>
-
-<script id="ui">
-"use strict";
-var state = { driver: "C", scenario: "storm", risk: 0.05, tables: false }; // opens on the most volatile driver in the storm
-var NAMES = { normal: "Normal weeks", storm: "Snowstorm replay" };
-var NS = "http://www.w3.org/2000/svg";
-function money(n) { var r = Math.round(n); return (r < 0 ? "−$" : "$") + Math.abs(r).toLocaleString("en-US"); }
-function pct(n) { return Math.round(n * 100) + "%"; }
-function css(v) { return getComputedStyle(document.documentElement).getPropertyValue(v).trim(); }
-function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]; }); }
-
-function niceTicks(min, max) {
-  var span = Math.max(max - min, 1), raw = span / 4, mag = Math.pow(10, Math.floor(Math.log10(raw))), norm = raw / mag;
-  var step = (norm < 1.5 ? 1 : norm < 3 ? 2 : norm < 7 ? 5 : 10) * mag;
-  var start = Math.floor(min / step) * step, out = [];
-  for (var v = start; ; v += step) { out.push(Math.round(v * 1e6) / 1e6); if (v >= max) break; }
-  return out;
-}
-
-// cfg: {series:[{name,color,values}], band:{lo,hi}|null, zero:bool, storm:bool, label:string, endLabels:bool}
-function lineChart(el, cfg) {
-  var W = 720, H = 300, m = { l: 56, r: cfg.endLabels ? 108 : 16, t: 14, b: 30 };
-  var n = cfg.series[0].values.length, all = [];
-  cfg.series.forEach(function (s) { all = all.concat(s.values); });
-  if (cfg.band) all = all.concat(cfg.band.lo, cfg.band.hi);
-  var ticks = niceTicks(Math.min.apply(null, all.concat(cfg.zero ? [0] : [])), Math.max.apply(null, all));
-  var y0 = ticks[0], y1 = ticks[ticks.length - 1];
-  var X = function (i) { return m.l + i * (W - m.l - m.r) / (n - 1); };
-  var Y = function (v) { return m.t + (1 - (v - y0) / (y1 - y0)) * (H - m.t - m.b); };
-  var surface = css("--surface"), grid = css("--grid"), axis = css("--axis"), muted = css("--muted"), ink2 = css("--ink2");
-  var g = "";
-  ticks.forEach(function (v) {
-    g += '<line x1="' + m.l + '" x2="' + (W - m.r) + '" y1="' + Y(v) + '" y2="' + Y(v) + '" stroke="' + (v === 0 && cfg.zero ? axis : grid) + '" stroke-width="1"/>';
-    g += '<text x="' + (m.l - 8) + '" y="' + (Y(v) + 4) + '" text-anchor="end" font-size="11" fill="' + muted + '">' + money(v) + '</text>';
-  });
-  for (var i = 0; i < n; i += 1) {
-    if (i % 4 === 0 || i === n - 1) g += '<text x="' + X(i) + '" y="' + (H - 8) + '" text-anchor="middle" font-size="11" fill="' + muted + '">W' + (i + 1) + '</text>';
-  }
-  if (cfg.zero && y0 < 0) {
-    g += '<rect x="' + m.l + '" y="' + Y(0) + '" width="' + (W - m.l - m.r) + '" height="' + (Y(y0) - Y(0)) + '" fill="' + css("--crit") + '" opacity="0.07"/>';
-    g += '<g transform="translate(' + (m.l + 8) + ',' + (Y(y0) - 18) + ')"><path d="M6 1 11 10H1z" fill="none" stroke="' + css("--crit") + '" stroke-width="1.4" stroke-linejoin="round"/><path d="M6 4.2v2.6M6 8.3v.3" stroke="' + css("--crit") + '" stroke-width="1.4" stroke-linecap="round"/><text x="16" y="10" font-size="11" fill="' + ink2 + '">Overdraft zone</text></g>';
-  }
-  if (cfg.stormWeeks && cfg.stormWeeks.length) {
-    var sx = (W - m.l - m.r) / (n - 1);
-    var s0 = Math.min.apply(null, cfg.stormWeeks) - 1, s1 = Math.max.apply(null, cfg.stormWeeks) - 1;
-    g += '<rect x="' + (X(s0) - sx / 2) + '" y="' + m.t + '" width="' + (sx * (s1 - s0 + 1)) + '" height="' + (H - m.t - m.b) + '" fill="' + ink2 + '" opacity="0.08"/>';
-    g += '<text x="' + ((X(s0) + X(s1)) / 2) + '" y="' + (m.t + 11) + '" text-anchor="middle" font-size="11" fill="' + ink2 + '">Snowstorm</text>';
-  }
-  if (cfg.band) {
-    var up = cfg.band.hi.map(function (v, i) { return X(i) + "," + Y(v); }).join(" ");
-    var dn = cfg.band.lo.map(function (v, i) { return X(i) + "," + Y(v); }).reverse().join(" ");
-    g += '<polygon points="' + up + " " + dn + '" fill="' + cfg.series[0].color + '" opacity="0.10"/>';
-  }
-  cfg.series.forEach(function (s) {
-    var pts = s.values.map(function (v, i) { return X(i) + "," + Y(v); }).join(" ");
-    g += '<polyline points="' + pts + '" fill="none" stroke="' + s.color + '" stroke-width="2"' + (s.dash ? ' stroke-dasharray="6 5"' : "") + ' stroke-linejoin="round" stroke-linecap="round"/>';
-  });
-  var showEnds = cfg.endLabels;
-  if (showEnds && cfg.series.length > 1) {
-    var ys = cfg.series.map(function (s) { return Y(s.values[n - 1]); }).sort(function (a, b) { return a - b; });
-    for (var k = 1; k < ys.length; k++) if (ys[k] - ys[k - 1] < 16) showEnds = false;
-  }
-  cfg.series.forEach(function (s) {
-    var yy = Y(s.values[n - 1]);
-    g += '<circle cx="' + X(n - 1) + '" cy="' + yy + '" r="4" fill="' + s.color + '" stroke="' + surface + '" stroke-width="2"/>';
-    if (showEnds) g += '<text x="' + (X(n - 1) + 10) + '" y="' + (yy + 4) + '" font-size="12" fill="' + ink2 + '">' + esc(s.short || s.name) + " " + money(s.values[n - 1]) + "</text>";
-  });
-  g += '<g id="cross" style="display:none"><line y1="' + m.t + '" y2="' + (H - m.b) + '" stroke="' + axis + '" stroke-width="1"/></g>';
-  el.innerHTML = '<svg viewBox="0 0 ' + W + " " + H + '" tabindex="0" role="group" aria-label="' + esc(cfg.label) + ' Use the left and right arrow keys to read each week.">' + g + '</svg><div class="tip" role="status"></div>';
-  var svg = el.querySelector("svg"), tip = el.querySelector(".tip"), cross = svg.querySelector("#cross"), dots = [];
-  cfg.series.forEach(function (s) {
-    var c = document.createElementNS(NS, "circle");
-    c.setAttribute("r", 4); c.setAttribute("fill", s.color); c.setAttribute("stroke", surface); c.setAttribute("stroke-width", 2); c.style.display = "none";
-    svg.appendChild(c); dots.push(c);
-  });
-  var cur = n - 1;
-  function show(i) {
-    i = Math.max(0, Math.min(n - 1, i)); cur = i;
-    var x = X(i), line = cross.firstChild;
-    line.setAttribute("x1", x); line.setAttribute("x2", x); cross.style.display = "";
-    var html = "<b>Week " + (i + 1) + "</b>";
-    cfg.series.forEach(function (s, k) {
-      dots[k].setAttribute("cx", x); dots[k].setAttribute("cy", Y(s.values[i])); dots[k].style.display = "";
-      html += '<div><span><span class="dot" style="background:' + s.color + '"></span>' + esc(s.short || s.name) + '</span><span class="n">' + money(s.values[i]) + "</span></div>";
-    });
-    if (cfg.band) html += '<div><span>Forecast range</span><span class="n">' + money(cfg.band.lo[i]) + "–" + money(cfg.band.hi[i]) + "</span></div>";
-    tip.innerHTML = html; tip.style.display = "block";
-    var pxl = x / W * 100; tip.style.left = pxl > 60 ? "auto" : "calc(" + pxl + "% + 12px)"; tip.style.right = pxl > 60 ? "calc(" + (100 - pxl) + "% + 12px)" : "auto";
-  }
-  function hide() { cross.style.display = "none"; tip.style.display = "none"; dots.forEach(function (d) { d.style.display = "none"; }); }
-  svg.addEventListener("mousemove", function (e) {
-    var r = svg.getBoundingClientRect(), x = (e.clientX - r.left) / r.width * W;
-    show(Math.round((x - m.l) / ((W - m.l - m.r) / (n - 1))));
-  });
-  svg.addEventListener("mouseleave", hide);
-  svg.addEventListener("blur", hide);
-  svg.addEventListener("keydown", function (e) {
-    if (e.key === "ArrowRight") { show(cur + 1); e.preventDefault(); }
-    if (e.key === "ArrowLeft") { show(cur - 1); e.preventDefault(); }
-  });
-}
-
-function tableView(el, cols, rows) {
-  var h = "<table><thead><tr><th>Week</th>" + cols.map(function (c) { return '<th class="num">' + esc(c) + "</th>"; }).join("") + "</tr></thead><tbody>";
-  rows.forEach(function (r, i) { h += "<tr><td>W" + (i + 1) + "</td>" + r.map(function (v) { return '<td class="num">' + money(v) + "</td>"; }).join("") + "</tr>"; });
-  el.innerHTML = h + "</tbody></table>";
-}
-
-function legend(el, items, band) {
-  el.innerHTML = items.map(function (s) { return '<span><i class="key" style="border-color:' + s.color + '"></i>' + esc(s.name) + "</span>"; }).join("") +
-    (band ? '<span><i class="swatch" style="background:' + css("--keel") + '"></i>' + (DATA && DATA.meta.model === "toy" ? "Forecast range (toy: mean ± 1.28 spread)" : "Forecast range (calibrated low to high case)") + '</span>' : "");
-}
-
-function pill(ok, yes, no) {
-  var icon = ok
-    ? '<svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M2 6.5 5 9.5 10 3" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>'
-    : '<svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M3 3l6 6M9 3l-6 6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>';
-  return '<span class="pill ' + (ok ? "ok" : "bad") + '">' + icon + (ok ? yes : no) + "</span>";
-}
-
-function render() {
-  if (!DATA) return;
-  var run = findRun(state.driver, state.scenario, state.risk);
-  if (!run) { document.getElementById("tiles").innerHTML = '<div class="tile">No run in the results file for this driver, scenario and limit.</div>'; return; }
-  var R = fromRun(run), M = R.m, TOY = DATA.meta.model === "toy";
-  WEEKS = run.weeks.length;
-  var storm = KeelData.stormWeeks(run, DATA.meta);
-  var C = { keel: css("--keel"), avg4: css("--avg4"), last: css("--last"), ink2: css("--ink2") };
-
-  document.getElementById("tiles").innerHTML =
-    '<div class="tile"><div class="label">Weeks with an empty buffer</div><div class="value">' + M.keel.overdraft + ' of ' + WEEKS + '</div><div class="cmp">' +
-    '<span><i class="dot" style="background:' + C.keel + '"></i>Keel: ' + M.keel.overdraft + '</span>' +
-    '<span><i class="dot" style="background:' + C.avg4 + '"></i>4-week average: ' + M.avg4.overdraft + '</span>' +
-    '<span><i class="dot" style="background:' + C.last + '"></i>Last week’s pay: ' + M.last.overdraft + '</span></div></div>' +
-    '<div class="tile"><div class="label">Paycheck swing, best to worst week</div><div class="value">' + money(M.keel.swing) + '</div><div class="cmp">' +
-    '<span><i class="dot" style="background:' + C.keel + '"></i>Keel paycheck: ' + money(M.keel.swing) + '</span>' +
-    '<span><i class="dot" style="background:' + C.ink2 + '"></i>Take-home earnings: ' + money(M.earnSwing) + '</span></div></div>' +
-    '<div class="tile"><div class="label">Average weekly paycheck</div><div class="value">' + money(M.keel.avgPay) + '</div><div class="cmp">' +
-    '<span><i class="dot" style="background:' + C.keel + '"></i>Keel: ' + money(M.keel.avgPay) + '</span>' +
-    '<span><i class="dot" style="background:' + C.avg4 + '"></i>4-week average: ' + money(M.avg4.avgPay) + '</span>' +
-    '<span>Tax set aside over ' + WEEKS + ' weeks: ' + money(M.taxTotal) + ' (illustrative ' + pct(TAX) + ')</span></div></div>';
-
-  // Payday card: the first marked storm week (the hardest week), else the last week shown.
-  var pi = storm.length ? Math.min(storm[0] - 1, WEEKS - 1) : WEEKS - 1;
-  document.getElementById("payday").innerHTML =
-    '<div class="phone"><div class="app"><span>Keel · simulated driver ' + esc(state.driver) + '</span><span>Week ' + (pi + 1) + ', Friday</span></div>' +
-    '<div>Your paycheck this Friday</div><div class="big">' + money(R.pol.keel[pi]) + '</div>' +
-    '<dl><dt>Earned this week, after tax</dt><dd>' + money(R.net[pi]) + '</dd>' +
-    '<dt>Tax set aside</dt><dd>' + money(R.gross[pi] - R.net[pi]) + '</dd>' +
-    '<dt>Buffer after payday</dt><dd>' + money(R.buf.keel[pi]) + '</dd></dl></div>' +
-    '<p class="why"><strong>' + (storm.length ? "Snowstorm week. " : "Latest week. ") + '</strong>' +
-    (R.net[pi] < R.pol.keel[pi] ? "Earnings came in below the paycheck, so the buffer covered the gap. " : "Earnings covered the paycheck, so the rest went into the buffer. ") +
-    esc(R.log[pi].reason) + '</p>';
-
-  document.getElementById("c1sub").textContent = "Weekly take-home earnings after the tax set-aside, next to the paycheck Keel pays. Simulated driver " + state.driver + (state.scenario !== "storm" ? ", normal weeks." : storm.length ? ", snowstorm in week" + (storm.length > 1 ? "s " + storm[0] + " to " + storm[storm.length - 1] : " " + storm[0]) + "." : ", snowstorm scenario (the results file does not mark which weeks).");
-  var s1 = [{ name: "Take-home earnings", short: "Earnings", color: C.ink2, values: R.net }, { name: "Keel paycheck", short: "Keel", color: C.keel, values: R.pol.keel }];
-  legend(document.getElementById("c1legend"), [{ name: "Keel paycheck", color: C.keel }, { name: "Take-home earnings", color: C.ink2 }], true);
-  lineChart(document.getElementById("c1"), { series: [s1[1], s1[0]], band: { lo: R.lo, hi: R.hi }, zero: true, stormWeeks: storm, endLabels: true, label: "Weekly take-home earnings and Keel paycheck for " + WEEKS + " weeks." });
-  tableView(document.getElementById("c1table"), ["Take-home earnings", "Keel paycheck", "Forecast low", "Forecast high"], R.net.map(function (v, i) { return [v, R.pol.keel[i], R.lo[i], R.hi[i]]; }));
-
-  legend(document.getElementById("c2legend"), [{ name: "Keel", color: C.keel }, { name: "4-week average", color: C.avg4 }, { name: "Last week’s pay", color: C.last }], false);
-  lineChart(document.getElementById("c2"), { series: [
-    { name: "Keel", color: C.keel, values: R.buf.keel },
-    { name: "4-week average", color: C.avg4, values: R.buf.avg4 },
-    { name: "Last week’s pay", color: C.last, values: R.buf.last }], zero: true, stormWeeks: storm, endLabels: false, label: "Buffer balance for three pay rules over " + WEEKS + " weeks." });
-  tableView(document.getElementById("c2table"), ["Keel", "4-week average", "Last week’s pay"], R.buf.keel.map(function (v, i) { return [v, R.buf.avg4[i], R.buf.last[i]]; }));
-  ["c1", "c2"].forEach(function (id) {
-    document.getElementById(id).classList.toggle("hidden", state.tables);
-    document.getElementById(id + "table").classList.toggle("hidden", !state.tables);
-  });
-
-  var better = M.keel.overdraft < Math.min(M.avg4.overdraft, M.last.overdraft);
-  var tied = M.keel.overdraft === Math.min(M.avg4.overdraft, M.last.overdraft);
-  var STEADY_CUT = 0.3; // pass mark from docs/preregistration.md: paycheck swing at least 30% smaller than earnings swing
-  var steadier = M.keel.swing <= (1 - STEADY_CUT) * M.earnSwing;
-  var target = CAL && typeof CAL.target_low_case === "number" ? " (target " + pct(CAL.target_low_case) + ")" : "";
-  document.getElementById("score").innerHTML =
-    "<thead><tr><th>Question we wrote down first</th><th>" + (TOY ? "Toy sample (not our result)" : "Real model") + "</th></tr></thead><tbody>" +
-    "<tr><td>Is the low-case forecast right as often as it claims" + target + "?</td><td>" + pct(M.lowHit) + " of weeks at or above the low case</td></tr>" +
-    "<tr><td>Does Keel run out of buffer less often than the two simple rules?</td><td>" + pill(better, "Yes: " + M.keel.overdraft + " vs " + M.avg4.overdraft + " and " + M.last.overdraft, tied ? "Tie: " + M.keel.overdraft + " weeks each" : "No: " + M.keel.overdraft + " vs " + M.avg4.overdraft + " and " + M.last.overdraft) + "</td></tr>" +
-    "<tr><td>Is the paycheck swing at least 30% smaller than the earnings swing?</td><td>" + pill(steadier, "Yes: " + money(M.keel.swing) + " vs " + money(M.earnSwing), "No: " + money(M.keel.swing) + " vs " + money(M.earnSwing) + " (" + pct(Math.abs(1 - M.keel.swing / M.earnSwing)) + (M.keel.swing <= M.earnSwing ? " smaller)" : " larger)")) + "</td></tr></tbody>";
-
-  var cost = M.avg4.avgPay - M.keel.avgPay;
-  var txt = "<strong>Where Keel pays a price.</strong> ";
-  if (cost > 1) txt += "Keel pays " + money(cost) + " less per week on average than the 4-week average. That is the cost of a safer buffer. ";
-  else txt += "Keel pays about the same on average as the 4-week average (" + money(M.keel.avgPay) + " vs " + money(M.avg4.avgPay) + "). ";
-  if (!better) txt += "Here it did not beat the simple rules on empty-buffer weeks, and the real report will say so too.";
-  else txt += "The real report will list the cases where it loses, not only the ones it wins.";
-  document.getElementById("loses").innerHTML = txt;
-
-  document.getElementById("checks").innerHTML =
-    "<tbody>" +
-    "<tr><td>Every week: payout = paycheck + tax set-aside + change in buffer</td><td class=\"num\">" + pill(R.checks.identity, "Passed", "Failed") + "</td></tr>" +
-    "<tr><td>Keel buffer never below zero</td><td class=\"num\">" + pill(R.checks.buffer, "Passed", "Failed") + "</td></tr>" +
-    "<tr><td>Paycheck never negative</td><td class=\"num\">" + pill(R.checks.pay, "Passed", "Failed") + "</td></tr></tbody>";
-
-  if (whyWeek === null || whyWeek > R.log.length) whyWeek = R.log.length;
-  var rows = R.log.slice(-8).map(function (r) {
-    return "<tr" + (r.week === whyWeek ? ' aria-current="true"' : "") + "><td><button type=\"button\" data-why=\"" + r.week + "\" aria-label=\"Explain week " + r.week + "\">W" + r.week + "</button></td><td class=\"num\">" + money(r.lo) + "–" + money(r.hi) + "</td><td class=\"num\">" + money(r.buffer) + "</td><td class=\"num\">" + money(r.pay) + "</td><td>" + esc(r.reason) + "</td></tr>";
-  }).join("");
-  renderRecovery();
-  renderBenchmark();
-  renderWhatIf();
-  renderOptimizer();
-  renderBreakdown();
-  renderReliability();
-  renderStress();
-  renderWhy(run);
-  document.getElementById("log").innerHTML = "<thead><tr><th>Week</th><th class=\"num\">Forecast range</th><th class=\"num\">Buffer before</th><th class=\"num\">Paycheck</th><th>Why</th></tr></thead><tbody>" + rows + "</tbody>";
-}
-
-// Calibration panel: outputs/calibration.json if B has written it, else the low-case hit rates in the results file.
-function bar(label, v, target, off) {
-  return '<div class="row"><span>' + esc(label) + '</span><span class="track" role="img" aria-label="' + esc(label) + ": " + pct(v) + '">' +
-    '<span class="fill' + (off ? " off" : "") + '" style="width:' + Math.max(0, Math.min(1, v)) * 100 + '%"></span>' +
-    (target != null ? '<span class="target" style="left:calc(' + target * 100 + '% - 1px)" title="Target ' + pct(target) + '"></span>' : "") +
-    '</span><span class="n">' + pct(v) + "</span></div>";
-}
-// Forecast reliability: coverage vs target, error metrics, forecast band vs actual, largest misses.
-// Everything is read from results.json (stored forecasts) and calibration.json; nothing is re-estimated here.
-var CAL = null;
-function renderCalib(cal) { CAL = cal; render(); }
-function renderReliability() {
-  if (!DATA) return;
-  var C = { keel: css("--keel"), avg4: css("--avg4") };
-  var TOY = DATA.meta.model === "toy", rel = KeelData.reliability(DATA, CAL), o = rel.overall, T = rel.targets;
-  var src = TOY ? "Toy sample, not our result: the forecast is the prototype's toy, not the real model. " : "Real evaluation on simulated drivers. ";
-  document.getElementById("relsub").textContent = src + "Normal weeks only, on test weeks the model never saw. The snowstorm is left out because it was added after forecasting.";
-  document.getElementById("relexplain").innerHTML = "<strong>What calibration means:</strong> each week Keel forecasts a low case and a high case for take-home pay. " +
-    "A low case that claims to be right 9 times in 10 should have actual pay at or above it on about 9 weeks in 10. " +
-    "Calibration nudges the forecasts, using weeks held back from training, until that claim is true. If the low case is too high, Keel would pay out money that never arrives.";
-  if (!o) { document.getElementById("calib").innerHTML = '<p class="note">No normal-scenario weeks in the results file, so there is nothing to score.</p>'; return; }
-  var h = bar("Low case right (pay at or above it)", o.lowHit, T && T.low) + bar("High case right (pay at or below it)", o.highHit, T && T.high) + bar("Inside the band (both right)", o.bandHit, T && T.band);
-  if (CAL && typeof CAL.uncalibrated_hit_rate === "number") h += bar("Low case right before calibration", CAL.uncalibrated_hit_rate, T && T.low, true);
-  document.getElementById("calib").innerHTML = '<div class="bars">' + h + '</div><p class="note">' + (T
-    ? "The black tick is the target (" + pct(T.low) + " for each case, so " + pct(T.band) + " for the band), from outputs/calibration.json. "
-    : "<strong>outputs/calibration.json is missing</strong>, so no target is shown and the before-calibration rate is unknown. Bars are computed from the results file. ") +
-    o.n + " test weeks; weekly earnings are autocorrelated, so treat these as approximate.</p>";
-
-  var ws = rel.weeks.filter(function (w) { return w.driver === state.driver; });
-  legend(document.getElementById("rellegend"), [{ name: "Actual take-home pay", color: C.keel }], true);
-  if (ws.length) lineChart(document.getElementById("relchart"), {
-    series: [{ name: "Actual", color: C.keel, values: ws.map(function (w) { return w.actual; }) }].concat(ws[0].mid !== null ? [{ name: "Middle case", color: C.avg4, values: ws.map(function (w) { return w.mid; }) }] : []),
-    band: { lo: ws.map(function (w) { return w.lo; }), hi: ws.map(function (w) { return w.hi; }) }, zero: true, endLabels: false,
-    label: "Driver " + state.driver + ": forecast low-to-high band and actual take-home pay, " + ws.length + " test weeks." });
-
-  var row = function (name, s) {
-    return "<tr><td>" + esc(name) + '</td><td class="num">' + s.n + '</td><td class="num">' + pct(s.lowHit) + '</td><td class="num">' + pct(s.highHit) + '</td><td class="num">' + pct(s.bandHit) +
-      '</td><td class="num">' + money(s.meanWidth) + '</td><td class="num">' + s.missCount + (s.meanMiss === null ? "" : " (avg " + money(s.meanMiss) + ")") +
-      '</td><td class="num">' + (s.maeMid === null ? "Not in file" : money(s.maeMid)) + "</td></tr>";
-  };
-  document.getElementById("relstats").innerHTML = '<thead><tr><th>Driver</th><th class="num">Weeks</th><th class="num">Low case right</th><th class="num">High case right</th><th class="num">Inside band</th>' +
-    '<th class="num">Avg band width</th><th class="num">Weeks outside band (avg miss)</th><th class="num">Avg error vs middle case</th></tr></thead><tbody>' +
-    rel.drivers.map(function (d) { return row(d.label, d.s); }).join("") + row("All drivers", o) + "</tbody>";
-
-  document.getElementById("relworst").innerHTML = rel.worst.length
-    ? '<thead><tr><th>Driver</th><th>Week</th><th class="num">Actual</th><th class="num">Forecast band</th><th>Missed by</th></tr></thead><tbody>' +
-      rel.worst.map(function (w) {
-        return "<tr><td>" + esc(w.driver) + "</td><td>W" + w.week + (w.weekStart ? " (" + esc(w.weekStart) + ")" : "") + '</td><td class="num">' + money(w.actual) + '</td><td class="num">' +
-          money(w.lo) + "–" + money(w.hi) + "</td><td>" + money(w.miss) + (w.side === "above" ? " above the high case" : " below the low case (Keel planned on money that did not come)") + "</td></tr>";
-      }).join("") + "</tbody>"
-    : '<tbody><tr><td>Every test week landed inside the forecast band.</td></tr></tbody>';
-  document.getElementById("relnote").textContent = "Average error against the middle case needs the middle forecast, which the results file does not store (CONTRACT.md has only the low and high case), so it is shown as not in file instead of being estimated.";
-}
-
-// Where Keel loses: scanned from every run, so it cannot be cherry-picked by the filters.
-function renderLosses() {
-  var name = { avg4: "4-week average", last: "last week’s pay" }, items = [], payGaps = [];
-  DATA.runs.forEach(function (r) {
-    var o = r.metrics.overdraft_weeks, tag = "Driver " + r.driver + ", " + (r.scenario === "storm" ? "snowstorm" : "normal weeks") + ", " + pct(r.risk_limit) + " limit";
-    ["avg4", "last"].forEach(function (k) {
-      if (o.keel > o[k]) items.push(tag + ": Keel had " + o.keel + " empty-buffer week" + (o.keel === 1 ? "" : "s") + ", " + name[k] + " had " + o[k] + ".");
-    });
-    if (!r.checks.buffer_nonnegative && o.keel <= Math.min(o.avg4, o.last)) items.push(tag + ": Keel’s buffer still went below zero (" + o.keel + " week" + (o.keel === 1 ? "" : "s") + ").");
-    payGaps.push(r.metrics.avg_pay.avg4 - r.metrics.avg_pay.keel);
-  });
-  var lower = payGaps.filter(function (g) { return g > 0; });
-  if (lower.length) items.push("Keel paid less on average than the 4-week average in " + lower.length + " of " + DATA.runs.length + " runs, by " + money(Math.min.apply(null, lower)) + " to " + money(Math.max.apply(null, lower)) + " a week. That is the price of a safer buffer.");
-  if (!items.length) items.push("No run in this file where Keel did worse than a simple rule on empty-buffer weeks or average pay.");
-  items.push("Why each loss happened is written up in outputs/failures.md in the repo.");
-  document.getElementById("losslist").innerHTML = items.map(function (t) { return "<li>" + esc(t) + "</li>"; }).join("");
-}
-
-// Paycheck optimizer: every option is a precomputed run; nothing is estimated in the browser.
-var optWeek = 1;
-function renderOptimizer() {
-  var run = findRun(state.driver, state.scenario, state.risk), TOY = DATA.meta.model === "toy";
-  if (!run) return;
-  optWeek = Math.min(Math.max(1, optWeek), run.weeks.length);
-  document.getElementById("optweek").innerHTML = run.weeks.map(function (w) {
-    return '<option value="' + w.week + '"' + (w.week === optWeek ? " selected" : "") + ">Week " + w.week + (w.week_start ? " (" + esc(w.week_start) + ")" : "") + "</option>";
-  }).join("");
-  var opts = KeelData.paycheckChoices(DATA, state.driver, state.scenario, optWeek);
-  function riskText(o) { return o.risk === null ? "risk not in file" : pct(o.risk) + " chance of running dry"; }
-  document.getElementById("optlist").innerHTML = '<legend class="sr-only">Paycheck and risk options for week ' + optWeek + "</legend>" +
-    opts.map(function (o) {
-      var on = Math.abs(o.riskLimit - state.risk) < 1e-9;
-      return '<label><input type="radio" name="optpick" value="' + o.riskLimit + '"' + (on ? " checked" : "") + '><span><span class="big">' + money(o.pay) +
-        '</span><span class="sub">' + esc(riskText(o)) + " · limit " + pct(o.riskLimit) + "</span></span></label>";
-    }).join("");
-  var o = opts.find(function (x) { return Math.abs(x.riskLimit - state.risk) < 1e-9; });
-  document.getElementById("optdetail").innerHTML = o ? "<dl>" +
-    "<div><dt>Paycheck this week</dt><dd>" + money(o.pay) + "</dd></div>" +
-    "<div><dt>Estimated chance the buffer runs dry (next " + DATA.meta.horizon_weeks + " weeks)</dt><dd>" + (o.risk === null ? "Not in file" : pct(o.risk)) + "</dd></div>" +
-    "<div><dt>Buffer before → after</dt><dd>" + money(o.bufferBefore) + " → " + money(o.bufferAfter) + "</dd></div>" +
-    "<div><dt>Average paycheck · empty-buffer weeks (whole replay)</dt><dd>" + money(o.avgPay) + " · " + o.emptyWeeks + " of " + o.weeks + "</dd></div>" +
-    '</dl><p class="note"><strong>Why:</strong> ' + esc(o.reason || "No explanation in the file.") + "</p>" : "";
-  document.getElementById("optsub").textContent = (TOY ? "Toy sample, not our result. " : "") +
-    "Pick a week, then pick a paycheck. Each choice is one risk limit Keel was actually run with; other amounts were not evaluated, so they are not offered.";
-  document.getElementById("optnote").textContent = (TOY ? "Toy data: numbers come from the prototype simulation, not the real model. " : "Simulated drivers. ") +
-    "Read from the results file, not computed in the browser. Each option's buffer is the one that limit had built up by this week. Not financial or tax advice.";
-}
-document.getElementById("optweek").addEventListener("change", function (e) { optWeek = parseInt(e.target.value, 10); renderOptimizer(); });
-document.getElementById("optlist").addEventListener("change", function (e) {
-  if (e.target.name !== "optpick") return;
-  state.risk = parseFloat(e.target.value);
-  document.getElementById("risk").value = String(state.risk);
-  render();
-  var picked = document.querySelector('#optlist input[value="' + state.risk + '"]');
-  if (picked) picked.focus();
-});
-
-// Paycheck breakdown: one week's money flow from stored fields (KeelData.paycheckBreakdown). Nothing is recomputed
-// beyond subtraction, and values the file cannot give (week 1 opening buffer) are shown as not derivable.
-var bdWeek = null;
-function renderBreakdown() {
-  var run = findRun(state.driver, state.scenario, state.risk), TOY = DATA.meta.model === "toy";
-  if (!run) return;
-  if (bdWeek === null || bdWeek > run.weeks.length) bdWeek = Math.min(2, run.weeks.length);
-  document.getElementById("bdweek").innerHTML = run.weeks.map(function (w) {
-    return '<option value="' + w.week + '"' + (w.week === bdWeek ? " selected" : "") + ">Week " + w.week + (w.week_start ? " (" + esc(w.week_start) + ")" : "") + "</option>";
-  }).join("");
-  var b = KeelData.paycheckBreakdown(run, bdWeek), el = document.getElementById("bdbody"), na = "Not derivable";
-  document.getElementById("bdsub").textContent = (TOY ? "Toy sample, not our result. " : "Simulated driver " + state.driver + ". ") +
-    "Where one week's simulated earnings went: paycheck, tax reserve and buffer. Pick a week.";
-  document.getElementById("bdnote").textContent = (TOY ? "Toy data from the prototype simulation. " : "Simulated drivers, no real money. ") +
-    "Read from the results file: tax reserve = gross − take-home as stored (illustrative " + pct(TAX) + " rate), beginning buffer = last week's ending buffer. Not financial or tax advice.";
-  if (!b || b.gross === null) { el.innerHTML = '<p class="note">This week has no gross earnings in the file, so there is no breakdown to show.</p>'; return; }
-  function seg(cls, v, total, label) {
-    if (v <= 0 || total <= 0) return "";
-    var w = 100 * v / total;
-    return '<span class="' + cls + '" style="width:' + w + '%" title="' + esc(label + ": " + money(v)) + '">' + (w > 14 ? esc(money(v)) : "") + "</span>";
-  }
-  var draw = b.flow === "draw" ? -b.bufferChange : 0, toBuf = b.flow === "replenish" ? b.bufferChange : 0;
-  var h = "";
-  if (b.identity === false) h += '<p class="bdwarn" role="alert"><strong>Accounting check failed.</strong> Gross ' + money(b.gross) + " ≠ paycheck + tax reserve + buffer change (off by " + (Math.abs(b.gap) < 1 ? "$" + Math.abs(b.gap).toFixed(2) : money(Math.abs(b.gap))) + "). The numbers below are shown as stored; treat them with care.</p>";
-  if (b.bufferChange !== null) {
-    var total = b.gross + draw, legendItems = [["bd-earn", "Gross earnings"], ["bd-draw", "From buffer"], ["bd-pay", "Paycheck"], ["bd-tax", "Tax reserve"], ["bd-buf", "To buffer"]];
-    h += '<div class="bdflow" role="img" aria-label="' + esc("Money in: " + money(b.gross) + " earnings" + (draw ? " plus " + money(draw) + " from the buffer" : "") + ". Money out: " + money(b.pay) + " paycheck, " + money(b.tax) + " tax reserve" + (toBuf ? ", " + money(toBuf) + " to the buffer" : "") + ".") + '">' +
-      '<div class="bdrow"><span>Money in</span><div class="bdbar">' + seg("bd-earn", b.gross, total, "Gross earnings") + seg("bd-draw", draw, total, "From buffer") + "</div></div>" +
-      '<div class="bdrow"><span>Money out</span><div class="bdbar">' + seg("bd-pay", b.pay, total, "Paycheck") + seg("bd-tax", b.tax, total, "Tax reserve") + seg("bd-buf", toBuf, total, "To buffer") + "</div></div></div>" +
-      '<div class="legend">' + legendItems.map(function (l) { return '<span><i class="swatch ' + l[0] + '" style="opacity:1"></i>' + l[1] + "</span>"; }).join("") + "</div>";
-  }
-  var flowText = {
-    draw: "<strong>The buffer paid in.</strong> Take-home pay (" + money(b.net) + ") fell short of the paycheck, so " + money(draw) + " came out of the buffer.",
-    replenish: "<strong>Earnings refilled the buffer.</strong> Take-home pay (" + money(b.net) + ") was more than the paycheck, so the extra " + money(toBuf) + " went into the buffer.",
-    none: "<strong>Even week.</strong> Take-home pay matched the paycheck; the buffer did not change.",
-    unknown: "<strong>Week 1:</strong> the results file has no opening buffer balance, so the buffer change and the accounting check cannot be shown for this week. Pick week 2 or later."
-  };
-  h += '<p class="note">' + flowText[b.flow] + "</p><dl>" +
-    "<div><dt>Gross earnings (simulated)</dt><dd>" + money(b.gross) + "</dd></div>" +
-    "<div><dt>Paycheck (simulated)</dt><dd>" + money(b.pay) + "</dd></div>" +
-    "<div><dt>Tax reserve</dt><dd>" + money(b.tax) + "</dd></div>" +
-    "<div><dt>Buffer change</dt><dd>" + (b.bufferChange === null ? na : (b.bufferChange > 0 ? "+" : "") + money(b.bufferChange)) + "</dd></div>" +
-    "<div><dt>Buffer start → end</dt><dd>" + (b.bufferStart === null ? na : money(b.bufferStart)) + " → " + money(b.bufferEnd) + "</dd></div>" +
-    "<div><dt>Gross = paycheck + tax + buffer change</dt><dd>" + (b.identity === null ? na : pill(b.identity, "Balances", "Does not balance")) + "</dd></div></dl>";
-  el.innerHTML = h;
-}
-document.getElementById("bdweek").addEventListener("change", function (e) { bdWeek = parseInt(e.target.value, 10); renderBreakdown(); });
-
-// Stress test lab: before (normal weeks) vs after (chosen scenario) for the selected driver and risk limit.
-// Only scenarios with runs in the results file are shown with numbers; the rest say "not evaluated".
-var stScenario = "storm";
-function renderStress() {
-  if (!DATA) return;
-  var TOY = DATA.meta.model === "toy", C = { keel: css("--keel"), avg4: css("--avg4"), last: css("--last"), muted: css("--muted") };
-  var res = KeelData.stressTest(DATA, state.driver, state.risk, stScenario), sc = res.scenario;
-  // Only scenarios that were actually evaluated get a button.
-  document.getElementById("stseg").innerHTML = KeelData.STRESS_SCENARIOS.filter(function (s) {
-    return KeelData.stressTest(DATA, state.driver, state.risk, s.id).available;
-  }).map(function (s) {
-    return '<button type="button" data-st="' + s.id + '" aria-pressed="' + (s.id === stScenario) + '">' + esc(s.name) + "</button>";
-  }).join("");
-  document.getElementById("stsub").textContent = (TOY ? "Toy sample, not our result. " : "Simulated drivers, real evaluation runs. ") +
-    "Driver " + state.driver + " at a " + pct(state.risk) + " limit (change both above). Before = normal weeks, after = the chosen scenario.";
-  document.getElementById("stnote").textContent = "Every number comes from runs in the results file; nothing is simulated in the browser. " +
-    (DATA.meta.storm ? "Snowstorm: " + DATA.meta.storm + ". " : "") + "Depletion risk is the policy's own estimate for the next " + DATA.meta.horizon_weeks + " weeks. Not financial or tax advice.";
-  var charts = document.getElementById("stcharts"), body = document.getElementById("stbody");
-  if (!res.available) {
-    charts.classList.add("hidden");
-    body.innerHTML = '<p class="note"><strong>' + esc(sc.name) + " was not evaluated.</strong> The results file has no runs for this scenario, so there are no numbers to show. " +
-      "Adding it means running eval/run_eval.py with this scenario, not estimating it here.</p>";
-    return;
-  }
-  charts.classList.remove("hidden");
-  var A = res.after, B = res.before, D = res.delta, same = stScenario === "normal" || !B;
-  function chg(v, fmt, goodUp) {
-    if (same || v === null) return "<td></td>";
-    var r = Math.round(v), cls = r === 0 ? "" : (r > 0) === goodUp ? "up" : "down";
-    return '<td class="num ' + cls + '">' + (r > 0 ? "+" : r < 0 ? "−" : "") + fmt(Math.abs(v)) + "</td>";
-  }
-  var cnt = function (n) { return String(n); };
-  function line(label, b, a, d, fmt, goodUp) {
-    return "<tr><th scope=\"row\">" + esc(label) + "</th>" + (same ? "" : '<td class="num">' + (b === null ? "—" : fmt(b)) + "</td>") + '<td class="num">' + (a === null ? "Not in file" : fmt(a)) + "</td>" + (same ? "" : chg(d, fmt, goodUp)) + "</tr>";
-  }
-  var rk = function (r) { return r === null ? "Not in file" : pct(r); };
-  var h = same ? "" : '<p class="note"><strong>Financial impact:</strong> ' + esc(sc.name) + " changes average take-home pay by " + (D.avgNet < 0 ? "−" : "+") + money(Math.abs(D.avgNet)) +
-    " a week. Keel's paycheck moves by " + (D.avgPayKeel < 0 ? "−" : "+") + money(Math.abs(D.avgPayKeel)) + " and its lowest buffer by " + (D.minBufKeel < 0 ? "−" : "+") + money(Math.abs(D.minBufKeel)) +
-    ". Empty-buffer weeks: Keel " + B.empty.keel + " → " + A.empty.keel + ", 4-week average " + B.empty.avg4 + " → " + A.empty.avg4 + ", last week's pay " + B.empty.last + " → " + A.empty.last + ".</p>";
-  h += '<div class="scroll"><table id="sttable"><thead><tr><th>Average over ' + A.weeks + " weeks</th>" + (same ? "" : '<th class="num">Normal weeks</th>') + '<th class="num">' + esc(sc.name) + "</th>" + (same ? "" : '<th class="num">Change</th>') + "</tr></thead><tbody>" +
-    line("Take-home pay", B && B.avgNet, A.avgNet, D && D.avgNet, money, true) +
-    line("Forecast low case", B && B.avgLo, A.avgLo, D && A.avgLo - B.avgLo, money, true) +
-    line("Paycheck: Keel", B && B.avgPay.keel, A.avgPay.keel, D && D.avgPayKeel, money, true) +
-    line("Paycheck: 4-week average", B && B.avgPay.avg4, A.avgPay.avg4, D && A.avgPay.avg4 - B.avgPay.avg4, money, true) +
-    line("Paycheck: last week's pay", B && B.avgPay.last, A.avgPay.last, D && A.avgPay.last - B.avgPay.last, money, true) +
-    line("Lowest buffer: Keel", B && B.minBuf.keel, A.minBuf.keel, D && D.minBufKeel, money, true) +
-    line("Lowest buffer: 4-week average", B && B.minBuf.avg4, A.minBuf.avg4, D && A.minBuf.avg4 - B.minBuf.avg4, money, true) +
-    line("Lowest buffer: last week's pay", B && B.minBuf.last, A.minBuf.last, D && A.minBuf.last - B.minBuf.last, money, true) +
-    line("Empty-buffer weeks: Keel", B && B.empty.keel, A.empty.keel, D && D.emptyKeel, cnt, false) +
-    line("Empty-buffer weeks: 4-week average", B && B.empty.avg4, A.empty.avg4, D && D.emptyAvg4, cnt, false) +
-    line("Empty-buffer weeks: last week's pay", B && B.empty.last, A.empty.last, D && D.emptyLast, cnt, false) +
-    "<tr><th scope=\"row\">Highest estimated depletion risk: Keel</th>" + (same ? "" : '<td class="num">' + rk(B.maxRisk) + "</td>") + '<td class="num">' + rk(A.maxRisk) + "</td>" + (same ? "" : "<td></td>") + "</tr>" +
-    "</tbody></table></div>";
-  body.innerHTML = h;
-  var aw = res.afterRun.weeks, bw = res.beforeRun ? res.beforeRun.weeks : null, storm = KeelData.stormWeeks(res.afterRun, DATA.meta);
-  var col = function (ws, k) { return ws.map(function (x) { return x[k]; }); };
-  var s1 = [{ name: "Take-home, " + sc.name, short: "Take-home", color: C.muted, values: col(aw, "net") }, { name: "Keel paycheck, " + sc.name, short: "Keel", color: C.keel, values: col(aw, "pay_keel") }];
-  if (!same && bw) s1 = s1.concat([{ name: "Take-home, normal", color: C.muted, dash: true, values: col(bw, "net") }, { name: "Keel paycheck, normal", color: C.keel, dash: true, values: col(bw, "pay_keel") }]);
-  legend(document.getElementById("stleg1"), s1.map(function (s) { return { name: s.name + (s.dash ? " (dashed)" : ""), color: s.color }; }), false);
-  lineChart(document.getElementById("stc1"), { series: s1, zero: true, stormWeeks: storm, endLabels: false, label: "Take-home pay and Keel paycheck, " + sc.name + (same ? "" : " vs normal weeks (dashed)") + "." });
-  var s2 = [{ name: "Keel", color: C.keel, values: col(aw, "buf_keel") }, { name: "4-week average", color: C.avg4, values: col(aw, "buf_avg4") }, { name: "Last week’s pay", color: C.last, values: col(aw, "buf_last") }];
-  if (!same && bw) s2.push({ name: "Keel, normal weeks", color: C.keel, dash: true, values: col(bw, "buf_keel") });
-  legend(document.getElementById("stleg2"), s2.map(function (s) { return { name: s.name + (s.dash ? " (dashed)" : ""), color: s.color }; }), false);
-  lineChart(document.getElementById("stc2"), { series: s2, zero: true, stormWeeks: storm, endLabels: false, label: "Buffer balance under three pay rules, " + sc.name + ". Below zero means overdraft." });
-}
-document.getElementById("stseg").addEventListener("click", function (e) {
-  var b = e.target.closest("button[data-st]");
-  if (!b) return;
-  stScenario = b.dataset.st;
-  renderStress();
-  var again = document.querySelector('#stseg button[data-st="' + stScenario + '"]');
-  if (again) again.focus();
-});
-
-// "Why this paycheck?": one week explained from the stored run; the decision log picks the week.
-var whyWeek = null;
-function renderWhy(run) {
-  var TOY = DATA.meta.model === "toy", e = KeelData.explainWeek(run, whyWeek), H = DATA.meta.horizon_weeks;
-  document.getElementById("whysub").textContent = (TOY ? "Toy sample, not our result. " : "Simulated driver. ") +
-    "How Keel picked one week's paycheck for driver " + state.driver + ". Pick a week in the decision log below to explain it.";
-  document.getElementById("whynote").textContent = "Read from the results file, not recomputed. Not financial or tax advice.";
-  var el = document.getElementById("whybody");
-  if (!e) { el.innerHTML = '<p class="note">No week to explain: this run has no weekly data.</p>'; return; }
-  var na = "Not in file";
-  var h = '<p class="note"><strong>Week ' + e.week + (e.weekStart ? " (" + esc(e.weekStart) + ")" : "") + ":</strong> Keel paid <strong>" + money(e.pay) + "</strong>.</p><dl>" +
-    "<div><dt>Forecast take-home range</dt><dd>" + (e.lo === null || e.hi === null ? na : money(e.lo) + "–" + money(e.hi)) + "</dd></div>" +
-    "<div><dt>Buffer before payday</dt><dd>" + money(e.bufferBefore) + "</dd></div>" +
-    "<div><dt>Your risk limit</dt><dd>" + pct(e.limit) + "</dd></div>" +
-    "<div><dt>Estimated chance of running dry (next " + H + " weeks)</dt><dd>" + (e.risk === null ? na : pct(e.risk)) + "</dd></div>" +
-    "<div><dt>Paycheck</dt><dd>" + money(e.pay) + "</dd></div></dl>";
-  var limits = {
-    limit_met: "<strong>The rule it had to meet:</strong> a chance of running dry within " + pct(e.limit) + ". Keel tried higher paychecks first and this was the first one that met it. " +
-      "The file does not record whether higher amounts failed the limit or were above the starting cap, so we do not say which one stopped it.",
-    floor: "<strong>The rule it had to meet:</strong> even a $0 paycheck left a " + pct(e.risk) + " chance of running dry, above your " + pct(e.limit) + " limit, so Keel paid nothing rather than risk an overdraft.",
-    unknown: "<strong>The rule it had to meet:</strong> the risk estimate is not in the file, so we do not guess."
-  };
-  h += '<p class="note">' + limits[e.constraint] + "</p>";
-  h += '<p class="note"><strong>If earnings fall unexpectedly:</strong> the paycheck for the week is already set, so the buffer covers the gap. ' +
-    "Next week Keel sees the smaller buffer and the weaker earnings, and may lower the paycheck to keep the risk within your limit. ";
-  if (e.fellShort) h += "That happened here: take-home pay was " + money(e.net) + ", " + money(e.shortfall) + " under the low case. The buffer went from " + money(e.bufferBefore) + " to " + money(e.bufferAfter) +
-    (e.nextPay === null ? "." : ", and next week's paycheck was " + money(e.nextPay) + " (" + (e.nextPay < e.pay ? "down " : e.nextPay > e.pay ? "up " : "no change") + (e.nextPay === e.pay ? "" : money(Math.abs(e.nextPay - e.pay))) + ").");
-  else h += "This week take-home pay was " + money(e.net) + (e.lo === null ? "." : ", not below the low case.");
-  h += "</p>";
-  if (e.reason) h += '<p class="note"><strong>Keel’s note:</strong> ' + esc(e.reason) + "</p>";
-  el.innerHTML = h;
-}
-document.getElementById("log").addEventListener("click", function (ev) {
-  var b = ev.target.closest("button[data-why]");
-  if (!b) return;
-  whyWeek = parseInt(b.dataset.why, 10);
-  render();
-  document.getElementById("whycard").scrollIntoView({ block: "start", behavior: "smooth" });
-});
-
-// Buffer recovery: replayed runs only (KeelRecovery). No projection beyond the replay, so no recovery dates are promised.
-function renderRecovery() {
-  var run = findRun(state.driver, state.scenario, state.risk), TOY = DATA.meta.model === "toy", NA = "Not in file";
-  if (!run) return;
-  var rec = KeelRecovery.bufferRecovery(run), rows = KeelRecovery.recoveryCompare(DATA, state.driver);
-  var scen = function (id) { return NAMES[id] || id; };
-  function status(r) {
-    if (!r) return NA;
-    if (r.status === "never_below") return "Never fell below target";
-    if (r.status === "recovered") return r.weeksToRecover + " week" + (r.weeksToRecover === 1 ? "" : "s") + " (back by week " + r.recoveredWeek + ")";
-    return "Not back by end of replay (" + r.weeks + " weeks)";
-  }
-  document.getElementById("recsub").textContent = (TOY ? "Toy sample, not our result. " : "Simulated driver " + state.driver + ", " + scen(state.scenario).toLowerCase() + ". ") +
-    "How far the buffer fell and how fast it came back, in the historical replay.";
-  var el = document.getElementById("recbody");
-  if (!rec) { el.innerHTML = '<p class="note">This run is missing buffer data, so recovery cannot be shown.</p>'; }
-  else el.innerHTML = "<dl class=\"recdl\">" +
-    "<div><dt>Current buffer (end of replay)</dt><dd>" + money(rec.current) + "</dd></div>" +
-    "<div><dt>Recovery target (starting buffer)</dt><dd>" + money(rec.target) + "</dd></div>" +
-    "<div><dt>Lowest point</dt><dd>" + money(rec.lowest) + " · week " + rec.lowWeek + "</dd></div>" +
-    "<div><dt>Time to recover</dt><dd>" + esc(status(rec)) + "</dd></div></dl>" +
-    (rec.empty ? '<p class="note"><strong>The buffer ran empty</strong> in week ' + rec.lowWeek + " (" + money(rec.lowest) + "). Below zero means an overdraft in this simulation.</p>" : "");
-  // Chart: the selected scenario under every risk limit, with the target as a flat line.
-  var C = [css("--keel"), css("--last"), css("--avg4"), css("--crit")], same = DATA.runs.filter(function (r) { return r.driver === state.driver && r.scenario === state.scenario; })
-    .sort(function (a, b) { return a.risk_limit - b.risk_limit; });
-  var series = same.map(function (r, i) { return { name: "Limit " + pct(r.risk_limit), color: C[i % C.length], values: r.weeks.map(function (w) { return w.buf_keel; }) }; });
-  if (rec) series.push({ name: "Target", color: css("--muted"), values: run.weeks.map(function () { return rec.target; }) });
-  legend(document.getElementById("recleg"), series, false);
-  lineChart(document.getElementById("recchart"), { series: series, zero: true, stormWeeks: KeelData.stormWeeks(run, DATA.meta), endLabels: false, label: "Replayed buffer balance by week for each risk limit, with the recovery target." });
-  document.getElementById("rectable").innerHTML = "<thead><tr><th>Scenario</th><th class=\"num\">Risk limit</th><th class=\"num\">Average paycheck</th><th class=\"num\">Lowest buffer</th><th>Time to recover</th></tr></thead><tbody>" +
-    rows.map(function (x) {
-      var cur = x.scenario === state.scenario && Math.abs(x.risk - state.risk) < 1e-9;
-      return "<tr" + (cur ? ' aria-current="true"' : "") + "><td>" + esc(scen(x.scenario)) + "</td><td class=\"num\">" + pct(x.risk) + "</td><td class=\"num\">" + money(x.avgPay) +
-        "</td><td class=\"num\">" + (x.rec ? money(x.rec.lowest) : NA) + "</td><td>" + esc(status(x.rec)) + "</td></tr>";
-    }).join("") + "</tbody>";
-  document.getElementById("recnote").innerHTML = "<strong>The tradeoff:</strong> a looser risk limit pays a higher paycheck, so less goes back into the buffer each week; it falls further in bad weeks and takes longer to refill. " +
-    "<strong>What this is:</strong> historical replay of " + (TOY ? "toy" : "simulated") + " drivers on past weeks, using the paychecks Keel actually chose. It is not a forecast: no future earnings are projected and no recovery date is promised. Not financial or tax advice.";
-}
-
-// Policy benchmark (KeelBenchmark): held-out replay weeks from results.json. The only model ablation shown is the one
-// calibration.json actually records (conformal calibration on vs off); nothing else is claimed.
-var BM_INFO = {
-  avgPay: ["Average paycheck", "What lands in the worker's account each week. Higher is better, but not at the cost of overdrafts.", true],
-  paySwing: ["Paycheck swing", "Gap between the best and worst paycheck. Smaller means easier to budget rent and bills.", true],
-  avgChange: ["Typical week-to-week change", "How much the paycheck usually moves from one week to the next. Smaller is steadier.", true],
-  emptyWeeks: ["Weeks with an empty buffer", "Weeks the savings buffer went below zero, meaning an overdraft. Fewer is better.", false],
-  lowestBuffer: ["Lowest buffer", "The worst balance the buffer reached. Higher means more cushion in a bad week.", true],
-  shortfall: ["Total overdraft", "Dollars below zero, added up over all weeks. Shows how deep the shortfalls went.", true]
-};
-function renderBenchmark() {
-  if (!DATA) return;
-  var run = findRun(state.driver, state.scenario, state.risk), TOY = DATA.meta.model === "toy";
-  if (!run) return;
-  var rows = KeelBenchmark.benchmark(run), NA = "—";
-  var fmt = function (id, v) { return v === null ? NA : id === "emptyWeeks" ? String(v) : money(v); };
-  var verdict = function (r) {
-    if (r.vsAvg4 === null || r.vsLast === null) return ["", "Not in file"];
-    if (r.vsAvg4 === "better" && r.vsLast === "better") return ["better", "Better than both"];
-    if (r.vsAvg4 === "worse" && r.vsLast === "worse") return ["worse", "Worse than both"];
-    if (r.vsAvg4 === "tie" && r.vsLast === "tie") return ["", "Tie"];
-    var w = r.vsAvg4 === "worse" ? "4-week average" : r.vsLast === "worse" ? "last week’s pay" : null;
-    return w ? ["worse", "Worse than " + w] : ["better", "Better or tied"];
-  };
-  document.getElementById("bmsub").textContent = (TOY ? "Toy sample, not our result. " : "Real model, simulated driver " + state.driver + ". ") +
-    "Policy benchmark on the held-out test weeks (" + run.weeks.length + " weeks, " + (NAMES[state.scenario] || state.scenario).toLowerCase() + ", " + pct(state.risk) + " limit). Same earnings, same starting buffer, three pay rules.";
-  document.getElementById("bmtable").innerHTML = "<thead><tr><th>Metric</th><th class=\"num\">Keel</th><th class=\"num\">4-week average</th><th class=\"num\">Last week’s pay</th><th>Keel vs rules</th></tr></thead><tbody>" +
-    rows.map(function (r) {
-      var v = verdict(r), info = BM_INFO[r.id];
-      return "<tr><td><strong>" + esc(info[0]) + "</strong><br><span class=\"note\">" + esc(info[1]) + "</span></td><td class=\"num\">" + fmt(r.id, r.keel) + "</td><td class=\"num\">" + fmt(r.id, r.avg4) +
-        "</td><td class=\"num\">" + fmt(r.id, r.last) + '</td><td class="' + v[0] + '">' + esc(v[1]) + "</td></tr>";
-    }).join("") + "</tbody>";
-  var C = { keel: css("--keel"), avg4: css("--avg4"), last: css("--last") }, label = { keel: "Keel", avg4: "4-week average", last: "Last week’s pay" };
-  legend(document.getElementById("bmleg"), KeelBenchmark.POLICIES.map(function (p) { return { name: label[p], color: C[p] }; }), false);
-  document.getElementById("bmbars").innerHTML = rows.filter(function (r) { return r.id !== "lowestBuffer"; }).map(function (r) {
-    var vals = KeelBenchmark.POLICIES.map(function (p) { return r[p]; }), max = Math.max.apply(null, vals.map(function (v) { return Math.abs(v || 0); }));
-    return "<div><h4>" + esc(BM_INFO[r.id][0]) + (r.better === "higher" ? " (higher is better)" : " (lower is better)") + '</h4><div class="bars">' + KeelBenchmark.POLICIES.map(function (p) {
-      var v = r[p], w = v === null || !max ? 0 : 100 * Math.abs(v) / max;
-      return '<div class="row"><span>' + label[p] + '</span><span class="track" role="img" aria-label="' + esc(label[p] + ": " + fmt(r.id, v)) + '"><span class="fill" style="width:' + w + "%;background:" + C[p] + '"></span></span><span class="n">' + fmt(r.id, v) + "</span></div>";
-    }).join("") + "</div></div>";
-  }).join("");
-  var t = KeelBenchmark.tally(DATA);
-  document.getElementById("bmtally").innerHTML = KeelBenchmark.METRICS.map(function (m) {
-    var x = t[m.id];
-    return "<li><strong>" + esc(BM_INFO[m.id][0]) + ":</strong> Keel beat both rules in " + x.beatsBoth + " of " + x.runs + " runs and did worse than at least one in " + x.losesToOne + (x.missing ? " (" + x.missing + " runs missing this metric)" : "") + ".</li>";
-  }).join("");
-  var abl = document.getElementById("bmabl");
-  if (CAL && typeof CAL.calibrated_hit_rate === "number" && typeof CAL.uncalibrated_hit_rate === "number")
-    abl.textContent = (CAL.model === "toy" ? "Toy calibration file. " : "") + "Conformal calibration on vs off, from calibration.json: the low case was right in " + pct(CAL.calibrated_hit_rate) + " of " + (CAL.n_test_weeks || "the") + " test weeks with calibration and " + pct(CAL.uncalibrated_hit_rate) +
-      " without (target " + pct(CAL.target_low_case) + "). This compares the forecast model, not the pay rule; details are in Forecast reliability. No other ablations were run, so none are shown.";
-  else abl.textContent = "No ablation results in the files (calibration.json is missing or has no before/after hit rates), so none are shown.";
-  document.getElementById("bmnote").textContent = (TOY ? "Toy data from the prototype simulation. " : "Simulated drivers on real NYC trip data. ") +
-    "One replay per setting, so these are descriptive counts, not statistically tested differences. Average paycheck, swing and empty weeks are copied from the results file; the rest is arithmetic on its weekly values. Not financial or tax advice.";
-}
-
-// What-if: compares precomputed runs for the selected driver; the badge text says whether they are toy or real.
-function renderWhatIf() {
-  var rows = KeelData.whatIf(DATA, state.driver), TOY = DATA.meta.model === "toy";
-  document.getElementById("whatifsub").textContent = (TOY ? "Toy sample, not our result. " : "Simulated drivers. ") +
-    "Every scenario and risk limit for driver " + state.driver + ", read from the results file. Nothing is re-simulated in the browser. Pick a row to load it above.";
-  var same = rows.filter(function (r) { return r.scenario === state.scenario; });
-  var lo = same[0], hi = same[same.length - 1];
-  document.getElementById("whatifsum").innerHTML = lo && hi && lo !== hi
-    ? "<strong>" + esc(NAMES[state.scenario] || state.scenario) + ":</strong> moving the limit from " + pct(lo.risk) + " to " + pct(hi.risk) +
-      " changes Keel’s average paycheck from " + money(lo.avgPay) + " to " + money(hi.avgPay) + " and its empty-buffer weeks from " + lo.emptyKeel + " to " + hi.emptyKeel + "."
-    : "";
-  var h = '<thead><tr><th>Scenario</th><th class="num">Risk limit</th><th class="num">Keel avg paycheck</th><th class="num">4-week avg paycheck</th>' +
-    '<th class="num">Empty-buffer weeks: Keel / 4-week / last week</th><th class="num">Keel paycheck swing</th><th class="num">Earnings swing</th></tr></thead><tbody>';
-  rows.forEach(function (r) {
-    var cur = r.scenario === state.scenario && Math.abs(r.risk - state.risk) < 1e-9;
-    h += '<tr' + (cur ? ' aria-current="true"' : "") + '><td><button type="button" data-sc="' + esc(r.scenario) + '" data-risk="' + r.risk + '">' + esc(NAMES[r.scenario] || r.scenario) + "</button></td>" +
-      '<td class="num">' + pct(r.risk) + '</td><td class="num">' + money(r.avgPay) + '</td><td class="num">' + money(r.avgPayAvg4) + "</td>" +
-      '<td class="num">' + r.emptyKeel + " / " + r.emptyAvg4 + " / " + r.emptyLast + " of " + r.weeks + '</td><td class="num">' + money(r.swing) + '</td><td class="num">' + money(r.earnSwing) + "</td></tr>";
-  });
-  document.getElementById("whatif").innerHTML = h + "</tbody>";
-}
-document.getElementById("whatif").addEventListener("click", function (e) {
-  var b = e.target.closest("button[data-sc]");
-  if (!b) return;
-  state.risk = parseFloat(b.dataset.risk);
-  document.getElementById("risk").value = String(state.risk);
-  setScenario(b.dataset.sc);
-});
-
-// Fill the driver and risk menus from the file, so more drivers or limits need no app change.
-function fillSelect(id, items, current) {
-  var el = document.getElementById(id);
-  el.innerHTML = items.map(function (it) { return '<option value="' + esc(it.value) + '"' + (it.value === current ? " selected" : "") + ">" + esc(it.label) + "</option>"; }).join("");
-  return el.value;
-}
-function fillControls(d) {
-  var o = KeelData.options(d);
-  state.driver = fillSelect("driver", o.drivers.map(function (x) { return { value: String(x.id), label: x.label.replace(/^Driver\s+/, "") }; }),
-    o.drivers.some(function (x) { return String(x.id) === state.driver; }) ? state.driver : String(o.drivers[0].id));
-  var risk = o.risks.indexOf(state.risk) >= 0 ? state.risk : o.risks[0];
-  state.risk = parseFloat(fillSelect("risk", o.risks.map(function (r) { return { value: String(r), label: pct(r) }; }), String(risk)));
-  if (o.scenarios.indexOf(state.scenario) < 0) state.scenario = o.scenarios[0];
-  document.getElementById("sc-storm").disabled = o.scenarios.indexOf("storm") < 0;
-  document.getElementById("sc-normal").disabled = o.scenarios.indexOf("normal") < 0;
-}
-
-function setScenarioButtons() {
-  document.getElementById("sc-storm").setAttribute("aria-pressed", state.scenario === "storm");
-  document.getElementById("sc-normal").setAttribute("aria-pressed", state.scenario === "normal");
-}
-function setScenario(s) {
-  state.scenario = s;
-  setScenarioButtons();
-  render();
-}
-document.getElementById("driver").addEventListener("change", function (e) { state.driver = e.target.value; render(); });
-document.getElementById("risk").addEventListener("change", function (e) { state.risk = parseFloat(e.target.value); render(); });
-document.getElementById("tableview").addEventListener("change", function (e) { state.tables = e.target.checked; render(); });
-document.getElementById("sc-storm").addEventListener("click", function () { setScenario("storm"); });
-document.getElementById("sc-normal").addEventListener("click", function () { setScenario("normal"); });
-if (window.matchMedia) { try { window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", render); } catch (e) {} }
-new MutationObserver(render).observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
-KeelData.loadData(window.fetch.bind(window)).then(function (res) {
-  var d = res.data;
-  DATA = d; TAX = d.meta.tax_rate; HORIZON = d.meta.horizon_weeks;
-  fillControls(d);
-  setScenarioButtons();
-  // A broken real file must not hide behind the toy sample: say it was skipped.
-  var broken = res.skipped.filter(function (x) { return !/HTTP 404/.test(x.reason); });
-  if (broken.length) document.getElementById("loaderr").innerHTML = "<strong>Skipped:</strong> " + broken.map(function (x) { return esc(x.url + " (" + x.reason + ")"); }).join("; ") + ". Showing " + esc(res.url) + ".";
-  document.getElementById("loaderr").classList.toggle("hidden", !broken.length);
-  document.getElementById("badgetext").textContent = d.meta.model === "toy"
-    ? "Toy data: simulated drivers, toy forecast. Not our result."
-    : "Simulated drivers, real NYC ride-hail data";
-  document.getElementById("badge").classList.toggle("toy", d.meta.model === "toy");
-  render();
-  renderLosses();
-  fetch("../outputs/calibration.json", { cache: "no-store" })
-    .then(function (r) { return r.ok ? r.json() : null; })
-    .catch(function () { return null; })
-    .then(renderCalib);
-}).catch(function (e) {
-  document.getElementById("badgetext").textContent = "No results file loaded";
-  var why = (e.skipped || []).map(function (x) { return "<li>" + esc(x.url + ": " + x.reason) + "</li>"; }).join("");
-  document.getElementById("tiles").innerHTML = '<div class="tile">Could not load outputs/results.json or the sample. Serve the repo root over HTTP (from the repo root: <code>python3 -m http.server 8000</code>, then open <code>http://localhost:8000/</code>).' + (why ? '<ul class="plain">' + why + "</ul>" : "") + "</div>";
-});
-</script>
+<script src="paycheck.js"></script>
+<script src="ui.js"></script>
 </body>
 </html>

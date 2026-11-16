@@ -101,7 +101,7 @@
     if (/email not confirmed/i.test(m)) return "Please confirm your email first. Check your inbox for our link.";
     if (/rate limit|too many/i.test(m)) return "Too many tries. Please wait a minute and try again.";
     if (/provider is not enabled|unsupported provider/i.test(m)) return "Google sign-in isn't turned on for this copy of Keel yet. Use email instead.";
-    if (/fetch|network/i.test(m)) return "Can't connect right now. Check your internet, or try without an account.";
+    if (/fetch|network/i.test(m)) return "Can't connect right now. Check your internet, or continue as guest.";
     return m;
   }
 
@@ -145,7 +145,7 @@
 
   $("f-auth").addEventListener("submit", function (ev) {
     ev.preventDefault();
-    if (!accountsOn && !localOn) return msg("a-msg", "This browser can't create accounts. Try it without an account below.", "err");
+    if (!accountsOn && !localOn) return msg("a-msg", "This browser can't create accounts. Use 'Continue as guest' below.", "err");
     if (Date.now() < st.lockUntil) return msg("a-msg", "Too many tries. Please wait " + Math.ceil((st.lockUntil - Date.now()) / 1000) + " seconds.", "err");
     var up = st.authTab === "up";
     var email = $("a-email").value.trim(), pass = $("a-pass").value, r = rules(pass);

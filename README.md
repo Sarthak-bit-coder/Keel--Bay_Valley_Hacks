@@ -1,111 +1,240 @@
 # Keel
 
-### A steady weekly paycheck for gig workers and freelancers.
+### Your work changes. Your payday shouldn't.
 
-Gig workers get paid like a slot machine. **Keel pays them like an employer:** a steady weekly paycheck built from their own volatile earnings.
+Gig and freelance pay goes up and down. Rent doesn't. **Keel turns uneven pay into one steady weekly paycheck**, with money set aside for taxes and a savings cushion for slow weeks.
 
-> Theme: **"Elevate the Ordinary."** The ordinary thing we elevate is getting paid.
->
-> Built for Bay Valley Hacks 2026. We prove the idea on **simulated ride-hail drivers built on real NYC ride-hail data**. No real people, no real money, not financial or tax advice.
+> Built for **Bay Valley Hacks 2026**, theme **"Elevate the Ordinary"**. The ordinary thing we elevate is getting paid.
+> We prove the idea on **simulated drivers built on real NYC ride-hail data**. No real people, no real money, not financial or tax advice.
+
+- **Live site (GitHub Pages):** https://sarthak-bit-coder.github.io/Keel--Bay_Valley_Hacks/
+- **Run it locally:** `python3 -m http.server 8000` from this folder, then open http://localhost:8000/
+
+---
+
+## Contents
+1. [The problem](#the-problem)
+2. [How Keel works](#how-keel-works)
+3. [Results](#results)
+4. [The website](#the-website)
+5. [Privacy and security](#privacy-and-security)
+6. [Run it, test it, reproduce it](#run-it-test-it-reproduce-it)
+7. [Deploy](#deploy)
+8. [Repository map](#repository-map)
+9. [How we keep it honest](#how-we-keep-it-honest)
+10. [Limits and what's next](#limits-and-whats-next)
+11. [Demo video and docs](#demo-video-and-docs)
+12. [For the team](#for-the-team)
 
 ---
 
 ## The problem
 
-A gig worker can earn well one week and half as much the next: bad weather, a holiday, fewer hours. Rent and bills still arrive on a fixed schedule.
+A ride-share driver can earn well one week and half as much the next: snow, a holiday, a sick week. Bills arrive on a fixed schedule. The simple fixes people use ("spend what I made last week" or "spend my 4-week average") still leave them short in bad weeks. Apps that advance pay charge for it; budgeting apps only track spending.
 
-Today's apps either advance money against future earnings (and charge for it) or just track spending. None of them turns uncertain income into a predictable paycheck while showing how risky each choice is.
+## How Keel works
 
-## What Keel does
-
-1. **Holds:** payouts from the gig apps land in a buffer, not straight in checking.
-2. **Pays:** every week Keel sets a salary and moves it to checking.
-3. **Sets tax aside:** a share of every payout is put away for tax.
-4. **Stays safe:** the salary is the highest amount that keeps the chance of running out of buffer below a limit the worker chooses (for example 5%).
-
-In good weeks the buffer grows. In bad weeks it absorbs the dip, so the paycheck stays flat.
-
-## How it works
-
-| Step | What happens | Technique |
+| Step | In plain words | Under the hood |
 |---|---|---|
-| **1. Data** | Real NYC ride-hail trip records give pay per hour and demand patterns. Weather and holidays are added. Drivers are simulated on top, because the records have no driver ID. | NYC TLC high-volume trip data, Open-Meteo weather, holiday calendar |
-| **2. Forecast** | Predicts next week's take-home pay as a low, middle and high case, from recent weeks, hours, weather and holidays. | LightGBM quantile models |
-| **3. Calibrate** | Adjusts the low case so it is right about as often as it claims: a "90% low case" should hold about 90% of the time on weeks the model never saw. | Conformal calibration |
-| **4. Choose the salary** | Tries many possible paychecks, simulates the next 4 weeks many times using the forecast, and keeps the highest paycheck whose chance of an empty buffer stays under the limit. | Monte Carlo policy with common random numbers |
-| **5. Compare** | Runs the same weeks under two simple rules, *pay last week's earnings* and *pay the 4-week average*, with the same earnings and the same starting buffer. | Baselines on held-out weeks |
-| **6. Explain** | Every week gets a plain-English reason, for example: *"Chose $700 so the chance of running dry in the next 4 weeks is about 4% (limit 5%)."* | Decision log |
+| **1. Hold** | Pay goes into a savings cushion first. A share is set aside for taxes (15% by default, illustrative). | `buffer += take-home − paycheck` |
+| **2. Guess next week** | Keel guesses a low, middle and high week ahead. | LightGBM quantile models (10% / 50% / 90%) on recent weeks, how jumpy they were, hours and holidays |
+| **3. Keep the low guess honest** | Keel checks that its low guess is right as often as it claims. | Split conformal calibration, target 90% |
+| **4. Pick the paycheck** | It tries paychecks from high to low and keeps the first where the chance your cushion runs out in the next 4 weeks is under your limit (1%, 5%, 10% or 20%). | Monte Carlo: 400 simulated 4-week futures, $5 steps, common random numbers |
+| **5. Compare** | The same weeks are replayed with two simple rules: pay last week's earnings, and pay the 4-week average. | Baselines with the same earnings and starting cushion |
+| **6. Explain** | Every paycheck gets a plain-English reason, e.g. *"Chose $1,100 so the chance of running dry in the next 4 weeks is about 1% (limit 1%)."* | Decision log in `outputs/results.json` |
 
-## The app
+### The data
+- **Real:** NYC Taxi & Limousine Commission high-volume ride-hail trips (Uber/Lyft), Jan 2025 to Jan 2026, 13 monthly files (Jan 2025 alone: 20,405,666 trips): real hourly driver pay + tips. Real NYC daily weather (Open-Meteo). 11 real federal holidays.
+- **Simulated:** three drivers working set schedules. Every hour they drive, they earn what real drivers earned in that same hour.
+  - **Driver A:** full-time, steady (about 42 h/week, avg $1,338 gross)
+  - **Driver B:** part-time (about 24 h/week, avg $752)
+  - **Driver C:** weekends only, very uneven (about 16 h/week, avg $481)
+- **Time-ordered split, never shuffled:** 31 training weeks, 10 calibration weeks, 11 test weeks (Oct 20 to Dec 29, 2025). All results are on the 11 test weeks.
+- **Snowstorm stress test:** the two snowiest test weeks (Dec 8 and Dec 22, real snow) have earnings cut to 45% and 60% after forecasting.
 
-One page, no install, no build step. It reads `outputs/results.json` and redraws everything when you change a setting. It has three views, from simple to detailed:
+## Results
 
-### Settings (always visible)
-- **Simulated driver:** A (full-time, steady), B (part-time) or C (weekend-only, volatile).
-- **Weeks to replay:** normal weeks or the **snowstorm stress test**.
-- **Risk limit:** the chance of an empty buffer you accept: 1%, 5%, 10% or 20%.
+All numbers are from `outputs/results.json` and `outputs/calibration.json`.
 
-### 1. Paycheck
-The first screen answers five questions: how much the next simulated paycheck is, when payday is, how much is in the buffer, whether the paycheck fits the risk limit, and what to do next.
-- **Run simulated payday** replays that week from the results file: what was earned, what was set aside for tax, what was paid, and what the buffer covered. Step week by week through the replay. No real money moves.
-- **Earnings swing, the paycheck holds steady:** earnings next to the Keel paycheck, with the forecast range and the snowstorm weeks marked.
-- **The buffer absorbs the bad weeks:** Keel's buffer against two simple rules (pay last week's earnings, pay the 4-week average). Below zero means overdraft.
-- **Heads-up for next week:** next week's forecast low against this paycheck and the buffer.
-- **Week by week:** every paycheck, what was earned, the buffer and Keel's reason, in one table.
-- **Show as tables** swaps the charts for tables.
+**Weeks the cushion ran out** (3 drivers × normal and snowstorm weeks):
 
-### 2. Plan
-- **Choose a paycheck:** the paycheck Keel set under each risk limit, for any week.
-- **Stress test:** normal weeks against the snowstorm stress test, for earnings, paychecks and the buffer.
-- **Buffer recovery:** how far the buffer fell and how fast it came back.
-- **Where the money went:** one week's earnings split into paycheck, tax reserve and buffer.
-- **Why this paycheck?:** how one week's amount was chosen, plus the decision log for every week.
-- **Compare all settings:** every scenario and risk limit for the driver in one table.
+| Your limit | Keel | Pay last week's earnings | Pay the 4-week average |
+|---|---|---|---|
+| 1% | **1** | 12 | 17 |
+| 5% | **2** | 12 | 17 |
+| 10% | **2** | 12 | 17 |
+| 20% | **5** | 12 | 17 |
 
-### 3. Evidence
-How it works, the scorecard (the three questions we wrote down before the real run), forecast reliability and calibration, the benchmark against the simple rules, where Keel loses (scanned across every run, so it can't be cherry-picked), and the safety checks.
+**Example (Driver C, snowstorm weeks, 5% limit):**
+- Earnings swung **$701**; Keel's paycheck swung **$310**.
+- The cushion ran out **0 of 11** weeks with Keel, vs **5** paying last week's earnings and **6** with the 4-week average.
+- In the Dec 8 snow week the driver took home **$193**, and Keel still paid **$365**.
+- The cost: Keel paid **$44 a week** less on average than the 4-week average.
 
-Charts use one grammar throughout: a solid line is replayed data, the shaded band is a forecast made before the week, and a dashed line is a comparison.
+**Forecast honesty:** the low guess was right **90.9%** of test weeks (30 of 33), against a 90% target (**81.8%** before calibration).
 
-### Honest labels
-- A **"Toy data"** badge shows while the app runs on the sample file (`outputs/sample/results.json`, made from a toy simulation).
-- It switches to **"Simulated drivers, real NYC ride-hail data"** once the real results are in.
-- Charts have hover tooltips and keyboard focus. The page works in light and dark mode and at phone width.
+**Pre-registered scorecard** (written before the real run, [`docs/preregistration.md`](docs/preregistration.md)):
+1. Calibration within 85–95%: **90.9%, pass**
+2. Fewer empty weeks than both simple rules: **pass** (1 / 2 / 2 / 5 vs 12 and 17)
+3. Paycheck swing at least 30% below earnings swing: **mixed, 14 of 24 runs** (Driver C passes every run)
+4. Cost vs the 4-week average: **$57 / $44 / $38 / $27** a week less (at 1 / 5 / 10 / 20%)
 
-### Run the app
+**Where Keel loses** ([`outputs/failures.md`](outputs/failures.md)):
+- Driver A still ran dry after taking a whole week off.
+- The paycheck isn't always steadier than the 4-week average.
+- Keel pays a bit less on average: the price of the cushion.
+- Driver C's low guess hit 81.8%.
+- Only 33 test driver-weeks.
 
-The page loads JSON, so serve it over HTTP rather than double-clicking the file:
+## The website
 
+Plain HTML, CSS and JavaScript with hand-drawn SVG charts: no framework, no build step. Every page has the same top menu: **Keel · Home · My pay · Research**. The navy sections use a decorative "currents" background (`app/bg.js`): moving lines with one level teal "keel". It pauses off screen and is still when reduced motion is on.
+
+### Home (`index.html`)
+- Hero with a live chart card: switch Driver A/B/C and Normal/Snowstorm; it draws jagged earnings, then the steady paycheck. Hover to scrub week by week; a paycheck card and cushion bars sit below.
+- Week-by-week strip, **Three simple steps**, **The results** (three big numbers, the snow-week money-in vs money-out bars, and "Good to know" on where Keel loses), and a "Three ways to get paid" comparison.
+- A "test a bad stretch" lab with driver, weeks and risk controls, plus a walk through one real week.
+- Every figure is read from `outputs/results.json`.
+
+### My pay (`app/my-pay.html`), for any freelancer, no sign-up
+Opens straight into guest mode. Everything is saved only in that browser.
+1. **Three setup questions:**
+   - **About you:** first name and kind of work (driver, plumber, gardener, cleaner, handyman, designer, tutor, other).
+   - **Your money:** usual weekly pay, savings you have now (your starting cushion), and monthly bills (rent, utilities & phone, food, car & travel, loans & cards, everything else), with a live total.
+   - **Your choices:** tax set-aside (10–25%), how careful the paycheck is (Extra safe 1% / Safe 5% / Balanced 10% / Bold 20%), and optional 26 practice weeks scaled to your pay.
+2. **Home:**
+   - The big **paycheck next week**.
+   - **Your bills:** "Covered, with $X left over" or "Short by $X a week".
+   - **Savings cushion**, plus how many weeks of paychecks it covers.
+   - **Set aside for taxes**.
+   - A short cushion card with last week's math.
+   - **Why this amount?** in plain words.
+   - Your pay vs. your paycheck chart.
+3. **My weeks:**
+   - Add a week, with a live tax preview.
+   - **Did Keel help?** compares weeks short on bills with and without Keel.
+   - An earnings chart (red bars below your bills line, steady paycheck line).
+   - **Your cushion over time**.
+   - A week-by-week table (earned, taxes, into/out of cushion, Keel paid you, cushion after, bills covered?) with edit, delete and download as CSV.
+4. **Example:** a weekend New York driver from our real results (Driver C, snowstorm weeks), for anyone confused by the idea.
+5. **Settings:** name, work, weekly pay, starting savings, taxes, how careful, bills; Save / Undo; download data; delete all weeks; **Start over**.
+
+The paycheck rule is the same as the research (`app/engine.js`, a port of `src/policy/salary.py`, tested to match Python exactly). The forecast is simpler: the 10/50/90% points of your last 12 weeks, not LightGBM and not calibrated. The page says so.
+
+### Research (`app/`)
+- **The short version:** a 3-point plain-English summary.
+- **Our data, code and write-ups:** links to:
+  - the NYC TLC trip data and Open-Meteo weather;
+  - `results.json`, `calibration.json` and `failures.md`;
+  - the pre-registration, project summary and this README;
+  - the GitHub repo, the model code and the paycheck-rule code.
+- Controls: pick a driver, Normal or Snowstorm weeks, and how careful (1/5/10/20%); **Play payday** steps through one simulated week at a time.
+- **1. Paycheck:**
+  - payday card, heads-up for next week, stability tiles;
+  - "Earnings swing. The paycheck holds steady." and "The buffer absorbs the bad weeks" charts;
+  - week-by-week table and tables view.
+- **2. Compare:** choose a paycheck, stress test, buffer recovery, where the money went, why this paycheck (decision log), compare all settings.
+- **3. Proof & weak spots:** how it works, scorecard, forecast reliability, benchmark vs simple rules, where Keel loses, safety checks.
+- A "Toy data" badge shows if only the sample file (`outputs/sample/results.json`) is available.
+
+## Privacy and security
+
+- **No accounts and no sign-up.** My pay stores everything in the browser's local storage (`GuestStore` in `app/store.js`). Nothing is sent to a server, and there are no bank logins.
+- **Content security policy on My pay:** scripts only from this site, no frames, no plugins, `form-action 'self'`. A strict referrer policy is also set.
+- User text is escaped before display. CSV downloads are protected against spreadsheet formula injection. Every number entered is range-checked.
+- **For future cloud accounts:** `app/supabase_schema.sql` has row level security (each person sees only their own rows), no table access for anonymous users, and size/range limits. `app/store.js` has a tested `AccountStore`. Setup steps are in [`app/MY_PAY_SETUP.md`](app/MY_PAY_SETUP.md). The page does not load Supabase today.
+- **Never commit secrets.** The Supabase anon key is public by design; never put a `service_role` key or any OAuth client secret in this repo.
+
+## Run it, test it, reproduce it
+
+**View the site** (it loads JSON, so serve it over HTTP from the repo root):
 ```bash
-python -m http.server
+python3 -m http.server 8000
+# http://localhost:8000/          homepage
+# http://localhost:8000/app/my-pay.html   My pay
+# http://localhost:8000/app/      Research
 ```
 
-Then open http://localhost:8000/ for the homepage, or http://localhost:8000/app/ for the app. The app loads `outputs/results.json`, or falls back to the toy sample if that file doesn't exist yet.
+**Tests:**
+```bash
+node --test app/*.test.js     # 85 tests: data, benchmark, recovery, paycheck, home, smoke, engine, store (Node 18+)
+python -m pytest tests -q     # 24 tests: data, model, policy (needs requirements.txt; macOS: brew install libomp)
+```
+
+**Reproduce every result** (Python 3.10+, fixed seeds):
+```bash
+pip install -r requirements.txt
+python run_all.py   # data -> LightGBM + conformal -> Monte Carlo salary -> replay vs baselines -> outputs/
+```
+`src/data/download.py` fetches the raw TLC parquet files (about 0.5 GB each; git-ignored in `data/raw/`). Small caches in `data/` let the weekly build run in seconds without them.
+
+## Deploy
+
+The site is static and needs the **whole repo root** (pages read `outputs/results.json`).
+- **GitHub Pages** (current): Settings → Pages → branch `main`, folder `/`.
+- **Vercel:** from the repo root run `npx vercel login` once, then `npx vercel --prod`. Use framework "Other", no build command, output directory `.` (root). Or import the GitHub repo in the Vercel dashboard with the same settings.
+- Any static host works if it serves the repo root.
+
+## Repository map
+
+| Path | What |
+|---|---|
+| `index.html` | Homepage |
+| `app/my-pay.html`, `app/mypay.js`, `app/mypay.css` | My pay (guest setup, Home, My weeks, Example, Settings) |
+| `app/index.html`, `app/ui.js`, `app/charts.js`, `app/keel.css` | Research page |
+| `app/engine.js` | Paycheck rule, baselines and replay (JS port of the Python, tested) |
+| `app/data.js`, `paycheck.js`, `benchmark.js`, `recovery.js` | Tested helpers that read `outputs/results.json` |
+| `app/store.js`, `app/jobs.js` | Guest storage (+ unused cloud store); job types with simulated practice weeks |
+| `app/tokens.css`, `app/ds.css`, `app/site.css`, `app/home.css`, `app/home-extra.css`, `app/fx.css` | Design tokens and styles |
+| `app/bg.js`, `app/fx.js`, `app/motion.js`, `app/theme.js`, `app/home.js` | Currents background, motion, homepage drawing |
+| `app/supabase_schema.sql`, `app/config.js`, `app/MY_PAY_SETUP.md` | Optional cloud accounts (not used by the page today) |
+| `src/data/` | Download and build the simulated weekly earnings |
+| `src/model/train.py` | LightGBM quantile forecasts + conformal calibration |
+| `src/policy/` | Monte Carlo salary rule, baselines, replay |
+| `eval/run_eval.py` | 24 runs (3 drivers × 2 scenarios × 4 limits) → `outputs/results.json` |
+| `outputs/` | `results.json`, `calibration.json`, `failures.md`, `sample/` (toy) |
+| `data/` | Small committed caches and the contract CSV |
+| `tests/` | Python tests |
+| `docs/` | Pre-registration, project summary, demo debrief, video timeline, Devpost text, handoff |
+| `CONTRACT.md` | File formats between the three roles (ask before changing) |
 
 ## How we keep it honest
 
-- **Tests written first:** [`docs/preregistration.md`](docs/preregistration.md) fixes the pass marks before the real run. Calibration must land at 85–95%. Keel must have fewer empty-buffer weeks than both simple rules. The paycheck swing must be at least 30% smaller than the earnings swing.
-- **Held-out weeks:** time-ordered splits, no shuffling. The models see the test weeks only at the end.
-- **Failures reported:** `outputs/failures.md` lists where Keel does worse than a simple rule, and why.
-- **Reproducible:** `python run_all.py` rebuilds every result.
+- **Rules first:** [`docs/preregistration.md`](docs/preregistration.md) fixed the pass marks before the real run.
+- **Held-out weeks:** time-ordered splits; the test weeks were used only at the end.
+- **Failures published:** [`outputs/failures.md`](outputs/failures.md), the homepage "Good to know" line, and Research → Where Keel loses.
+- **Hard checks every week:**
+  - gross = paycheck + tax + cushion change, to the cent, in all 24 runs;
+  - paycheck ≥ 0;
+  - cushion ≥ 0 is reported, and fails in 6 runs.
+- **Reproducible:** `python run_all.py` rebuilds every result with fixed seeds.
+- **Labels:** drivers are always called simulated; the sample file shows a "Toy data" badge.
 
-## Limits
+## Limits and what's next
 
 - Drivers are simulated, not real people. No real money moves. Not financial or tax advice.
-- Weekly earnings carry over from week to week, so conformal coverage is approximate.
-- Holding or moving real money would need licensing. This is a demo of the method.
-- Only numbers from `outputs/results.json` count as results. The prototype and the sample file use a toy simulation.
+- Conformal coverage is approximate because weekly earnings are related week to week.
+- The 15% tax and half-week starting cushion (research runs) are illustrative.
+- Moving real money would need a bank partner and licensing.
+- **Next:**
+  - real payout connections and paying bills straight from the cushion;
+  - cloud accounts (the schema is ready);
+  - more gig platforms;
+  - the same forecast-and-cushion method for other uneven costs.
 
-## What's next
+## Demo video and docs
 
-Real payout connections, paying bills straight from the buffer, more gig platforms, and the same forecast-and-reserve method for other uneven costs.
+- [`docs/demo_video_timeline.md`](docs/demo_video_timeline.md): 2:30, 16-shot timeline, read-aloud voiceover, and a Claude Code prompt that records the video.
+- [`docs/demo_video_debrief.md`](docs/demo_video_debrief.md): everything Keel has, with every number and its source, plus judge Q&A.
+- [`docs/app_summary.md`](docs/app_summary.md): full technical summary.
+- [`docs/devpost.md`](docs/devpost.md), [`docs/video_script.md`](docs/video_script.md), [`docs/handoff.md`](docs/handoff.md).
 
 ---
 
 ## For the team
 
 <details>
-<summary>Roles, contract, checkpoints and the full pipeline</summary>
+<summary>Roles, contract and pipeline notes</summary>
 
 ### Roles
 
@@ -119,37 +248,10 @@ Prompts for each role are in `prompts/`. Start every agent session with `prompts
 
 ### Contract
 
-`CONTRACT.md` defines the files A hands to B and B hands to C. Do not change a column name without telling the other two. `outputs/sample/results.json` (made by `app/export_sample.mjs` from the toy simulation in `docs/prototype.html`) follows the final format, so the app works before the real results exist.
+`CONTRACT.md` defines the files A hands to B and B hands to C. Don't change a column name without telling the other two. `outputs/sample/results.json` (made by `app/export_sample.mjs` from the toy simulation in `docs/prototype.html`) follows the final format.
 
-### Checkpoints (final deadline 10:00 PM, aim to submit by 9:00 PM)
+### Rules
 
-Every team must submit a video.
-
-| Time | Checkpoint |
-|---|---|
-| 11:15 | Gate 1: a TLC high-volume file loads (if not, switch to the fallback idea, Complaint Compass). `CONTRACT.md` agreed. |
-| 1:00 PM | Gate 2: simulated drivers look credible next to published earnings-swing figures. If not, simplify the simulation. |
-| 3:30 PM | Real `outputs/results.json` exists. |
-| 5:30 PM | App wired to real outputs and every number on screen audited against the file. Safety checks pass. |
-| 7:00 PM | Write-up and gallery screenshots done. |
-| 8:00 PM | Video recorded. |
-| 9:00 PM | Submitted. One-hour buffer before the 10:00 PM deadline. |
-
-### Full pipeline
-
-```bash
-pip install -r requirements.txt
-# macOS: LightGBM also needs `brew install libomp`. Python 3.11-3.13 is safest for wheels.
-python run_all.py          # data -> forecast -> policy -> evaluation -> outputs/
-python3 -m http.server 8000   # from the repo root, then open http://localhost:8000/
-```
-
-The app fetches `../outputs/results.json` (falling back to `outputs/sample/results.json`), so it must be served over HTTP from the **repo root**. Opening `app/index.html` as a file, or deploying only `app/`, cannot reach `outputs/`. To deploy, publish the whole repo root as a static site (GitHub Pages: Settings → Pages → branch `main`, folder `/`); the root `index.html` is the homepage (`app/home.css`, `app/home.js`), which draws its hero from the same results file and links to the app at `app/`.
-
-App tests (Node 18+, no install): `node --test app/`
-
-App files: `app/index.html` (markup), `app/keel.css` (design system), `app/ui.js` and `app/charts.js` (rendering), and the tested data helpers `data.js`, `paycheck.js`, `benchmark.js`, `recovery.js`.
-
-`run_all.py` is a skeleton. Each role fills in its step.
+Simulation only; say "simulated"; not financial or tax advice; no real people's data. No raw parquet files or virtualenvs in git. Every script runs from the repo root. Only `outputs/results.json` counts as results.
 
 </details>

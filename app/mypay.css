@@ -240,3 +240,17 @@ footer.meta { border-top: 1px solid var(--border); padding-top: 16px; }
 .lastweek { background: color-mix(in srgb, var(--keel-soft) 50%, transparent); border-radius: var(--r-ctl); padding: 12px 14px; font-size: 14px; color: var(--ink2); line-height: 1.6; }
 .lastweek .good { color: var(--good-text); font-weight: 600; } .lastweek .bad { color: var(--crit); font-weight: 600; }
 @media (max-width: 640px) { .cflow { grid-template-columns: minmax(0, 1fr); } }
+.vs { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.vs > div { border-radius: var(--r-card); padding: 14px 16px; display: grid; gap: 2px; font-size: 14px; color: var(--ink2); }
+.vs b { font-size: 24px; letter-spacing: -.02em; color: var(--ink); font-variant-numeric: tabular-nums; }
+.vs .without { background: color-mix(in srgb, var(--crit) 7%, var(--surface)); border: 1px solid color-mix(in srgb, var(--crit) 25%, var(--border)); }
+.vs .with { background: var(--keel-soft); border: 1px solid color-mix(in srgb, var(--keel) 30%, var(--border)); }
+.sub3 { font-size: 17px; margin: 8px 0 0; }
+td .pos { color: var(--good-text); font-weight: 600; } td .neg { color: var(--crit); font-weight: 600; }
+@media (max-width: 560px) { .vs { grid-template-columns: minmax(0, 1fr); } }
+.cushion { gap: 10px !important; }
+.cushion .row.between h2 { margin: 0; }
+.cnow { font-size: 15px; margin: 0; }
+.lastweek { padding: 8px 12px; margin: 0; }
+.vs.ex3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+@media (max-width: 760px) { .vs.ex3 { grid-template-columns: minmax(0, 1fr); } }

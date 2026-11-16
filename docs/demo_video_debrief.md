@@ -77,18 +77,17 @@ Pre-registered scorecard (written before the real run, `docs/preregistration.md`
 ## 6. Tour of the website (what to click, in order)
 
 ### Homepage (`/`)
-- Same top bar on every page: **Keel · Home · My pay · Log in / Sign up** (shows **My account** once you're signed in).
+- Same top bar on every page: **Keel · Home · My pay · Research**.
 - Navy hero with moving "current" lines (decorative; the one flat teal line is the "keel").
 - Live chart card: switch Driver A/B/C and Normal/Snowstorm; it draws jagged earnings, then the steady paycheck; hover to scrub week by week; paycheck card + cushion bars below.
 - **Three simple steps:** tell us your pay → we build a cushion → you get paid the same.
 - **The results:** three big numbers from the file, the snow-week example (money in vs money out bars), and a "Good to know" line on where Keel loses.
-- **Sign up free** band at the bottom. The research page is only a quiet footer link ("How we tested Keel").
+- **Get my steady paycheck** band at the bottom.
 
-### Sign up / Log in (`/app/my-pay.html`)
-- Log in / Sign up tabs, **Sign up with Google**, or email + password (8+ characters with a letter and a number, typed twice, show/hide button, "Forgot it?").
-- "Just looking? Try it without an account" (guest, saved in that browser only).
+### My pay (`/app/my-pay.html`): no sign-up
+- Opens straight into guest mode: no account, no bank logins; everything stays in the browser. Settings has "Start over".
 
-### Sign-up questions (3 steps)
+### Setup questions (3 steps)
 1. **About you:** first name, kind of work (driver, plumber, gardener, cleaner, handyman, designer, tutor, other).
 2. **Your money:** usual weekly pay, savings you have now (becomes your starting cushion), monthly bills (rent, utilities & phone, food, car & travel, loans & cards, everything else) with a live total.
 3. **Your choices:** taxes to set aside (10–25%), how careful the paycheck is (Extra safe 1% / Safe 5% / Balanced 10% / Bold 20%), and "fill in 26 practice weeks" (made-up weeks scaled to your pay so you see results instantly).
@@ -114,32 +113,31 @@ Pre-registered scorecard (written before the real run, `docs/preregistration.md`
 ### My pay: Settings tab
 - Name, kind of work, weekly pay, starting savings, taxes, how careful, bills; Save / Undo; download data; delete all weeks (asks first); log out.
 
-### How we tested Keel (`/app/`, optional)
-- Short 3-point explanation, one driver chart, **Play payday** to step week by week.
-- "Show all the detailed numbers (for experts)" reveals the full research: Compare (choose a paycheck, stress test, buffer recovery, where the money went, decision log, all settings) and Proof (scorecard, forecast reliability, benchmark vs simple rules, where Keel loses, safety checks).
+### Research (`/app/`)
+- Short 3-point explanation; **Our data, code and write-ups** links (NYC TLC trips, Open-Meteo weather, results.json, calibration.json, failures.md, pre-registration, summary, README, GitHub, model and paycheck-rule code); **Play payday** to step week by week.
+- Full research tabs shown by default (a button can hide them): Compare (choose a paycheck, stress test, buffer recovery, where the money went, decision log, all settings) and Proof (scorecard, forecast reliability, benchmark vs simple rules, where Keel loses, safety checks).
 
-## 7. Accounts and security (for the "is it safe?" question)
+## 7. Privacy and security (for the "is it safe?" question)
 
-- **Cloud accounts (when Supabase is connected):** Supabase Auth handles passwords; Google uses PKCE; every table has row level security (you can only see your own rows); the public "anon" role has no table access; values have size/range limits.
-- **Without a cloud project (default today):** device accounts. The password is never stored: only a salted PBKDF2-SHA256 hash (250,000 rounds). Each email account's data is encrypted with AES-GCM using a key from the password. Google sign-in uses Google Identity Services with the public client ID only (the client secret is never in the code).
-- Page protections: content security policy on My pay, integrity hash on the Supabase script, 30-second wait after 5 wrong passwords, auto log-out after 30 minutes idle, spreadsheet-safe downloads.
-- Honest limits: device accounts don't sync between devices and the Google token isn't checked by a server; cloud accounts fix both.
+- No accounts and no sign-up: My pay runs as a guest, and everything is saved only in that browser. Nothing is sent to a server.
+- Content security policy on My pay (scripts only from our own site, no frames), referrer policy, spreadsheet-safe downloads, size and range checks on every number.
+- The Supabase schema (`app/supabase_schema.sql`, row level security, no access for anonymous users) is ready if cloud accounts are added later; it's not used by the page today.
 
 ## 8. Tech stack
 
 - Data + ML: Python 3.10+, pandas, LightGBM, hand-written conformal calibration, NumPy Monte Carlo. Seeds fixed.
 - Website: plain HTML/CSS/JavaScript, hand-drawn SVG charts, no framework, no build step; GitHub Pages.
 - The salary rule is ported to JavaScript (`app/engine.js`) and tested to match Python exactly.
-- Tests: 24 Python tests; 89 JavaScript tests (data, benchmark, recovery, paycheck, home, smoke, engine, store, device accounts).
+- Tests: 24 Python tests; 85 JavaScript tests (data, benchmark, recovery, paycheck, home, smoke, engine, store).
 
-## 9. Suggested 2-minute video
+## 9. Suggested 2-minute video (for the full 2:30 version see `docs/demo_video_timeline.md`)
 
 | Time | Show | Say |
 |---|---|---|
 | 0:00–0:12 | Homepage hero, chart drawing itself | "Gig pay is a slot machine. Rent isn't. Keel turns uneven pay into one steady weekly paycheck." |
 | 0:12–0:30 | Hero chart: click Snowstorm; scroll to The results and the snow-week bars | "This driver is simulated, but every hour they earn what real New York ride-share drivers earned. In a snowstorm week they took home $193. Keel still paid $365, from their cushion." |
 | 0:30–0:45 | Results numbers | "Paying yourself last week's earnings ran out of money 5 weeks out of 11. The 4-week average, 6. Keel, zero. The cost: about $44 a week less on average." |
-| 0:45–1:05 | Sign up → 3 questions (pay, savings, bills, how careful) | "Anyone can try it: sign up with Google or email, tell us your pay, savings and bills, and pick how careful to be." |
+| 0:45–1:05 | My pay → 3 questions (pay, savings, bills, how careful) | "Anyone can try it, no sign-up: tell us your pay, savings and bills, and pick how careful to be." |
 | 1:05–1:25 | Home tab: paycheck, bills covered, cushion, Why this amount | "You get one number for next week, whether it covers your bills, and why: the most Keel can pay with only a 5 in 100 chance your cushion runs out." |
 | 1:25–1:40 | My weeks: with vs without Keel + cushion chart | "My weeks shows every week with and without Keel, and how your cushion rises and falls." |
 | 1:40–1:52 | How we tested Keel → experts → Proof | "Under the hood: LightGBM forecasts, conformal calibration right 91% of the time, and a Monte Carlo rule. We publish where it loses, too." |

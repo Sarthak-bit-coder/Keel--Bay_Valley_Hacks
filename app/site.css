@@ -148,3 +148,10 @@ html:not(.expert-on) #headsup, html:not(.expert-on) #tiles, html:not(.expert-on)
 .linkbtn:hover { text-decoration: underline; }
 .pad { padding: 20px; }
 .hint { font-size: 14px; color: var(--ink2); }
+.links-card { display: grid; gap: 14px; }
+.linkgrid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; }
+.linkgrid > div { display: grid; gap: 8px; align-content: start; }
+.linkgrid a { color: var(--keel); font-size: 14px; font-weight: 500; text-decoration: none; }
+.linkgrid a:hover { text-decoration: underline; }
+@media (max-width: 900px) { .linkgrid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 520px) { .linkgrid { grid-template-columns: minmax(0, 1fr); } }

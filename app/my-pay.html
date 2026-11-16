@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdn.jsdelivr.net https://accounts.google.com/gsi/client; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://accounts.google.com/gsi/style; font-src https://fonts.gstatic.com; img-src 'self' data: https://*.googleusercontent.com; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://accounts.google.com/gsi/; frame-src https://accounts.google.com/gsi/; form-action 'self'; base-uri 'self'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self'; frame-src 'none'; form-action 'self'; base-uri 'self'; object-src 'none'">
 <meta name="referrer" content="strict-origin-when-cross-origin">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Keel My Pay</title>
@@ -17,7 +17,6 @@
 <link rel="stylesheet" href="site.css">
 <link rel="stylesheet" href="fx.css">
 <script src="theme.js"></script>
-<script src="signedin.js"></script>
 </head>
 <body>
 <div class="fx-progress" aria-hidden="true"></div>
@@ -25,57 +24,9 @@
 <p class="strip">Practice demo. No real money moves. Not financial or tax advice.</p>
 <header class="top"><div class="topin">
   <a class="brand" href="../" aria-label="Keel home"><span class="logo"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M2 6h16M10 6v6M4 12c1.5 3 4 4 6 4s4.5-1 6-4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></span>Keel</a>
-  <nav class="links" aria-label="Main"><a href="../">Home</a><a href="my-pay.html" aria-current="page">My pay</a></nav>
-  <div class="acts2"><a class="btn quiet small2 auth-out" href="my-pay.html">Log in</a><a class="btn primary small2 auth-out" href="my-pay.html#signup">Sign up</a><a class="btn quiet small2 auth-in" href="my-pay.html#settings"><span class="ms">person</span>My account</a><span id="tb-avatar" hidden></span></div>
+  <nav class="links" aria-label="Main"><a href="../">Home</a><a href="my-pay.html" aria-current="page">My pay</a><a href="./">Research</a></nav>
+  <div class="acts2"><span id="tb-avatar" hidden></span></div>
 </div></header>
-
-<!-- ================= Log in / Sign up ================= -->
-<div id="v-signin" hidden>
-  <main class="authmain" data-currents="dark" data-keel="0.9">
-    <section class="authcard" aria-labelledby="auth-h">
-      <span class="anchor"><span class="ms">anchor</span></span>
-      <h1 id="auth-h">Welcome to Keel</h1>
-      <p class="sub" id="auth-sub">Turn uneven pay into one steady weekly paycheck.</p>
-
-      <div class="seg wide2" role="group" aria-label="Log in or sign up">
-        <button type="button" id="tab-in" aria-pressed="true">Log in</button>
-        <button type="button" id="tab-up" aria-pressed="false">Sign up</button>
-      </div>
-
-      <button type="button" class="btn quiet block google" id="b-google">
-        <svg width="18" height="18" viewBox="0 0 48 48" aria-hidden="true"><path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.7 29.2 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.4-.4-3.5z"/><path fill="#FF3D00" d="m6.3 14.7 6.6 4.8C14.7 15.1 19 12 24 12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"/><path fill="#4CAF50" d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2C29.2 35.1 26.7 36 24 36c-5.2 0-9.6-3.3-11.3-8l-6.5 5C9.5 39.6 16.2 44 24 44z"/><path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.2-2.2 4.2-4.1 5.6l6.2 5.2C37 39.2 44 34 44 24c0-1.3-.1-2.4-.4-3.5z"/></svg>
-        <span id="g-label">Log in with Google</span>
-      </button>
-      <div id="g-gis" class="gis" hidden></div>
-      <div class="or"><span>or use your email</span></div>
-
-      <form id="f-auth" novalidate>
-        <label class="lf" for="a-email"><span class="lab">Email</span>
-          <input id="a-email" type="email" autocomplete="email" required placeholder="you@example.com">
-        </label>
-        <div class="lf">
-          <span class="lrow"><label class="lab" for="a-pass">Password</label><button type="button" class="linkbtn" id="a-forgot">Forgot it?</button></span>
-          <span class="inwrap"><input id="a-pass" type="password" autocomplete="current-password" required><button type="button" class="eye" id="a-eye" aria-label="Show password" aria-pressed="false"><span class="ms">visibility</span></button></span>
-          <ul class="pwrules" id="a-rules" hidden>
-            <li data-rule="len">At least 8 characters</li>
-            <li data-rule="mix">A letter and a number</li>
-          </ul>
-        </div>
-        <label class="lf" for="a-pass2" id="a-pass2-wrap" hidden><span class="lab">Type the password again</span>
-          <input id="a-pass2" type="password" autocomplete="new-password">
-        </label>
-        <button class="btn primary block" type="submit" id="a-submit">Log in</button>
-        <p class="msg" id="a-msg" role="status"></p>
-      </form>
-      <p class="inset" id="a-off" hidden><span class="ms">info</span>Accounts aren't turned on for this copy of Keel yet. You can still use "Continue as guest" below.</p>
-
-      <div class="or"><span>or</span></div>
-      <button type="button" class="btn quiet block" id="b-guest"><span class="ms">person</span>Continue as guest</button>
-      <p class="fine center">No sign-up needed. As a guest, your info stays only in this browser.</p>
-    </section>
-    <p class="sandbox"><span class="ms">lock</span> We never ask for bank logins. No real money moves.</p>
-  </main>
-</div>
 
 <!-- ================= Sign-up questions ================= -->
 <div id="v-profile" hidden>
@@ -83,7 +34,7 @@
     <div class="pheroin wizhero">
       <span class="kicker"><span class="dot"></span><span id="p-stage">Step 1 of 3</span></span>
       <h1 id="p-title">Let's set up your paycheck</h1>
-      <p class="lede">Three quick questions. Guesses are fine, and you can change them later.</p>
+      <p class="lede">Three quick questions, no sign-up needed. Guesses are fine, and you can change them later.</p>
       <ol class="stepper3" id="p-steps">
         <li data-step="1"><button type="button"><span class="caps">Step 1</span><b>About you</b><i></i></button></li>
         <li data-step="2"><button type="button"><span class="caps">Step 2</span><b>Your money</b><i></i></button></li>
@@ -339,17 +290,17 @@
         </section>
       </div>
       <div class="savebar card pad">
-        <span class="hint" id="s-where">Saved in this browser.</span>
+        <span class="hint">Saved in this browser.</span>
         <span class="grow"></span>
         <button type="button" class="btn quiet" id="s-discard">Undo changes</button>
         <button type="button" class="btn primary" id="s-save"><span class="ms">check</span>Save</button>
       </div>
       <section class="card pad" data-fx>
-        <h2>Account</h2>
-        <p class="hint" id="set-session"></p>
+        <h2>Your data</h2>
+        <p class="hint">Everything you enter stays only in this browser. Nothing is sent anywhere.</p>
         <div class="setrow"><div><b>Download my data</b><span class="hint">All your weeks as a spreadsheet file.</span></div><button type="button" class="btn quiet" data-export="csv"><span class="ms">download</span>Download</button></div>
-        <div class="setrow"><div><b>Delete all my weeks</b><span class="hint">This can't be undone.</span></div><span id="clear-wrap"><button type="button" class="btn danger" id="d-clear">Delete</button></span></div>
-        <div class="setrow"><div><b id="s-out-label">Log out</b><span class="hint" id="s-out-hint">For your safety, Keel logs you out after 30 minutes of no activity.</span></div><button type="button" class="btn danger" id="d-out"><span class="ms">logout</span><span id="d-out-t">Log out</span></button></div>
+        <div class="setrow"><div><b>Delete all my weeks</b><span class="hint">Keeps your answers, removes your weeks.</span></div><span id="clear-wrap"><button type="button" class="btn danger" id="d-clear">Delete</button></span></div>
+        <div class="setrow"><div><b>Start over</b><span class="hint">Erase everything and answer the 3 questions again.</span></div><button type="button" class="btn danger" id="d-out"><span class="ms">restart_alt</span>Start over</button></div>
       </section>
     </section>
 
@@ -360,14 +311,10 @@
 
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
-<script src="config.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js" integrity="sha384-GFr3yTh5lJznCbZfpTtXnwboFsxqtTQoeTZCRHhE0579KrRmlCzen5AA8ohaB5ug" crossorigin="anonymous"></script>
 <script src="data.js"></script>
 <script src="engine.js"></script>
 <script src="jobs.js"></script>
 <script src="store.js"></script>
-<script src="localauth.js"></script>
-<script src="https://accounts.google.com/gsi/client" async></script>
 <script src="mypay.js"></script>
 <script src="bg.js"></script>
 <script src="fx.js"></script>

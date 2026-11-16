@@ -646,7 +646,7 @@ function showView(view, jumpId) {
   var changed = view !== state.view;
   state.view = view;
   VIEWS.forEach(function (v) { document.getElementById("view-" + v).hidden = v !== view; });
-  document.querySelectorAll(".nav a").forEach(function (a) {
+  document.querySelectorAll(".tabs a[data-view]").forEach(function (a) {
     if (a.dataset.view === view) a.setAttribute("aria-current", "page"); else a.removeAttribute("aria-current");
   });
   if (location.hash.slice(1) !== view) history.pushState(null, "", "#" + view);
@@ -655,8 +655,8 @@ function showView(view, jumpId) {
 }
 window.addEventListener("hashchange", function () { showView(location.hash.slice(1)); });
 window.addEventListener("popstate", function () { showView(location.hash.slice(1)); });
-document.querySelector(".masthead").addEventListener("click", function (e) {
-  var a = e.target.closest("a[data-view], a.brand");
+document.querySelector(".tabs").addEventListener("click", function (e) {
+  var a = e.target.closest("a[data-view]");
   if (!a) return;
   e.preventDefault();
   showView(a.dataset.view || VIEWS[0]);

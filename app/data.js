@@ -216,6 +216,26 @@
     };
   }
 
+  // "Why this paycheck?" for one week of one run, using only what the results file stores. The policy tries
+  // paychecks from a cap down in $5 steps and keeps the first whose estimated risk fits the limit (src/policy/salary.py).
+  // The cap is not stored, so whether the cap or the limit stopped the search is not claimed.
+  function explainWeek(run, week) {
+    var w = run && run.weeks[week - 1];
+    if (!w) return null;
+    var num = function (v) { return typeof v === "number" ? v : null; };
+    var risk = num(w.risk), lo = num(w.lo), hi = num(w.hi), next = run.weeks[week];
+    var limit = run.risk_limit, before = w.buf_keel - w.net + w.pay_keel;
+    var constraint = risk === null ? "unknown" : risk > limit + 1e-9 ? (w.pay_keel === 0 ? "floor" : "unknown") : "limit_met";
+    return {
+      week: w.week, weekStart: w.week_start || null, lo: lo, hi: hi, net: w.net, pay: w.pay_keel, risk: risk, limit: limit,
+      bufferBefore: before, bufferAfter: w.buf_keel, reason: typeof w.reason === "string" && w.reason ? w.reason : null,
+      constraint: constraint,
+      // Earnings came in under the low case: the buffer covered the gap.
+      fellShort: lo !== null && w.net < lo, shortfall: lo !== null && w.net < lo ? lo - w.net : 0,
+      nextPay: next ? next.pay_keel : null, nextRisk: next && typeof next.risk === "number" ? next.risk : null
+    };
+  }
+
   // Turn one CONTRACT run into the shape render() uses.
   function fromRun(run) {
     var w = run.weeks, M = run.metrics;
@@ -232,7 +252,7 @@
     };
   }
 
-  var api = { SOURCES: SOURCES, validate: validate, loadData: loadData, findRun: findRun, options: options, stormWeeks: stormWeeks, whatIf: whatIf, paycheckChoices: paycheckChoices, reliability: reliability, STRESS_SCENARIOS: STRESS_SCENARIOS, stressTest: stressTest, paycheckBreakdown: paycheckBreakdown, fromRun: fromRun };
+  var api = { SOURCES: SOURCES, validate: validate, loadData: loadData, findRun: findRun, options: options, stormWeeks: stormWeeks, whatIf: whatIf, paycheckChoices: paycheckChoices, reliability: reliability, STRESS_SCENARIOS: STRESS_SCENARIOS, stressTest: stressTest, paycheckBreakdown: paycheckBreakdown, explainWeek: explainWeek, fromRun: fromRun };
   if (typeof module !== "undefined" && module.exports) module.exports = api;
   else root.KeelData = api;
 })(this);

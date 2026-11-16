@@ -82,6 +82,14 @@ h2 { font-size: 17px; text-wrap: balance; }
 #bdbody dt { font-size: 13px; color: var(--ink2); } #bdbody dd { margin: 0; font-size: 18px; font-weight: 600; }
 .bdwarn { border: 1px solid var(--crit); color: var(--crit); border-radius: 8px; padding: 8px 12px; font-size: 14px; }
 @media (max-width: 520px) { .bdrow { grid-template-columns: 1fr; gap: 4px; } }
+#whybody dl { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 8px 16px; margin: 0; }
+#whybody dt { font-size: 13px; color: var(--ink2); }
+#whybody dd { margin: 0; font-size: 18px; font-weight: 600; }
+.whyhow summary { cursor: pointer; font-weight: 600; }
+.whysteps { margin: 8px 0; padding-left: 20px; display: grid; gap: 6px; font-size: 14px; color: var(--ink2); }
+.whysteps b { color: var(--ink); }
+#log button[data-why] { font: inherit; color: var(--keel); background: none; border: 0; padding: 0; cursor: pointer; text-decoration: underline; text-underline-offset: 2px; }
+#log tr[aria-current="true"] td { background: color-mix(in srgb, var(--keel) 10%, transparent); }
 .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 #optlist { border: 0; margin: 0; padding: 0; display: grid; gap: 8px; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); }
 #optlist label { display: flex; gap: 8px; align-items: flex-start; border: 1px solid var(--border); border-radius: 8px; padding: 10px; cursor: pointer; }
@@ -329,6 +337,25 @@ footer { color: var(--muted); font-size: 12px; }
     <p class="note" id="relnote"></p>
   </section>
 
+  <section class="card" aria-labelledby="why-h" id="whycard">
+    <header>
+      <h2 id="why-h">Why this paycheck?</h2>
+      <p id="whysub">How Keel picked one week's paycheck. Pick a week in the decision log below to explain it.</p>
+    </header>
+    <div id="whybody" aria-live="polite"></div>
+    <details class="whyhow">
+      <summary>How Keel sets a paycheck</summary>
+      <ol class="whysteps">
+        <li><b>Forecast a range.</b> Keel estimates a low and a high case for next week's take-home pay. The wider the range, the less sure it is.</li>
+        <li><b>Imagine many possible weeks.</b> It plays out hundreds of possible next few weeks inside that range.</li>
+        <li><b>Try paychecks from high to low.</b> It starts at a cap and steps down $5 at a time.</li>
+        <li><b>Stop at the first safe one.</b> It keeps the first paycheck where the chance of the buffer running dry stays within your limit.</li>
+      </ol>
+      <p class="note">More uncertainty (a wider range) or a smaller buffer means a lower paycheck. A bigger buffer or a looser limit means a higher one. Keel does not show which model inputs mattered most, because the results file does not record that.</p>
+    </details>
+    <p class="note" id="whynote"></p>
+  </section>
+
   <section class="card">
     <header>
       <h2>Decision log</h2>
@@ -542,14 +569,16 @@ function render() {
     "<tr><td>Keel buffer never below zero</td><td class=\"num\">" + pill(R.checks.buffer, "Passed", "Failed") + "</td></tr>" +
     "<tr><td>Paycheck never negative</td><td class=\"num\">" + pill(R.checks.pay, "Passed", "Failed") + "</td></tr></tbody>";
 
+  if (whyWeek === null || whyWeek > R.log.length) whyWeek = R.log.length;
   var rows = R.log.slice(-8).map(function (r) {
-    return "<tr><td>W" + r.week + "</td><td class=\"num\">" + money(r.lo) + "–" + money(r.hi) + "</td><td class=\"num\">" + money(r.buffer) + "</td><td class=\"num\">" + money(r.pay) + "</td><td>" + esc(r.reason) + "</td></tr>";
+    return "<tr" + (r.week === whyWeek ? ' aria-current="true"' : "") + "><td><button type=\"button\" data-why=\"" + r.week + "\" aria-label=\"Explain week " + r.week + "\">W" + r.week + "</button></td><td class=\"num\">" + money(r.lo) + "–" + money(r.hi) + "</td><td class=\"num\">" + money(r.buffer) + "</td><td class=\"num\">" + money(r.pay) + "</td><td>" + esc(r.reason) + "</td></tr>";
   }).join("");
   renderWhatIf();
   renderOptimizer();
   renderBreakdown();
   renderReliability();
   renderStress();
+  renderWhy(run);
   document.getElementById("log").innerHTML = "<thead><tr><th>Week</th><th class=\"num\">Forecast range</th><th class=\"num\">Buffer before</th><th class=\"num\">Paycheck</th><th>Why</th></tr></thead><tbody>" + rows + "</tbody>";
 }
 
@@ -782,6 +811,46 @@ document.getElementById("stseg").addEventListener("click", function (e) {
   renderStress();
   var again = document.querySelector('#stseg button[data-st="' + stScenario + '"]');
   if (again) again.focus();
+});
+
+// "Why this paycheck?": one week explained from the stored run; the decision log picks the week.
+var whyWeek = null;
+function renderWhy(run) {
+  var TOY = DATA.meta.model === "toy", e = KeelData.explainWeek(run, whyWeek), H = DATA.meta.horizon_weeks;
+  document.getElementById("whysub").textContent = (TOY ? "Toy sample, not our result. " : "Simulated driver. ") +
+    "How Keel picked one week's paycheck for driver " + state.driver + ". Pick a week in the decision log below to explain it.";
+  document.getElementById("whynote").textContent = "Read from the results file, not recomputed. Not financial or tax advice.";
+  var el = document.getElementById("whybody");
+  if (!e) { el.innerHTML = '<p class="note">No week to explain: this run has no weekly data.</p>'; return; }
+  var na = "Not in file";
+  var h = '<p class="note"><strong>Week ' + e.week + (e.weekStart ? " (" + esc(e.weekStart) + ")" : "") + ":</strong> Keel paid <strong>" + money(e.pay) + "</strong>.</p><dl>" +
+    "<div><dt>Forecast take-home range</dt><dd>" + (e.lo === null || e.hi === null ? na : money(e.lo) + "–" + money(e.hi)) + "</dd></div>" +
+    "<div><dt>Buffer before payday</dt><dd>" + money(e.bufferBefore) + "</dd></div>" +
+    "<div><dt>Your risk limit</dt><dd>" + pct(e.limit) + "</dd></div>" +
+    "<div><dt>Estimated chance of running dry (next " + H + " weeks)</dt><dd>" + (e.risk === null ? na : pct(e.risk)) + "</dd></div>" +
+    "<div><dt>Paycheck</dt><dd>" + money(e.pay) + "</dd></div></dl>";
+  var limits = {
+    limit_met: "<strong>The rule it had to meet:</strong> a chance of running dry within " + pct(e.limit) + ". Keel tried higher paychecks first and this was the first one that met it. " +
+      "The file does not record whether higher amounts failed the limit or were above the starting cap, so we do not say which one stopped it.",
+    floor: "<strong>The rule it had to meet:</strong> even a $0 paycheck left a " + pct(e.risk) + " chance of running dry, above your " + pct(e.limit) + " limit, so Keel paid nothing rather than risk an overdraft.",
+    unknown: "<strong>The rule it had to meet:</strong> the risk estimate is not in the file, so we do not guess."
+  };
+  h += '<p class="note">' + limits[e.constraint] + "</p>";
+  h += '<p class="note"><strong>If earnings fall unexpectedly:</strong> the paycheck for the week is already set, so the buffer covers the gap. ' +
+    "Next week Keel sees the smaller buffer and the weaker earnings, and may lower the paycheck to keep the risk within your limit. ";
+  if (e.fellShort) h += "That happened here: take-home pay was " + money(e.net) + ", " + money(e.shortfall) + " under the low case. The buffer went from " + money(e.bufferBefore) + " to " + money(e.bufferAfter) +
+    (e.nextPay === null ? "." : ", and next week's paycheck was " + money(e.nextPay) + " (" + (e.nextPay < e.pay ? "down " : e.nextPay > e.pay ? "up " : "no change") + (e.nextPay === e.pay ? "" : money(Math.abs(e.nextPay - e.pay))) + ").");
+  else h += "This week take-home pay was " + money(e.net) + (e.lo === null ? "." : ", not below the low case.");
+  h += "</p>";
+  if (e.reason) h += '<p class="note"><strong>Keel’s note:</strong> ' + esc(e.reason) + "</p>";
+  el.innerHTML = h;
+}
+document.getElementById("log").addEventListener("click", function (ev) {
+  var b = ev.target.closest("button[data-why]");
+  if (!b) return;
+  whyWeek = parseInt(b.dataset.why, 10);
+  render();
+  document.getElementById("whycard").scrollIntoView({ block: "start", behavior: "smooth" });
 });
 
 // What-if: compares precomputed runs for the selected driver; the badge text says whether they are toy or real.

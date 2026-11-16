@@ -217,13 +217,13 @@ test("stressTest: catalog offers all four scenarios in order", () => {
 });
 
 // Paycheck breakdown
-const wk = (o) => Object.assign({ net: 0, lo: 0, hi: 0, pay_avg4: 0, pay_last: 0, buf_avg4: 0, buf_last: 0 }, o);
+const bdWk = (o) => Object.assign({ net: 0, lo: 0, hi: 0, pay_avg4: 0, pay_last: 0, buf_avg4: 0, buf_last: 0 }, o);
 const bdRun = { weeks: [
-  wk({ week: 1, gross: 1000, net: 850, pay_keel: 700, buf_keel: 500 }),
-  wk({ week: 2, gross: 1000, net: 850, pay_keel: 700, buf_keel: 650 }), // earnings > paycheck: +150 to buffer
-  wk({ week: 3, gross: 400, net: 340, pay_keel: 700, buf_keel: 290 }),  // buffer covers 360
-  wk({ week: 4, gross: 0, net: 0, pay_keel: 250, buf_keel: 40 }),       // zero earnings, buffer pays all
-  wk({ week: 5, gross: 500, net: 425, pay_keel: 300, buf_keel: 200 })   // stored buffer off by 35
+  bdWk({ week: 1, gross: 1000, net: 850, pay_keel: 700, buf_keel: 500 }),
+  bdWk({ week: 2, gross: 1000, net: 850, pay_keel: 700, buf_keel: 650 }), // earnings > paycheck: +150 to buffer
+  bdWk({ week: 3, gross: 400, net: 340, pay_keel: 700, buf_keel: 290 }),  // buffer covers 360
+  bdWk({ week: 4, gross: 0, net: 0, pay_keel: 250, buf_keel: 40 }),       // zero earnings, buffer pays all
+  bdWk({ week: 5, gross: 500, net: 425, pay_keel: 300, buf_keel: 200 })   // stored buffer off by 35
 ] };
 
 test("breakdown: normal earnings replenish the buffer and the identity holds", () => {
@@ -257,4 +257,37 @@ test("breakdown: week 1 has no opening balance, so nothing is invented", () => {
 test("breakdown: real sample weeks satisfy the identity", () => {
   const run = SAMPLE.runs[0];
   for (let w = 2; w <= run.weeks.length; w++) assert.notEqual(K.paycheckBreakdown(run, w).identity, false, "week " + w);
+});
+
+const mkRun = (weeks, risk_limit = 0.05) => ({ driver: "A", scenario: "normal", risk_limit, weeks });
+const wk = (o) => Object.assign({ week: 1, net: 500, lo: 400, hi: 700, pay_keel: 450, buf_keel: 300, risk: 0.04, reason: "Chose $450." }, o);
+
+test("explainWeek: copies the week's stored values and derives buffer before", () => {
+  const e = K.explainWeek(mkRun([wk({}), wk({ week: 2, pay_keel: 420, risk: 0.03 })]), 1);
+  assert.equal(e.pay, 450); assert.equal(e.risk, 0.04); assert.equal(e.limit, 0.05);
+  assert.equal(e.bufferBefore, 250); assert.equal(e.bufferAfter, 300);
+  assert.equal(e.constraint, "limit_met");
+  assert.equal(e.fellShort, false);
+  assert.equal(e.nextPay, 420);
+});
+
+test("explainWeek: earnings under the low case are flagged with the shortfall", () => {
+  const e = K.explainWeek(mkRun([wk({ net: 250 })]), 1);
+  assert.equal(e.fellShort, true); assert.equal(e.shortfall, 150); assert.equal(e.nextPay, null);
+});
+
+test("explainWeek: $0 paycheck with risk over the limit is the floor case", () => {
+  assert.equal(K.explainWeek(mkRun([wk({ pay_keel: 0, risk: 0.3 })]), 1).constraint, "floor");
+});
+
+test("explainWeek: missing risk, band or reason stay null; bad week gives null", () => {
+  const e = K.explainWeek(mkRun([wk({ risk: undefined, lo: undefined, reason: "" })]), 1);
+  assert.equal(e.risk, null); assert.equal(e.lo, null); assert.equal(e.reason, null);
+  assert.equal(e.constraint, "unknown"); assert.equal(e.fellShort, false);
+  assert.equal(K.explainWeek(mkRun([wk({})]), 5), null);
+});
+
+test("explainWeek: every real-file week either meets its limit or is the $0 floor", { skip: !fs.existsSync(REAL_PATH) }, () => {
+  const real = JSON.parse(fs.readFileSync(REAL_PATH, "utf8"));
+  for (const r of real.runs) for (const w of r.weeks) assert.notEqual(K.explainWeek(r, w.week).constraint, "unknown");
 });
